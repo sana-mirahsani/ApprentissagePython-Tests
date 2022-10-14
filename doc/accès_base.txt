@@ -1,0 +1,11 @@
+mamachine> ssh thonny@thonnylog.fil.univ-lille.fr
+server> docker exec -ti dcb060d7bfc1 /bin/bash
+container> mongosh --username noce --authenticationDatabase admin
+mongosh> use xAPIStatements
+mongosh> db.statements.count()
+mongosh> exit
+container> mongoexport --username noce --authenticationDatabase admin --jsonArray --collection statements --db xAPIStatements --out test.json
+server> exit
+server> docker cp dcb060d7bfc1:/test.json .
+server> exit
+mamachine> scp thonny@thonnylog.fil.univ-lille.fr:/home/thonny/test.json traces.json
