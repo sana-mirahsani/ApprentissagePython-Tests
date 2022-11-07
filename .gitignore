@@ -44,3 +44,4 @@ ipython_config.py
 
 *.ipynb
 data
+*/__pycache__/*
