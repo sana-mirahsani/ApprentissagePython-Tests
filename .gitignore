@@ -43,5 +43,5 @@ ipython_config.py
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,jupyternotebooks
 
 *.ipynb
-data
-*/__pycache__/*
+/data/*
+**/__pycache__/
