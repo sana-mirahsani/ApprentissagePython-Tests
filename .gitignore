@@ -45,3 +45,5 @@ ipython_config.py
 *.ipynb
 /data/*
 **/__pycache__/
+*.png
+*.svg
