@@ -48,6 +48,7 @@ for session, session_logs in sessions:
 
 
 # %%
-
+fig = plot_tp_sessions(logs, '2022-09-13', '10:10', '11:50', scaled=True)
+plt.savefig('tp_mardi_13092022_matin_scaled.png')
 
 

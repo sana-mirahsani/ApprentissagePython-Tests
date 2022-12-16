@@ -1,22 +1,10 @@
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import numpy as np
+from datetime import *
 from ..data.constants import *
 
 def plot_session(ax, logs):
-    actor = logs['actor'].unique()[0]
-    session = logs['session.id'].unique()[0]
-    
-    # recherche de la fin de session. Pour l'instant il semble que l'événement peut ne pas être présent
-    # dans ce cas, on ne fait pas le graphe
-    time_data = logs.loc[logs['verb'] == 'Session.end']
-    if len(time_data) == 0:
-        return ax
-
-    session_duration = time_data['session.duration'].iloc[0].to_pytimedelta().total_seconds()
-    session_duration_hours = int(session_duration / 3600)
-    session_duration_minutes = int((session_duration - session_duration_hours * 3600) / 60)
-    session_date = time_data['timestamp'].iloc[0].date()
 
     # Insertion de labels et de couleurs en double pour gérer les événements avec et sans erreur
     colors = list(verb_colors.values())
@@ -42,10 +30,11 @@ def plot_session(ax, logs):
     positions.append(logs.loc[(logs['verb'] == 'Run.Test') & (logs['result.success'] == 'False')]['timestamp'])
     positions.append(logs.loc[logs['verb'] == 'Docstring.Generate']['timestamp'])
     
-    ax.set_xlabel('event timestamp')
-    ax.set_title(f"Session {session} de l'étudiant {actor}\nle {session_date} - durée : {session_duration_hours}h{session_duration_minutes}")
+    linelength = [1,1] + [.5] * 8
 
-    ax.eventplot(positions=positions, lineoffsets=[.25, .25, .25, .25, -.25, .25, -.25, .25, -.25, .25], linelength=.5, colors=colors)
+    ax.set_xlabel('event timestamp')
+
+    ax.eventplot(positions=positions, lineoffsets=[.5, .5, .25, .25, -.25, .25, -.25, .25, -.25, .25], linelengths=linelength, colors=colors)
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
     for label in ax.get_xticklabels(which='major'):
         label.set(rotation=30, horizontalalignment='right')
@@ -64,9 +53,52 @@ def plot_actor_sessions(logs, actor):
     fig, axs = plt.subplots(nb_sessions,1, squeeze = True, figsize=(14, 3*nb_sessions))
     plot = 0
     for session, session_logs in actor_session_logs:
-        print(session)
         plot_session(axs[plot], session_logs)
+
+        actor = session_logs['actor'].unique()[0]
+        session = session_logs['session.id'].unique()[0]
+    
+        # recherche de la fin de session. Pour l'instant il semble que l'événement peut ne pas être présent
+        # dans ce cas, on ne fait pas le graphe
+        time_data = session_logs.loc[logs['verb'] == 'Session.end']
+        if len(time_data) == 0:
+            continue
+
+        session_duration = time_data['session.duration'].iloc[0].to_pytimedelta().total_seconds()
+        session_duration_hours = int(session_duration / 3600)
+        session_duration_minutes = int((session_duration - session_duration_hours * 3600) / 60)
+        session_date = time_data['timestamp'].iloc[0].date()
+
+        axs[plot].set_title(f"Session {session} de l'étudiant {actor}\nle {session_date} - durée : {session_duration_hours}h{session_duration_minutes}")
         plot += 1
 
     fig.tight_layout()
     return fig
+
+def plot_tp_sessions(logs, date, start, end, scaled=False):
+    tp_logs = logs.loc[(logs['timestamp'].dt.strftime('%Y-%m-%d') == date)
+            & (logs['timestamp'].dt.strftime('%H:%M') > start)
+            & (logs['timestamp'].dt.strftime('%H:%M') < end)]
+
+    tp_actor_logs = tp_logs.groupby('actor')
+    nb_actors = tp_actor_logs.ngroups
+    if scaled == True:
+        start_dt = datetime.combine(datetime.fromisoformat(date), time.fromisoformat(start))
+        end_dt = datetime.combine(datetime.fromisoformat(date), time.fromisoformat(end))
+
+    date_tp = tp_logs['timestamp'].iloc[0].strftime('%Y-%m-%d')
+
+    fig, axs = plt.subplots(nb_actors,1, squeeze = True, figsize=(14, 3*nb_actors))
+    plot = 0
+    for actor, actor_logs in tp_actor_logs:
+        plot_session(axs[plot], actor_logs)
+        if scaled == True:
+            axs[plot].set_xlim(start_dt, end_dt)
+        axs[plot].set_title(f"acteur {actor} - {date_tp}")
+        plot += 1
+
+    fig.tight_layout()
+    return fig
+
+    def plot_session_scaled(ax, logs, xmin, xmax):
+        pass
