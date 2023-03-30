@@ -19,8 +19,8 @@ def plot_session(ax, logs):
 
     # Génération d'une liste par événement pour matplotlib.eventplot
     positions = []
-    positions.append(logs.loc[logs['verb'] == 'Session.start']['timestamp'])
-    positions.append(logs.loc[logs['verb'] == 'Session.end']['timestamp'])
+    positions.append(logs.loc[logs['verb'] == 'Session.Start']['timestamp'])
+    positions.append(logs.loc[logs['verb'] == 'Session.End']['timestamp'])
     positions.append(logs.loc[logs['verb'] == 'File.Save']['timestamp'])
     positions.append(logs.loc[(logs['verb'] == 'Run.Program') & (logs['result.success'] == 'True')]['timestamp'])
     positions.append(logs.loc[(logs['verb'] == 'Run.Program') & (logs['result.success'] == 'False')]['timestamp'])
@@ -49,27 +49,20 @@ def plot_session(ax, logs):
 def plot_actor_sessions(logs, actor):
     actor_session_logs = logs.loc[logs['actor'] == actor].groupby('session.id')
     nb_sessions = actor_session_logs.ngroups
-
+    
     fig, axs = plt.subplots(nb_sessions,1, squeeze = True, figsize=(14, 3*nb_sessions))
     plot = 0
     for session, session_logs in actor_session_logs:
         plot_session(axs[plot], session_logs)
-
-        actor = session_logs['actor'].unique()[0]
-        session = session_logs['session.id'].unique()[0]
     
-        # recherche de la fin de session. Pour l'instant il semble que l'événement peut ne pas être présent
-        # dans ce cas, on ne fait pas le graphe
-        time_data = session_logs.loc[logs['verb'] == 'Session.end']
-        if len(time_data) == 0:
-            continue
+        time_data = session_logs.loc[logs['verb'] == 'Session.End']
 
         session_duration = time_data['session.duration'].iloc[0].to_pytimedelta().total_seconds()
         session_duration_hours = int(session_duration / 3600)
         session_duration_minutes = int((session_duration - session_duration_hours * 3600) / 60)
         session_date = time_data['timestamp'].iloc[0].date()
 
-        axs[plot].set_title(f"Session {session} de l'étudiant {actor}\nle {session_date} - durée : {session_duration_hours}h{session_duration_minutes}")
+        axs[plot].set_title(f"Session {session} de l'étudiant {actor}\nle {session_date} - durée : {session_duration_hours}h{session_duration_minutes:02}")
         plot += 1
 
     fig.tight_layout()
@@ -86,15 +79,13 @@ def plot_tp_sessions(logs, date, start, end, scaled=False):
         start_dt = datetime.combine(datetime.fromisoformat(date), time.fromisoformat(start))
         end_dt = datetime.combine(datetime.fromisoformat(date), time.fromisoformat(end))
 
-    date_tp = tp_logs['timestamp'].iloc[0].strftime('%Y-%m-%d')
-
     fig, axs = plt.subplots(nb_actors,1, squeeze = True, figsize=(14, 3*nb_actors))
     plot = 0
     for actor, actor_logs in tp_actor_logs:
         plot_session(axs[plot], actor_logs)
         if scaled == True:
             axs[plot].set_xlim(start_dt, end_dt)
-        axs[plot].set_title(f"acteur {actor} - {date_tp}")
+        axs[plot].set_title(f"acteur {actor} - {date}")
         plot += 1
 
     fig.tight_layout()
