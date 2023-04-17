@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 %autoreload 2
 
 # %%
-#process_raw_data("20221125_traces.json")
+process_raw_data("20230322.json")
 
 # %%
 logs = load_clean_data("traces_clean.csv")
@@ -22,15 +22,11 @@ logs = load_clean_data("traces_clean.csv")
 select_sessions_by_duration(logs, min_duration='00:60:00', max_duration='01:30:00')
 
 # %%
-plot_actor_session(logs, 'bd9a2e11c76b784', '140052352910144')
+plot_actor_sessions(logs, '032a0e61f26bba1')
 
 # %%
 fig = plot_actor_sessions(logs,'5e4e413bfce200d')
 plt.savefig('sessions.png')
-
-# %%
-# Cas d'une session où on a pas de Session.end
-logs.loc[(logs['actor'] == '5e4e413bfce200d') & (logs['session.id'] == '139720990229168')][['timestamp', 'verb', 'session.duration']]
 
 # %%
 traces = logs.loc[logs['actor'] == '5e4e413bfce200d'].groupby(['session.id'], sort=False)
@@ -41,14 +37,18 @@ for session, session_logs in traces:
 
 
 # %%
-sessions = logs.groupby(['actor', 'session.id'])
-for session, session_logs in sessions:
-    print(session_logs.iloc[-1]['verb'])
-    
-
+fig = plot_tp_sessions(logs, '2023-01-31', '10:10', '11:50', scaled=True)
+plt.savefig('tp_mardi_13092022_matin_scaled.png')
 
 # %%
-fig = plot_tp_sessions(logs, '2022-09-13', '10:10', '11:50', scaled=True)
-plt.savefig('tp_mardi_13092022_matin_scaled.png')
+actor_session_logs = logs.loc[logs['actor'] == '5e4e413bfce200d'].groupby('session.id')
+nb_sessions = actor_session_logs.ngroups
+print(nb_sessions)
+plot = 0
+for session, session_logs in actor_session_logs:
+    time_data = session_logs.loc[logs['verb'] == 'Session.End']
+    #session_duration = time_data['session.duration'].to_pytimedelta().total_seconds()
+    print(time_data['session.duration'].iloc[0].to_pytimedelta().total_seconds())
+
 
 

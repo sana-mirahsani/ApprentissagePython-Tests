@@ -33,8 +33,13 @@ def plot_session(ax, logs):
     linelength = [1,1] + [.5] * 8
 
     ax.set_xlabel('event timestamp')
+    ax.set_yticks([])
+    #ax.set_ylabels(['failure', 'success']) 
 
-    ax.eventplot(positions=positions, lineoffsets=[.5, .5, .25, .25, -.25, .25, -.25, .25, -.25, .25], linelengths=linelength, colors=colors)
+    ax.set(ylim=(-1.5, 1.5))#, yticks=np.arange(1, 8))
+    ax.eventplot(positions=positions, lineoffsets=[.5, .5, .25, .25, -.25, .25, -.25, .25, -.25, .25],\
+        linelengths=linelength, colors=colors)
+
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
     for label in ax.get_xticklabels(which='major'):
         label.set(rotation=30, horizontalalignment='right')
@@ -51,6 +56,7 @@ def plot_actor_sessions(logs, actor):
     nb_sessions = actor_session_logs.ngroups
     
     fig, axs = plt.subplots(nb_sessions,1, squeeze = True, figsize=(14, 3*nb_sessions))
+    #fig.subplots_adjust(hspace=.5, bottom=.5)
     plot = 0
     for session, session_logs in actor_session_logs:
         plot_session(axs[plot], session_logs)
@@ -93,3 +99,23 @@ def plot_tp_sessions(logs, date, start, end, scaled=False):
 
     def plot_session_scaled(ax, logs, xmin, xmax):
         pass
+
+def plot_actions_and_test_per_week(logs):
+    timed = logs.set_index('timestamp')
+    sampled_timed = timed.resample('W')
+    sampled_tests = timed.loc[timed['verb'] == 'Run.Test'].resample('W')
+
+    df = pd.DataFrame(sampled_timed.size(), columns=['all'])
+    
+    df['test'] = sampled_tests.size()
+    ax = df.plot(kind='bar', figsize=(10,4))
+    
+    ax.legend(['toutes actions', 'Run.Test'])
+    plt.xticks(rotation = 45)
+    ticklabels = [item.strftime('%W') for item in sampled_timed.groups]
+    ax.xaxis.set_major_formatter(ticker.FixedFormatter(ticklabels))
+    ax.set_xlabel("semaines de TP")
+    ax.set_ylabel("Nombre total d'actions par TP")
+    ax.set_title("Visualisation du nombre d'actions et de tests par TP")
+    
+    plt.savefig('nb_actions_et_tests.png')
