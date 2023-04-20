@@ -22,12 +22,12 @@ def plot_session(ax, logs):
     positions.append(logs.loc[logs['verb'] == 'Session.Start']['timestamp'])
     positions.append(logs.loc[logs['verb'] == 'Session.End']['timestamp'])
     positions.append(logs.loc[logs['verb'] == 'File.Save']['timestamp'])
-    positions.append(logs.loc[(logs['verb'] == 'Run.Program') & (logs['result.success'] == 'True')]['timestamp'])
-    positions.append(logs.loc[(logs['verb'] == 'Run.Program') & (logs['result.success'] == 'False')]['timestamp'])
-    positions.append(logs.loc[(logs['verb'] == 'Run.Command') & (logs['result.success'] == 'True')]['timestamp'])
-    positions.append(logs.loc[(logs['verb'] == 'Run.Command') & (logs['result.success'] == 'False')]['timestamp'])
-    positions.append(logs.loc[(logs['verb'] == 'Run.Test') & (logs['result.success'] == 'True')]['timestamp'])
-    positions.append(logs.loc[(logs['verb'] == 'Run.Test') & (logs['result.success'] == 'False')]['timestamp'])
+    positions.append(logs.loc[(logs['verb'] == 'Run.Program') & (logs['result.success'] == True)]['timestamp'])
+    positions.append(logs.loc[(logs['verb'] == 'Run.Program') & (logs['result.success'] == False)]['timestamp'])
+    positions.append(logs.loc[(logs['verb'] == 'Run.Command') & (logs['result.success'] == True)]['timestamp'])
+    positions.append(logs.loc[(logs['verb'] == 'Run.Command') & (logs['result.success'] == False)]['timestamp'])
+    positions.append(logs.loc[(logs['verb'] == 'Run.Test') & (logs['result.success'] == True)]['timestamp'])
+    positions.append(logs.loc[(logs['verb'] == 'Run.Test') & (logs['result.success'] == False)]['timestamp'])
     positions.append(logs.loc[logs['verb'] == 'Docstring.Generate']['timestamp'])
     
     linelength = [1,1] + [.5] * 8
