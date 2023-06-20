@@ -8,4 +8,4 @@ container> mongoexport --username noce --authenticationDatabase admin --jsonArra
 server> exit
 server> docker cp dcb060d7bfc1:/test.json .
 server> exit
-mamachine> scp thonny@thonnylog.fil.univ-lille.fr:/home/thonny/test.json traces.json
+mamachine> scp -O thonny@thonnylog.fil.univ-lille.fr:/home/thonny/test.json traces.json
