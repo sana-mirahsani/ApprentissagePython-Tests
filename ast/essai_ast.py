@@ -5,7 +5,6 @@
 # author : Mirabelle Nebut 
 
 import ast
-import difflib
 
 # copié de utils.py ds L1Test
 # attention il faut appeler cette fonction sur les nodes de l'AST pour obtenir les noms
@@ -76,7 +75,7 @@ class NonTestableFunctions(ast.NodeVisitor):
         self._function_name_in_attribute = None
         self._function_names = [] # all function names
 
-    def visit_FunctionDef(self, node):
+    def visit_FunctionDef(self, node:ast.AST) -> None:
         docstring = ast.get_docstring(node)
         if not docstring:
             self._function_names.append((node.name, NO_DOCSTRING))
@@ -89,12 +88,12 @@ class NonTestableFunctions(ast.NodeVisitor):
         self._current_func_name = None
 
 
-    def visit_Call(self, node):
+    def visit_Call(self, node:ast.AST) -> None:
         self._call = True
         self.generic_visit(node)
         self._call = False
 
-    def visit_Name(self, node):
+    def visit_Name(self, node:ast.AST) -> None:
         if self._call and self._current_func_name and \
            (node.id in NAMES_TO_CHECK or \
             node.id in IMPORT_TO_CHECK and self._function_name_in_attribute in IMPORT_TO_CHECK[node.id]): 
@@ -102,14 +101,14 @@ class NonTestableFunctions(ast.NodeVisitor):
         self.generic_visit(node)
 
 
-    def visit_Attribute(self, node):
+    def visit_Attribute(self, node:ast.AST) -> None:
         if self._call and self._current_func_name:
             self._function_name_in_attribute = node.attr
         self.generic_visit(node)
         self._function_name_in_attribute = None
         
 def visit(editor_content:str) -> tuple[list,set]:
-    '''Returns a tuple of the names of all functions then the names of
+    '''Returns a tuple of the names of all functions then the set of names of
     non testable functions contained in editor_content.
 
     Names of tested functions can be retrieved from L1test export to
@@ -117,8 +116,6 @@ def visit(editor_content:str) -> tuple[list,set]:
     _tested_functions_names).
     '''
     visitor = NonTestableFunctions()
-    with open('exemple.py') as f:
-        texte = f.read()
     module = ast.parse(editor_content, mode='exec') # ast.Module
     visitor.visit(module)
     return (visitor._function_names, visitor._non_testable_func_names)
