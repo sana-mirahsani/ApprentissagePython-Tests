@@ -91,6 +91,7 @@ def _slice_anonymize_dataframe(df: pd.DataFrame, start: int, end: int) -> pd.Dat
     
 def anonymize_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
+    CHANGED!
     Anonymizes the given DataFrame by hashing actors name and cleaning up comment in code state columns.
 
     Args:
@@ -99,16 +100,26 @@ def anonymize_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: The anonymized DataFrame.
     """
-    for idx, row in df.iterrows():
-        actors = row['actor'].split('/')
-        anonymized_actors = [_hash_224(actors[0]), '' if actors[1] == '' else _hash_224(actors[1])]
-        row['actor'] = anonymized_actors[0] + '/' + anonymized_actors[1]
-        for column in COLUMNS_WITH_PATH:
-            row[column] = row[column].replace(actors[0], anonymized_actors[0])
-        row['P_codeState'] = _clean_unused_comments(row['P_codeState'])
-        row['F_codeState'] = _clean_unused_comments(row['F_codeState'])
-        df.loc[idx] = row
+    # Split 'actor' column into two parts
+    actors_df = df['actor'].str.split('/', expand=True)
+    
+    # Hash both parts
+    hashed_0 = actors_df[0].apply(_hash_224)
+    hashed_1 = actors_df[1].apply(lambda x: '' if x == '' else _hash_224(x))
+    
+    # Reconstruct the 'actor' column
+    df['actor'] = hashed_0 + '/' + hashed_1
+
+    # Replace actor[0] with hashed version in specified columns
+    for column in COLUMNS_WITH_PATH:
+        df[column] = df[column].replace(actors_df[0].tolist(), hashed_0.tolist(), regex=False)
+
+    # Apply comment cleaning functions
+    df['P_codeState'] = df['P_codeState'].apply(_clean_unused_comments)
+    df['F_codeState'] = df['F_codeState'].apply(_clean_unused_comments)
+    
     return df
+
 
 def _hash_224(s : str) -> str:
     """

@@ -4,6 +4,8 @@
 # ajout Mirabelle
 # peut-être mieux ailleurs
 
+from itertools import chain
+
 def extract_filename_from_commandRan_Run_Program(command: str) -> str:
     '''
     precond : command doit commencer par %Run
@@ -33,6 +35,7 @@ def give_actors(actor : str) -> list[str] :
 
 def give_list_actors(df : pd.DataFrame) -> list[str] :
     """
+    CHANGED
     Extracts a list of actors that appear in the dataframe `df` by spliting the binome.
     
     Args:
@@ -41,11 +44,9 @@ def give_list_actors(df : pd.DataFrame) -> list[str] :
     Returns:
         list[str]: A list of unique users extracted the dataframe.
     """
-
-    actors = []
-    for actor in df['actor'].unique() :
-        actors += give_actors(actor)
-    return list(set(actors))
+    unique_actors = df['actor'].unique()
+    split_actors = chain.from_iterable(give_actors(actor) for actor in unique_actors)
+    return list(set(split_actors))
 
 def give_number_of_actors(df : pd.DataFrame) -> list[str] :
     """
