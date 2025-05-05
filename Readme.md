@@ -36,3 +36,6 @@ Analyze L1 (first-year) students learning Python using the Thonny editor (with a
 - One the two files above are done, try the visualisation part for the clean data, from the previous proccess.
 
 **The whole idea until now is working on the same code of Thomas just make it better (remove the for) and more understandable**
+
+# What is folder New src
+To optimize the code of Thomas, it should replace the for loop by the pandas operations which makes it much faster. I copied all the file one by one and make them more efficient, the whole concept and logic are the same.
