@@ -1,5 +1,26 @@
 # Folder 
-This folder is about changing the old folder to the new version.
+This folder is about changing the old folder to the new version. so the structure is the same but the content is clearer and faster
+
+## 📁 Project Structure
+
+```
+project-root/
+├── notebooks/                          # Jupyter notebooks
+│   ├── nettoyage_acteurs_2425.py       # original code but with some errors
+│   ├── nettoyage_acteurs_2425.ipynb    # my code            
+│   
+├── src/                     # Source code
+│   ├── data/                # Data loading/cleaning functions
+|   |    ├── anonymizing.py
+|   |    ├── cleaning.py
+|   |    ├── constants.py
+|   |    
+│   ├── features/            # Feature engineering
+│       ├── utils.py   
+|      
+└── README.md                # Project documentation
+```
+
 
 ## Changes
 - src\data\anonymizing.py
