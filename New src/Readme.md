@@ -7,7 +7,8 @@ This folder is about changing the old folder to the new version. so the structur
 project-root/
 ├── data/ 
 │   ├── interim/ 
-│      ├── traces250102_clean.csv
+│      ├── traces250102_clean.csv       
+│      ├── acteurs_corriges_2425.csv    # cleaned 'actor' column of traces250102_clean.csv
 │ 
 ├── notebooks/                          # Jupyter notebooks
 │   ├── nettoyage_acteurs_2425.py       # original code but with some errors
