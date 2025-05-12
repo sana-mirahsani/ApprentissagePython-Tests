@@ -40,3 +40,18 @@ project-root/
     - Problems with importing **from src.data import cleaning**, **from src.features import utils**, that is why it didn't work.
     - **clean_actor()**, **test_on_dataframe ()** : it is better to have two functions, one for cleaning the data and one to test the cleaning; instead of having the code without a function.
      
+
+## My suggestion for the structure of project
+your_project/
+├── notebooks/
+│   ├── 01_cleaning.ipynb      # Uses `column_to_list()` from .py
+│   └── 02_anonymization.ipynb # Calls Pandas/list logic directly
+│
+├── src/
+│   └── utils.py               # Only critical utilities
+│
+├── data/                      # Raw → interim → processed
+└── README.md
+
+
+Look at the nettoyage_fichier.py dans thomas
