@@ -9,6 +9,7 @@ import os
 #                  Functions
 #------------------------------------------------
 
+# Read dataframe
 def reading_dataframe(dir : str, file_name : str) -> pd.DataFrame:
     """
     Read data from the CSV file in a directory and convert them into a dataframe.
@@ -38,6 +39,7 @@ def reading_dataframe(dir : str, file_name : str) -> pd.DataFrame:
 
     return None
 
+# Read column and head of dataframe
 def column_and_head(df : pd.DataFrame) -> None:
     """
     Print the column and head of a dataframe as input.
@@ -53,6 +55,36 @@ def column_and_head(df : pd.DataFrame) -> None:
     print("\n")
     print("Columns of the dataframe: \n")
     print(df.columns)
+
+    return None
+    
+# Write the new dataframe into CSV file
+def write_csv(df : pd.DataFrame, dir: str) -> None:
+    """
+    Write the dataframe into csv file.
+    
+    Args:
+        df: Any dataframe.
+        dir : Directory to save the csv file
+    
+    Returns:
+        CSV file.
+    """
+    file_name = str(input("Enter the name of csv : \n"))
+
+    # Check if the file exists in the directory
+    if os.path.isfile(dir):
+        print(f"The directory exist.")
+
+        # convert to csv
+        try:
+            df.to_csv(dir+file_name+".csv")
+            
+        except Exception as error:
+            print(f"There is an error in saving the dataframe in csv, error : {error}")
+
+    else:
+        print(f"the directory: {dir} doesn't exist.")
 
     return None
     
