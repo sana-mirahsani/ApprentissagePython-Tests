@@ -8,7 +8,7 @@
 import pandas as pd 
 import hashlib
 from typing import Optional
-from src_thomas.data.constants import INTERIM_DATA_DIR, PROCESSED_DATA_DIR, COLUMNS_WITH_PATH
+from src.data.constants import INTERIM_DATA_DIR, PROCESSED_DATA_DIR, COLUMNS_WITH_PATH
 #------------------------------------------------
 #                  Functions
 #------------------------------------------------

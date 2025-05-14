@@ -24,7 +24,7 @@ sys.path.append('../') # these two lines allow the notebook to find the path to 
 import pandas as pd
 import io_utils, data_cleaning, data_anonymization
 from tests import test_preprocessing, test_anonymization
-from src_thomas.data.constants import INTERIM_DATA_DIR
+from src.data.constants import INTERIM_DATA_DIR
 
 # ### Reading dataframe
 # Use functions in file **io_utils.py.py**

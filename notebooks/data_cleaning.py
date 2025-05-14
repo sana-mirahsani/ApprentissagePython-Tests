@@ -43,7 +43,129 @@ def clean_time(df: pd.DataFrame) -> pd.DataFrame:
     df.reset_index(drop=True, inplace=True)
     return df
 
-# Clean actor column
+# Find not matching values
+def not_a_correct_identifier(df: pd.DataFrame) -> list:
+
+    """
+    Find the names of actor that doesn't match the pattern.
+    Returns a list of these unique names.
+
+    Args:
+        df : The dataframe.
+
+    Returns:
+        list: A list of not matching names.
+    """
+
+    pattern = r'^[a-zA-Z\-]+\.[a-zA-Z0-9\-]+\.etu$'
+
+    invalid_actors = df['actor'].dropna().unique()
+    invalid_actors = pd.Series(invalid_actors)
+    invalid_actors = invalid_actors[~invalid_actors.str.fullmatch(pattern)]
+
+    return invalid_actors
+
+# Remove @ at the end
+def delete_end_email(df: pd.DataFrame) -> pd.DataFrame:
+
+    """
+    Check if there actors contians @, if so just pick the first part.
+
+    Args:
+        df : The dataframe.
+
+    Returns:
+        df: Same dataframe with the cleaned actor column.
+    """
+
+    pattern = r'^([a-zA-Z\-]+\.[a-zA-Z0-9\-]+\.etu)@'
+
+    matches = df['actor'].str.extract(pattern)[0]
+
+    # Replace values in 'actor' column **only where a match is found**
+    df['actor'] = matches.combine_first(df['actor'])
+
+    return df
+
+# Remove all lines of an actor
+def delete_actor_lines(df: pd.DataFrame,name: str) -> pd.DataFrame:
+    
+    df_cleaned = df[df['actor'] != 'nebut']
+    return df_cleaned
+
+# Split actor and binome
+def split_actor_binome(df: pd.DataFrame) -> pd.DataFrame:
+
+    """
+    Split the actor and binome, keep the first name in actor but 
+    put the second name in binome column (new column).
+
+    Args:
+        df : A dataframe.
+
+    Returns:
+        df: The same dataframe but with one name in actor and second name in binome.
+    """
+     
+    split_df = df['actor'].str.split('/', n=1, expand=True)
+
+    # Assign first part back to 'actor', second part to 'binome'
+    df['actor'] = split_df[0]
+    df['binome'] = split_df[1]
+
+    return df    
+
+# Replace None value by ""
+def replace_None_by_str(df: pd.DataFrame, column : str) -> pd.DataFrame:
+
+    """
+    Fill all the None values with the an empty string (une chaine vide).
+
+    Args:
+        df : A dataframe.
+        column : The name of the column.
+
+    Returns:
+        df: The same dataframe but with one name in actor and second name in binome.
+    """
+     
+    df[column] = df[column].fillna("")
+
+    return df  
+
+# Replace jokers by real names
+def replace_jokers(df: pd.DataFrame, columns : list, jokers_real_name : dict) -> pd.DataFrame:
+
+    """
+    Find jokers and replace them with the real name.
+
+    Args:
+        df : A dataframe.
+        column : The name of the column to search jokers.
+        jokers_real_name : A dictionary of jokers and real names.
+
+    Returns:
+        df: The same dataframe but with cleaned values of jokers.
+    """
+    for column in columns:
+        df[column] = df[column].replace(jokers_real_name)
+
+    return df  
+
+# Manually cleaning
+def cleaning_manual_actors_2425(df: pd.DataFrame, name: str) -> pd.DataFrame:
+    """
+    It's a manual cleanign which can be change, depends on the data.
+    For now deleting rows of anis.younes.etu@univ-lille.fr actor.
+
+    Args:
+        df : A dataframe.
+        name : The name of actor to remove rows.
+
+    Returns:
+        df: The same dataframe but with deleted values of name.
+    """
+
 def clean_actor(names: str) -> Optional[str]:
     """
     clean actors with this pattern 'prenom.nom.etu'.
