@@ -65,7 +65,7 @@ def not_a_correct_identifier(df: pd.DataFrame) -> list:
 
     return invalid_actors
 
-# Remove @ at the end
+# Remove @ from the end
 def delete_end_email(df: pd.DataFrame) -> pd.DataFrame:
 
     """
@@ -90,7 +90,7 @@ def delete_end_email(df: pd.DataFrame) -> pd.DataFrame:
 # Remove all lines of an actor
 def delete_actor_lines(df: pd.DataFrame,name: str) -> pd.DataFrame:
     
-    df_cleaned = df[df['actor'] != 'nebut']
+    df_cleaned = df[df['actor'] != name]
     return df_cleaned
 
 # Split actor and binome
@@ -114,6 +114,26 @@ def split_actor_binome(df: pd.DataFrame) -> pd.DataFrame:
     df['binome'] = split_df[1]
 
     return df    
+
+# Delete specific name of actor or binome
+def delete_name_actor_binome(df: pd.DataFrame, column : str, name : str) -> pd.DataFrame:
+    
+    """
+    Find the name in actor or in binome and replace it by None.
+
+    Args:
+        df : A dataframe.
+        column : The name of the column.
+        name : The name to remove.
+
+    Returns:
+        df: The same dataframe but with removed name in the column.
+    """
+
+    df.loc[df[column] == name, column] = None
+
+    return df
+
 
 # Replace None value by ""
 def replace_None_by_str(df: pd.DataFrame, column : str) -> pd.DataFrame:
@@ -154,6 +174,7 @@ def replace_jokers(df: pd.DataFrame, columns : list, jokers_real_name : dict) ->
 
 # Manually cleaning
 def cleaning_manual_actors_2425(df: pd.DataFrame, name: str) -> pd.DataFrame:
+
     """
     It's a manual cleanign which can be change, depends on the data.
     For now deleting rows of anis.younes.etu@univ-lille.fr actor.
@@ -166,8 +187,12 @@ def cleaning_manual_actors_2425(df: pd.DataFrame, name: str) -> pd.DataFrame:
         df: The same dataframe but with deleted values of name.
     """
 
+    df_cleaned = df[df['actor'] != name]
+    
+    return df_cleaned
+
 def clean_actor(names: str) -> Optional[str]:
-    """
+    """ Not USED!!!
     clean actors with this pattern 'prenom.nom.etu'.
     This function doesn't get a dataframe, instead it is applied on a dataframe and 
     it gets the row one by one of the dataframe as the input, 
