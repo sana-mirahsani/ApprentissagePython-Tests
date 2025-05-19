@@ -14,6 +14,9 @@ from typing import Optional
 #                  Functions
 #------------------------------------------------
 
+#------------------------------------------------
+#                  Time cleaning
+#------------------------------------------------
 # Change time format
 def clean_time(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -43,6 +46,9 @@ def clean_time(df: pd.DataFrame) -> pd.DataFrame:
     df.reset_index(drop=True, inplace=True)
     return df
 
+#------------------------------------------------
+#                  Actor cleaning
+#------------------------------------------------
 # Find not matching values
 def not_a_correct_identifier(df: pd.DataFrame) -> list:
 
@@ -134,7 +140,6 @@ def delete_name_actor_binome(df: pd.DataFrame, column : str, name : str) -> pd.D
 
     return df
 
-
 # Replace None value by ""
 def replace_None_by_str(df: pd.DataFrame, column : str) -> pd.DataFrame:
 
@@ -190,6 +195,70 @@ def cleaning_manual_actors_2425(df: pd.DataFrame, name: str) -> pd.DataFrame:
     df_cleaned = df[df['actor'] != name]
     
     return df_cleaned
+
+#------------------------------------------------
+#                  filename cleaning
+#------------------------------------------------
+# Extract filename for not None value
+def extract_filename(series: pd.Series) -> pd.Series:
+    '''
+    Extract filename by split / and get the last value for row which has a filename.
+
+    Args:
+        series : A column of dataframe.
+
+    Returns:
+        series : The same column but clean.
+    '''
+    return series.str.split('/').str[-1]
+
+# Fill empty values of filename with clean commandRan column
+def extract_filename_from_commandRan_Run_Program(commandRan_Run_Program: pd.Series) -> pd.Series:
+    '''
+    Get a Dataframe and fill filename column of Run.Program by
+    cleaned commandRan column.
+
+    Args:
+        commandRan_Run_Program : A column of dataframe.
+
+    Returns:
+        clean: The same column but clean.
+    '''
+
+    # Replace $EDITOR_CONTENT by ''
+    cleaned = commandRan_Run_Program.str.replace('%Run -c $EDITOR_CONTENT\n', '', regex=False)
+    
+    # Remove %Run from the beginning
+    cleaned = cleaned.str.replace('^%Run ', '', regex=True).str.rstrip()
+    
+    # Remove \n from the end
+    cleaned = cleaned.str.replace('\n', '', regex=False)
+
+    return cleaned
+
+# Fill empty values by P_codeState
+def extract_filename_from_P_codestate_Run_Program(codestate_Run_Program: str) -> str:
+    '''
+    Get a Dataframe and fill filename column of Run.Program by
+    cleaned commandRan column.
+
+    Args:
+        codestate_Run_Program : The value of codestate for Runprogram.
+
+    Returns:
+        codestate_Run_Program: Clean codestate_Run_Program just with the name of function.
+    '''
+    
+    if isinstance(codestate_Run_Program, str) and codestate_Run_Program.strip().startswith('def '):
+        try:
+            # Extract between 'def ' and first '('
+            codestate_Run_Program = codestate_Run_Program.strip()
+            func_name = codestate_Run_Program.split('def ', 1)[1].split('(', 1)[0].strip()
+            return func_name + '.py'
+        except IndexError:
+            return ''  # fallback if split fails
+    return ''  # leave unchanged if it doesn't start with 'def '
+    
 
 def clean_actor(names: str) -> Optional[str]:
     """ Not USED!!!
