@@ -25,7 +25,7 @@ def reading_dataframe(dir : str, file_name : str) -> pd.DataFrame:
     file_path = os.path.join(dir, file_name)
 
     if os.path.isfile(file_path):
-        print(f"The file {file_name} exists in the directory.")
+        print(f"Directory is ok.")
 
         # convert to dataframe
         try:
@@ -35,28 +35,10 @@ def reading_dataframe(dir : str, file_name : str) -> pd.DataFrame:
             print(f"There is an error is reading the dataframe, error : {error}")
 
     else:
-        print(f"The file {file_name} does not exist in the directory.")
+        print(f"The filepath : {file_path} does not exist.")
 
     return None
 
-# Read column and head of dataframe
-def column_and_head(df : pd.DataFrame) -> None:
-    """
-    Print the column and head of a dataframe as input.
-    
-    Args:
-        df: Any dataframe.
-    
-    Returns:
-        Print column and head of the dataframe.
-    """
-    print("5 rows of the dataframe: \n")
-    print(df.head())
-    print("\n")
-    print("Columns of the dataframe: \n")
-    print(df.columns)
-
-    return None
     
 # Write the new dataframe into CSV file
 def write_csv(df : pd.DataFrame, dir: str) -> None:
@@ -73,18 +55,19 @@ def write_csv(df : pd.DataFrame, dir: str) -> None:
     file_name = str(input("Enter the name of csv : \n"))
 
     # Check if the file exists in the directory
-    if os.path.isfile(dir):
-        print(f"The directory exist.")
+    if os.path.isdir(dir):
+        print(f"Directory is ok.")
 
         # convert to csv
         try:
             df.to_csv(dir+file_name+".csv")
+            print("File saved.")
             
         except Exception as error:
             print(f"There is an error in saving the dataframe in csv, error : {error}")
 
     else:
-        print(f"the directory: {dir} doesn't exist.")
+        print(f"The directory: {dir} doesn't exist.")
 
     return None
     
