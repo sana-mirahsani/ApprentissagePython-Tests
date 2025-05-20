@@ -315,7 +315,64 @@ df.loc[mask,['filename','commandRan','P_codeState']]
 
 # Empty strings without commandRan or P_codeState
 
-# #### 3. Fill empty filename for Run.Debogger
+# #### 3. Fill empty filename for Run.Debugger
+
+# +
+# Before
+total       = len(df[df['verb']=='Run.Debugger'])
+total_nan   = df[df['verb']=='Run.Debugger']['filename'].isna().sum()
+total_empty = (df[df['verb']=='Run.Debugger']['filename'] == '').sum()
+
+print(f"Total rows of Run.Debugger                  : {total}")
+print(f"Total rows of Nan in Run.Debugger           : {total_nan}")
+print(f"Total rows of empty strings in Run.Debugger : {total_empty}")
+# -
+
+# Fill by commandRan
+mask = df['verb'] == 'Run.Debugger'
+df.loc[mask, 'filename'] = data_cleaning.extract_filename_from_commandRan_Run_Debugger(df.loc[mask, 'commandRan'])
+
+# +
+# After
+total_empty = (df[df['verb']=='Run.Debugger']['filename'] == '').sum()
+
+print(f"Total rows of empty strings in Run.Debugger : {total_empty}")
+# -
+
+# The number of empty strings reduced from 9500 to zero.
+
+# Check their value
+df[df['verb']=='Run.Debugger']['filename'].unique()
+
+# +
+# Test for values with different pattern in filename of Run.Debugger
+pattern = re.compile(r'^[\w\-]+\.py$') # Pattern : name(any number or space).py
+
+filenames       = df[df['verb']=='Run.Debugger']['filename']
+invalid_indices = filenames[~filenames.apply(lambda val: isinstance(val, str) and bool(pattern.fullmatch(val.strip())))].index # Extract invalid index
+
+print(f"Total rows    : {len(df[df['verb']=='Run.Debugger']['filename'])}")
+print(f"Invalid rows  : {len(invalid_indices)}")
+# -
+
+unique_invalid_value = df.loc[list(invalid_indices)]['filename'].unique()
+len(unique_invalid_value), unique_invalid_value
+
+# There is no empty string, and from 402, there are actually 70 values (remove the redundents), they are in the format name.py but they are maybe correct.
+
+# +
+# Until now how many filename left
+total       = len(df)
+total_nan   = df['filename'].isna().sum()
+total_empty = (df['filename'] == '').sum()
+
+print(f"Total rows of df                        : {total}")
+print(f"Total rows of Nan in filename           : {total_nan}")
+print(f"Total rows of empty strings in filename : {total_empty}")
+
+total_empty = (df['filename'] == '').sum()
+total_empty
+# -
 
 # ## Anonymize Data
 
@@ -340,3 +397,4 @@ df.loc[mask,['filename','commandRan','P_codeState']]
 # - Process raw data
 # - Add column that trace the output ?? I don't remember
 # - Look at notebooknettoyage of Thomas to add a column
+# - Correct Readme
