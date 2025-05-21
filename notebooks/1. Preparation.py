@@ -42,6 +42,8 @@ from src.data.constants import INTERIM_DATA_DIR
 
 df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='traces250102_clean.csv')
 
+df[df['actor']=='abaly.oura.etu/']['seance']
+
 # ### Print 5 rows and columns of dataframe
 
 df.head()
@@ -389,7 +391,32 @@ total_empty
 
 #
 # # TODO
+# - Remove just / first
+# - don't put ipynb on git
+# - the correct one is email and prenom.nom.etu
+# - function to test the pattern email
 # - Finish filename cleaning
+# - extract_filename = extract_short_filename
+# - P_codeState for Run.Program : check the name of function in P_codeState with the name function in variab_constant.py if okay put the name as the filename
+# - check utils.py in src/feature to see how thoma extract filename for P_codeState
+# - Check the Etude_sur_les_testes.py in notebook / Thomas version to calculate the number of student present of each week and each TP
+# - for File.txt or file.md look at the codestate and then remove it or not the name of the function and the content between <trace></tracte>
+# - add another column beside filename which put all the anme of files that we find it : filename_infere
+# - leave the semaine11
+# - create a copy of the dataframe to compare
+# - just keep the Prog because in the Run.Debugger there is TP that are manipulation which we don't need
+# - we want just Nom_TP_PPROGRAMMATION without the first week
+# - add column TP_programmation et TP_manipulation (activite_range.py is manipulation)
+# - Add a column TP1 et TP2....
+# - change main name to preparation data
+# - create a notebook for analyze is like Thomas did on Etude_sur_les_testes.py
+# - Leave the part after the print on Etude_sur_les_testes.py
+# - How to check if the student did the Test and continue the Test
+# - When the Test is red what did they do, did they continue or they did nothing
+# - Seperate the student that are very debutan and the student that already did some courses in programmation
+# - See cleaning.keep_research_data_only in notebooks/Init_data.py
+# ## others:
+# - add why there are empty filename after commandRan for Run.Program
 # - Decide what to do with empty strings of Run.Program
 # - Calculate the total name of student (after cleaning process)
 # - init_data.py (look at it and the readme of Thomas)

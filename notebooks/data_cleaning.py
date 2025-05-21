@@ -50,14 +50,15 @@ def clean_time(df: pd.DataFrame) -> pd.DataFrame:
 #                  Actor cleaning
 #------------------------------------------------
 # Find not matching values
-def not_a_correct_identifier(df: pd.DataFrame) -> list:
+def not_a_correct_identifier(df: pd.DataFrame, column : str) -> list:
 
     """
-    Find the names of actor that doesn't match the pattern.
+    Find the names of actor that doesn't match the pattern prenom.nom.etu
     Returns a list of these unique names.
 
     Args:
         df : The dataframe.
+        column : A column can be actor or binome (any column to check with format).
 
     Returns:
         list: A list of not matching names.
@@ -65,8 +66,12 @@ def not_a_correct_identifier(df: pd.DataFrame) -> list:
 
     pattern = r'^[a-zA-Z\-]+\.[a-zA-Z0-9\-]+\.etu$'
 
-    invalid_actors = df['actor'].dropna().unique()
+    invalid_actors = df[column].dropna().unique()
     invalid_actors = pd.Series(invalid_actors)
+
+    # Remove empty strings before applying regex
+    invalid_actors = invalid_actors[invalid_actors != '']
+
     invalid_actors = invalid_actors[~invalid_actors.str.fullmatch(pattern)]
 
     return invalid_actors
@@ -125,7 +130,7 @@ def split_actor_binome(df: pd.DataFrame) -> pd.DataFrame:
 def delete_name_actor_binome(df: pd.DataFrame, column : str, name : str) -> pd.DataFrame:
     
     """
-    Find the name in actor or in binome and replace it by None.
+    Find the name in actor or in binome and replace it by ''.
 
     Args:
         df : A dataframe.
@@ -136,27 +141,9 @@ def delete_name_actor_binome(df: pd.DataFrame, column : str, name : str) -> pd.D
         df: The same dataframe but with removed name in the column.
     """
 
-    df.loc[df[column] == name, column] = None
+    df.loc[df[column] == name, column] = ''
 
     return df
-
-# Replace None value by ""
-def replace_None_by_str(df: pd.DataFrame, column : str) -> pd.DataFrame:
-
-    """
-    Fill all the None values with the an empty string (une chaine vide).
-
-    Args:
-        df : A dataframe.
-        column : The name of the column.
-
-    Returns:
-        df: The same dataframe but with one name in actor and second name in binome.
-    """
-     
-    df[column] = df[column].fillna("")
-
-    return df  
 
 # Replace jokers by real names
 def replace_jokers(df: pd.DataFrame, columns : list, jokers_real_name : dict) -> pd.DataFrame:

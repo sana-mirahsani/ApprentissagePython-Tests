@@ -29,7 +29,7 @@ def reading_dataframe(dir : str, file_name : str) -> pd.DataFrame:
 
         # convert to dataframe
         try:
-            df = pd.read_csv(file_path)
+            df = pd.read_csv(file_path, keep_default_na=False)
             return df
         except Exception as error:
             print(f"There is an error is reading the dataframe, error : {error}")
