@@ -13,7 +13,7 @@
 #     name: python3
 # ---
 
-# # Project Workflow Overview:
+# # Preparation Workflow Overview:
 # 1. Import Libraries
 # 2. Load DataFrame
 # 3. Clean DataFrame
@@ -34,6 +34,7 @@ import re
 import io_utils, data_cleaning, data_anonymization
 #from tests import test_preprocessing, test_anonymization
 from src.data.constants import INTERIM_DATA_DIR
+from src.data.variable_constant import SORTED_SEANCE, TP_NAME
 
 
 # ## Load DataFrame
@@ -42,339 +43,556 @@ from src.data.constants import INTERIM_DATA_DIR
 
 df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='traces250102_clean.csv')
 
-df[df['actor']=='abaly.oura.etu/']['seance']
-
 # ### Print 5 rows and columns of dataframe
 
 df.head()
+
+# ## Create a copy of dataframe to compare later
+
+df_clean = df.copy()
 
 # ## Clean DataFrame
 
 # ### Convert Time Format
 
 # Before
-df[['session.id', 'timestamp.$date', 'time_delta', 'session.duration']]
+df_clean[['session.id', 'timestamp.$date', 'time_delta', 'session.duration']]
 
 # Apply
-df = data_cleaning.clean_time(df)
+df_clean = data_cleaning.clean_time(df_clean)
 
 # After
-df[['session.id', 'timestamp.$date', 'time_delta', 'session.duration']]
+df_clean[['session.id', 'timestamp.$date', 'time_delta', 'session.duration']]
 
 # ### Clean **Actor** Field
 # Process: 
-# 1. Extract all the non matching name of actor with prenom.nom.etu -> **incorrect = not_a_correct_identifier()**
-# 2. Delete emails at the end -> **df = delete_end_email()**
-# 3. Delete all rows of nebut -> **df = delete_actor_lines()**
-# 4. Split actor and binome into 2 columns -> **df = split_actor_binome()**
-# 5. Remove actors or binomes name -> **df = delete_name_actor_binome()**
-# 6. Replace None value by " " -> **df = replace_None_by_str()**
-# 7. Replace joker -> **df = replace_jokers()**
-# 8. Cleaning manually -> **df = cleaning_manual_actors_2425()**
+# 1. Split actor and binome into 2 columns -> **df_clean = split_actor_binome()**
+# 2. Delete emails at the end -> **df_clean = delete_end_email()**
+# 3. Extract all the non matching name of actor with prenom.nom.etu -> **incorrect = not_a_correct_identifier()**
+# 4. Delete all rows of nebut -> **df_clean = delete_actor_lines()** 
+# 5. Remove actors or binomes name -> **df_clean = delete_name_actor_binome()**
+# 6. Replace joker -> **df_clean = replace_jokers()**
+# 7. Cleaning manually -> **df_clean = cleaning_manual_actors_2425()**
 
-# #### 1. Extract all the non matching name of actor with prenom.nom.etu
+# #### 1. Split actor and binome into 2 columns (This part delete '/')
 
-incorrect = data_cleaning.not_a_correct_identifier(df)
-incorrect
+# +
+# Before 
+total_slash = df_clean['actor'].str.contains('/').sum()
+total_nan   = df_clean['actor'].isna().sum()
+total_empty = (df_clean['actor']=='').sum()
+
+print(f"Total number of rows : {len(df_clean)}")
+print(f"Total number of rows include / : {total_slash}")
+print(f"Total number of Nan rows : {total_nan}")
+print(f"Total number of empty strings : {total_empty}")
+# -
+
+# Apply
+df_clean = data_cleaning.split_actor_binome(df_clean)
+
+# +
+# After
+total_slash_actor  = df_clean['actor'].str.contains('/').sum()
+total_slash_binome = df_clean['binome'].str.contains('/').sum() # double_check
+
+print(f"Total number of rows include / in actor: {total_slash_actor}")
+print(f"Total number of rows include / in binome: {total_slash_binome}")
+
+print("Successful!") if total_slash_actor == 0 and total_slash_binome == 0 else print("Error!") 
+# -
 
 # #### 2. Delete the email at the end
 
-## Before deleting
-print(df['actor'].unique())
-
-# Apply deleting
-df = data_cleaning.delete_end_email(df)
-df['actor'].unique() # After deleting
-
-# #### 3. Delete all rows of nebut
-
 # +
-# # Before
-print(len(df[df['actor'] == 'nebut/'])) 
+# Before (check actor and binom)
+total_email_actor  = df_clean['actor'].str.contains('@').sum()
+total_email_binome = df_clean['binome'].str.contains('@').sum()
 
-# Apply
-df = data_cleaning.delete_actor_lines(df, "nebut/")
-
-# After
-print(len(df[df['actor'] == 'nebut/'])) 
+print(f"Total number of rows include @ in actor:   {total_email_actor}")
+print(f"Total number of rows include @ in binome : {total_email_binome}")
 # -
 
-# ####  4. Split actor and binome into 2 columns
+# Apply 
+df_clean = data_cleaning.delete_end_email(df_clean)
+
+# +
+# After
+total_email_actor = df_clean['actor'].str.contains('@').sum()
+
+print(f"Total number of rows include @ in actor: {total_email_actor}")
+
+print("Successful!") if total_email_actor == 0 else print("Error!") 
+# -
+
+# #### 3. Extract all the non matching name of actor with prenom.nom.etu
+
+# +
+incorrect_actor  = data_cleaning.not_a_correct_identifier(df_clean,'actor')
+incorrect_binome = data_cleaning.not_a_correct_identifier(df_clean,'binome')
+
+incorrect_actor, incorrect_binome
+# -
+
+# #### 4. Delete all rows of nebut
 
 # Before
-df['actor'].head(50)
+total = (df_clean['actor'] == 'nebut').sum()
+print(f"total occurance of nebut : {total}") 
 
-# +
 # Apply
-df = data_cleaning.split_actor_binome(df)
+df_clean = data_cleaning.delete_actor_lines(df_clean, "nebut")
 
 # After
-df[['actor','binome']]
-# -
+total = (df_clean['actor'] == 'nebut').sum()
+print(f"total occurance of nebut : {total}") 
+print("Successful!") if total == 0 else print("Error!") 
 
-df['binome'].unique()
-
-# #### 5. Remove actors or binomes name
-
-# +
-# Before in actor
-count = (df['actor'] == 'nebut').sum()
-print(f"The value appears {count} times for nebut.")
+# #### 5. Remove actors or binomes name ( just replace them by '' in binome column)
 
 # Before in binome
-count = (df['binome'] == 'luc').sum()
-print(f"The value appears {count} times for luc.")
-
-df = data_cleaning.delete_name_actor_binome(df, 'actor', 'nebut')
-df = data_cleaning.delete_name_actor_binome(df, 'binome', 'luc')
-    
-# After in actor
-count = (df['actor'] == 'nebut').sum()
-print(f"The value appears {count} times for nebut.")
-
-# After in binome
-count = (df['binome'] == 'luc').sum()
-print(f"The value appears {count} times for luc.")
-# -
-
-# #### 6. Replace None value by empty string
-
-# +
-# Before
-print(f"Total value of None in actor: {len(df[df['actor'].isna()])}")
-print(f"Total value of None in binome: {len(df[df['binome'].isna()])}")
+total = (df_clean['binome'] == 'luc').sum()
+print(f"total occurance : {total} ")
 
 # Apply
-df = data_cleaning.replace_None_by_str(df,'binome')
+df_clean = data_cleaning.delete_name_actor_binome(df_clean, 'binome', 'luc')
 
-# After
-print("After")
-print(f"Total value of None in actor: {len(df[df['actor'].isna()])}")
-print(f"Total value of None in binome: {len(df[df['binome'].isna()])}")
-# -
+# After 
+total = (df_clean['binome'] == 'luc').sum()
+print(f"Total occurance of : {total}")
+print("Successful!") if total == 0 else print("Error!") 
 
-
-# #### 7. Replace joker
+# #### 6. Replace joker
 
 # +
 # Before
-print(len(df[df['binome'] == 'MI1304']), len(df[df['binome'] == 'MI1301']))
+total_joker1 = (df_clean['binome'] == 'MI1304').sum()
+total_joker2 = (df_clean['binome'] == 'MI1301').sum()
 
+print(f"Total occurance of joker 1 : {total_joker1}")
+print(f"Total occurance of joker 2 : {total_joker2}")
+# -
+
+# Apply
 jokers_real_name = {
     'MI1304': 'mariama-sere.sylla.etu',
     'MI1301': 'mariama-sere.sylla.etu'
 }
+df_clean = data_cleaning.replace_jokers(df_clean, ['actor','binome'],jokers_real_name)
 
-# Apply
-df = data_cleaning.replace_jokers(df, ['actor','binome'],jokers_real_name)
-
+# +
 # After
-print("After")
-print(len(df[df['binome'] == 'MI1304']), len(df[df['binome'] == 'MI1301']))
+total_joker1 = (df_clean['binome'] == 'MI1304').sum()
+total_joker2 = (df_clean['binome'] == 'MI1301').sum()
+
+print(f"Total occurance of joker 1 : {total_joker1}")
+print(f"Total occurance of joker 2 : {total_joker2}")
+
+print("Successful!") if total_joker1 == 0 and total_joker1 == 0 else print("Error!") 
 # -
 
 
-# #### 8. Cleaning manually
+# #### 7. Cleaning manually
 
 # +
 # Before
-print(len(df[df['actor'] == 'anis.younes.etu']))
+total = (df_clean['actor'] == 'anis.younes.etu').sum()
 
-# Apply
-df = data_cleaning.cleaning_manual_actors_2425(df, 'anis.younes.etu')
-
-# After
-print("After")
-print(len(df[df['actor'] == 'anis.younes.etu@univ-lille.fr']))
-
+print(f"Total occurance : {total}")
 # -
 
-# Retry the test to see the number of incorrects
-incorrect = data_cleaning.not_a_correct_identifier(df)
-incorrect
+# Apply
+df_clean = data_cleaning.cleaning_manual_actors_2425(df_clean, 'anis.younes.etu')
 
-# Save new df
-io_utils.write_csv(df,INTERIM_DATA_DIR)
+# +
+# After
+total = (df_clean['actor'] == 'anis.younes.etu').sum()
+print(f"Total occurance : {total}")
+
+print("Successful!") if total == 0 else print("Error!") 
+# -
+
+# #### Retry Test for invalid actor or binome
+
+# +
+incorrect_actor  = data_cleaning.not_a_correct_identifier(df_clean,'actor')
+incorrect_binome = data_cleaning.not_a_correct_identifier(df_clean,'binome')
+
+print(len(incorrect_actor),len(incorrect_binome))
+
+print("Cleaning actor successful!") if len(incorrect_actor) == 0 and len(incorrect_binome) == 0 else print("Error!") 
+# -
+
+# #### Save new dataframe
+
+io_utils.write_csv(df_clean,INTERIM_DATA_DIR)
 
 # ### Read clean dataframe
 
-df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='actuer_nettoyage_2425.csv')
+df_clean = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='acteur_nettoyage_2425.csv')
 
-df['actor'].unique()
+df_clean[['actor','binome']].head(10)
 
-# ### Clean **Filename** Field 
+# ### Clean **Filename** Field
 # Process:
-# 1. Replace None values in filename by ""
-# 2. Split filename, extract the filename
-# 3. Fill empty filename for each verbe (like Run.Program)
+#
+# 1. Add Column 'TP'
+#
+# 2. Add Column 'filename_infere'
+#
+#     2.1 Fill filename_infere by filename values
+#
+#     2.2 Check empty filename_infere of **Run.Test**
+#
+#     2.3 Check empty filename_infere of **Run.Program**
+#
+#         2.3.1 Fill empty filename_infere of **Run.Program** by commandRan
+#
+#         2.3.2 Fill empty filename_infere of **Run.Program** by P_codestate
+#
+#     2.4 Check empty filename_infere of **Run.Debugger**
+#
+#         2.4.1 Fill empty filename_infere of **Run.Debugger** by commandRan
+#
+#     2.5 Check empty filename_infere of **Run.Command**
+#
+#     2.6 Check empty filename_infere of **File.Open**
+#
+#     2.7 Check empty filename_infere of **File.Save**
+#
+#     2.8 Check empty filename_infere of **Docstring.Generate** 
+#
+# 3. check all filename_infere and fill the rest
+#
+#     3.1 TP2 
+#
+# 4. Add Column 'Type_TP'
+#
 
-# #### 1. Replace None values in filename by ""
+# #### 1. Add column TP
 
 # +
-#Before 
-print(df['filename'].isnull().sum())
+# creat new list of TP with the same size as SORTED_SEANCE to use map
+TP_NAME_change = ['Tp1','Tp2','Tp3','Tp4','Tp5','Tp6','Tp7','Tp8','DSI','Tp9','Tp10','Tp_game','Tp_game','Tp_game']
 
-# Apply 
-df = data_cleaning.replace_None_by_str(df,'filename')
+mapping_dict = dict(zip(SORTED_SEANCE, TP_NAME_change))
 
-#After
-print(df['filename'].isnull().sum())
+col_index = df_clean.columns.get_loc('seance')
+df_clean.insert(col_index + 1, 'TP', df_clean['seance'].map(mapping_dict)) # use map to change all values
+
+df_clean[['seance','TP']]
+
+# +
+# check Nan values in TP
+
+print(f" Total number of nan in TP :{df_clean['TP'].isna().sum()}")
+df_clean['TP'] = df_clean['TP'].fillna('')
+print(f" Total number of nan in TP :{df_clean['TP'].isna().sum()}")
 # -
 
-# #### 2. Split filename, extract the filename
+# #### 2. Add Column 'filename_infere'
 
+# create new column next to the filename
+col_index = df_clean.columns.get_loc('filename')
+df_clean.insert(col_index + 1, 'filename_infere', '') 
+df_clean.columns
+
+# #### 2.1 Fill filename_infere by filename values
+
+# +
 # Before
-df['filename'].head(50)
+total_empty_filename_infere = (df_clean['filename_infere']=='').sum()
+print(f"Total number of empty strings in filename_infere : {total_empty_filename_infere}")
 
 # Apply
-df['filename'] = data_cleaning.extract_filename(df['filename'])
+df_clean['filename_infere'] = data_cleaning.extract_short_filename(df_clean['filename'])
 
 # After
-df['filename'].head(50)
+total_empty_filename_infere = (df_clean['filename_infere']=='').sum()
+print(f"Total number of empty strings in filename_infere : {total_empty_filename_infere}")
+# -
 
-# #### 3. Fill empty filename for Run.Test
+df_clean[['filename','filename_infere']].head(10)
 
-df[df['verb']=='Run.Test']['filename'].unique()
+# Some filenames have already the name, we can fill filename_infere by them, which we filled some of them, reduced from 306914 to 151183
 
-print(df[df['verb']=='Run.Test']['filename'].isna().sum())
-print((df[df['verb']=='Run.Test']['filename'] == '').sum())
+# #### 2.2 Check empty filename_infere of **Run.Test**
 
-# There is no Nan or empty strings, OK for filename of Run.Test
+# +
+total_Run_Test       = len(df_clean[df_clean['verb']  == 'Run.Test'])
+total_Run_Test_empty = (df_clean[df_clean['verb'] =='Run.Test']['filename'] == '').sum()
+total_Run_Test_nan   = df_clean[df_clean['verb'] =='Run.Test']['filename_infere'].isna().sum()
 
-# #### 3. Fill empty filename for Run.Program
+print(f"Total number of traces in Run.Test : {total_Run_Test}")
+print(f"Total number of empty strings in filename_infere in Run.Test : {total_Run_Test_empty}")
+print(f"Total number of None in filename_infere in Run.Test : {total_Run_Test_nan}")
+# -
+
+# **Interpretation** There is no empty or none values for Run.Test, but we need to check the correctness of their name which we do later.
+
+# ####  2.3 Check empty filename_infere of **Run.Program**
 
 # +
 # Before
-total       = len(df[df['verb']=='Run.Program'])
-total_nan   = df[df['verb']=='Run.Program']['filename'].isna().sum()
-total_empty = (df[df['verb']=='Run.Program']['filename'] == '').sum()
+total_Run_Program       = len(df_clean[df_clean['verb']  == 'Run.Program'])
+total_Run_Program_empty = (df_clean[df_clean['verb']=='Run.Program']['filename_infere'] == '').sum()
+total_Run_Program_nan   = df_clean[df_clean['verb']=='Run.Program']['filename_infere'].isna().sum()
 
-print(f"Total rows of Run.Program                  : {total}")
-print(f"Total rows of Nan in Run.Program           : {total_nan}")
-print(f"Total rows of empty strings in Run.Program : {total_empty}")
+print(f"Total number of traces in Run.Program : {total_Run_Program}")
+print(f"Total number of empty strings in filename_infere in Run.Program : {total_Run_Program_empty}")
+print(f"Total number of None in filename_infere in Run.Program : {total_Run_Program_nan}")
+
 # -
 
-# All values of filename for the rows where verb == Run.Program are an empty string.
+# **Interpretation** All rows of Run.Program is empty so we first look at column **commandRan** and then if there is still any empty string, we look at **P_codeState**
 
-# Fill by commandRan
-mask = df['verb'] == 'Run.Program'
-df.loc[mask, 'filename'] = data_cleaning.extract_filename_from_commandRan_Run_Program(df.loc[mask, 'commandRan'])
+# ##### 2.3.1 Fill empty filename_infere of **Run.Program** by commandRan
+
+# +
+# check if all values in commandRan starts with %Run
+total_non_empty_commandRan = len(df_clean[(df_clean['verb'] == 'Run.Program') & (df_clean['commandRan'] != '')])
+total_commandRan_start_Run = len(df_clean[df_clean['verb'] == 'Run.Program']['commandRan'].str.startswith('%Run'))
+
+print(f"Total rows of not empty strings in commandRan for Run.Program : {total_non_empty_commandRan}")
+print(f"Total rows of commandRan starts with %Run in Run.Program : {total_commandRan_start_Run}")
+# -
+
+# Apply
+mask = df_clean['verb'] == 'Run.Program'
+df_clean.loc[mask, 'filename_infere'] = data_cleaning.extract_short_filename_from_commandRan_Run_Program(df_clean.loc[mask, 'commandRan'])
 
 # +
 # After
-total_empty = (df[df['verb']=='Run.Program']['filename'] == '').sum()
+total_Run_Program_empty = (df_clean[df_clean['verb']=='Run.Program']['filename_infere'] == '').sum()
 
-print(f"Total rows of empty strings in Run.Program : {total_empty}")
+print(f"Total rows of empty strings in Run.Program : {total_Run_Program_empty}")
 # -
 
-# The number of empty strings reduced from 54352 to 5791 thanks to commandRan.
+# **Interpretation** : we reduced empty filename_infere from 54352 to 5791, since they are still empty string, we need to look at **P_codeState** column.
 
-df[df['verb']=='Run.Program'][['filename','commandRan']].head(50)
+# ##### 2.3.2 Fill empty filename_infere of **Run.Program** by P_codestate
 
-# Fill with P_codeState for the rest.
-mask = (df['verb'] == 'Run.Program') & (df['filename'] == '')
-df.loc[mask, 'filename'] = df.loc[mask, 'P_codeState'].map(data_cleaning.extract_filename_from_P_codestate_Run_Program)
+# Apply
+mask = (df_clean['verb'] == 'Run.Program') & (df_clean['filename_infere'] == '')
+df_clean.loc[mask, 'filename_infere'] = df_clean.loc[mask, 'P_codeState'].map(data_cleaning.extract_short_filename_from_P_codestate_Run_Program)
 
 # +
 # After
-total_empty = (df[df['verb']=='Run.Program']['filename'] == '').sum()
+total_Run_Program_empty = (df_clean[df_clean['verb']=='Run.Program']['filename_infere'] == '').sum()
 
-print(f"Total rows of empty strings in Run.Program : {total_empty}")
+print(f"Total rows of empty strings in Run.Program : {total_Run_Program_empty}")
 # -
 
-# Empty strings reduced from 5791 to 4623 thanks to P_codeState.
+df_clean[(df_clean['verb'] == 'Run.Program') & (df_clean['filename_infere'] != '')][['filename_infere','commandRan','P_codeState']]
 
-df[df['verb']=='Run.Program'][['filename','P_codeState']].head(50)
-
-# +
-# Test for values with different pattern or empty string in filename of Run.Program
-pattern = re.compile(r'^[\w\-]+\.py$') # Pattern : name(any number or space).py
-
-filenames       = df[df['verb']=='Run.Program']['filename']
-invalid_indices = filenames[~filenames.apply(lambda val: isinstance(val, str)  and bool(pattern.fullmatch(val.strip())))].index # Extract invalid index
-
-mask = (df['verb'] == 'Run.Program') & (df['filename'] == '')
-
-invalid_indices = set(invalid_indices) - set(df.loc[mask,'filename'].index) # Remove empty strings
-
-print(f"Total rows    : {len(df[df['verb']=='Run.Program']['filename'])}")
-print(f"Invalid rows  : {len(invalid_indices)}")
-print(f"Empty strings : {len(df.loc[mask,'filename'])}")
-# -
-
-# From 54352 rows of Run.program, there are 3643 rows which doesn't have the same pattern as name.py in filename; and 4623 rows are empty string in filename.
-
-# Check what are these 3643, first use unique() on their filename to reduces the number of redundent values.
-unique_invalid_value = df.loc[list(invalid_indices)]['filename'].unique()
-len(unique_invalid_value), unique_invalid_value
-
-# There are 236 values not in the exactly pattern (some of them are correct).
-
-# Check empty strings
-#pd.set_option('display.max_rows', None) # To show all rows remove the '#'
-#pd.set_option('display.max_columns', None) # To show all rows remove the '#'
-df.loc[mask,['filename','commandRan','P_codeState']]
-
-# Empty strings without commandRan or P_codeState
-
-# #### 3. Fill empty filename for Run.Debugger
+# #### 2.4 Check empty filename_infere of **Run.Debugger**
 
 # +
 # Before
-total       = len(df[df['verb']=='Run.Debugger'])
-total_nan   = df[df['verb']=='Run.Debugger']['filename'].isna().sum()
-total_empty = (df[df['verb']=='Run.Debugger']['filename'] == '').sum()
+total_Run_Debugger       = len(df_clean[df_clean['verb']  == 'Run.Debugger'])
+total_Run_Debugger_empty = (df_clean[df_clean['verb'] == 'Run.Debugger']['filename_infere'] == '').sum()
+total_Run_Debugger_nan   = df_clean[df_clean['verb'] == 'Run.Debugger']['filename_infere'].isna().sum()
 
-print(f"Total rows of Run.Debugger                  : {total}")
-print(f"Total rows of Nan in Run.Debugger           : {total_nan}")
-print(f"Total rows of empty strings in Run.Debugger : {total_empty}")
+print(f"Total number of traces in Run.Debugger : {total_Run_Debugger}")
+print(f"Total number of empty strings in filename_infere in Run.Debugger : {total_Run_Debugger_empty}")
+print(f"Total number of None in filename_infere in Run.Debugger : {total_Run_Debugger_nan}")
 # -
 
-# Fill by commandRan
-mask = df['verb'] == 'Run.Debugger'
-df.loc[mask, 'filename'] = data_cleaning.extract_filename_from_commandRan_Run_Debugger(df.loc[mask, 'commandRan'])
+# Same as Run.Program we will do the same process
+
+# ##### 2.4.1 Fill empty filename_infere of **Run.Debugger** by commandRan
+
+# +
+# check if all values in commandRan starts with %Debug
+total_non_empty_commandRan       = len(df_clean[(df_clean['verb'] == 'Run.Debugger') & (df_clean['commandRan'] != '')])
+total_commandRan_start_Debug     = df_clean[df_clean['verb'] == 'Run.Debugger']['commandRan'].str.startswith('%Debug').sum()
+total_commandRan_start_NiceDebug = df_clean[df_clean['verb'] == 'Run.Debugger']['commandRan'].str.startswith('%Nice').sum()
+total_commandRan_start_FastDebug = df_clean[df_clean['verb'] == 'Run.Debugger']['commandRan'].str.startswith('%Fast').sum()
+
+print(f"Total rows of not empty strings in commandRan for Run.Debugger  : {total_non_empty_commandRan}")
+print(f"Total rows of commandRan starts with %Debug in Run.Debugger     : {total_commandRan_start_Debug}")
+print(f"Total rows of commandRan starts with %NiceDebug in Run.Debugger : {total_commandRan_start_NiceDebug}")
+print(f"Total rows of commandRan starts with %FastDebug in Run.Debugger : {total_commandRan_start_FastDebug}")
+# -
+
+# **Interpretation** All values in commandRan starts with %Debug, we can extract filename from commandRan.
+
+# Apply
+mask = df_clean['verb'] == 'Run.Debugger'
+df_clean.loc[mask, 'filename_infere'] = data_cleaning.extract_short_filename_from_commandRan_Run_Debugger(df_clean.loc[mask, 'commandRan'])
+
+# After
+total_Run_Debugger_empty = (df_clean[df_clean['verb'] == 'Run.Debugger']['filename_infere'] == '').sum()
+print(f"Total number of empty strings in filename_infere in Run.Debugger : {total_Run_Debugger_empty}")
+
+df_clean[df_clean['verb'] == 'Run.Debugger']['filename_infere'].head(10)
+
+# #### 2.5 Check empty filename_infere of **Run.Command**
+
+# +
+# Before
+total_Run_command       = len(df_clean[df_clean['verb']  == 'Run.Command'])
+total_Run_command_empty = (df_clean[df_clean['verb'] == 'Run.Command']['filename_infere'] == '').sum()
+total_Run_command_nan   = df_clean[df_clean['verb'] == 'Run.Command']['filename_infere'].isna().sum()
+
+print(f"Total number of traces in Run.command : {total_Run_command}")
+print(f"Total number of empty strings in filename_infere in Run.command : {total_Run_command_empty}")
+print(f"Total number of None in filename_infere in Run.command : {total_Run_command_nan}")
+
+# +
+# check if all values in commandRan starts with %NiceDebug or %FastDebug
+total_non_empty_commandRan       = len(df_clean[(df_clean['verb'] == 'Run.Command') & (df_clean['commandRan'] != '')])
+total_commandRan_start_Debug     = df_clean[df_clean['verb'] == 'Run.Command']['commandRan'].str.startswith('%Debug').sum()
+total_commandRan_start_NiceDebug = df_clean[df_clean['verb'] == 'Run.Command']['commandRan'].str.startswith('%NiceDebug').sum()
+total_commandRan_start_FastDebug = df_clean[df_clean['verb'] == 'Run.Command']['commandRan'].str.startswith('%FastDebug').sum()
+
+print(f"Total rows of not empty strings in commandRan for Run.Command  : {total_non_empty_commandRan}")
+print(f"Total rows of commandRan starts with %Debug in Run.Command     : {total_commandRan_start_Debug}")
+print(f"Total rows of commandRan starts with %NiceDebug in Run.Command : {total_commandRan_start_NiceDebug}")
+print(f"Total rows of commandRan starts with %FastDebug in Run.Command : {total_commandRan_start_FastDebug}")
+# -
+
+# **Interpretation** Only 70 values starts wtih %FastDebug, so we can fill only 70 values of filename_infere
+
+# +
+# Apply 
+mask = df_clean['verb'] == 'Run.Command'
+
+# Get only cleaned values for those starting with %FastDebug
+cleaned_values = data_cleaning.extract_short_filename_from_commandRan_Run_Command(df_clean.loc[mask, 'commandRan'])
+
+df_clean.loc[cleaned_values.index, 'filename_infere'] = cleaned_values
 
 # +
 # After
-total_empty = (df[df['verb']=='Run.Debugger']['filename'] == '').sum()
+total_Run_command_empty     = (df_clean[df_clean['verb'] == 'Run.Command']['filename_infere'] == '').sum()
+total_Run_command_not_empty = (df_clean[df_clean['verb'] == 'Run.Command']['filename_infere'] != '').sum()
 
-print(f"Total rows of empty strings in Run.Debugger : {total_empty}")
+print(f"Total number of empty strings in filename_infere in Run.command : {total_Run_command_empty}")
+print(f"Total number of NOT empty strings in filename_infere in Run.command : {total_Run_command_not_empty}")
 # -
 
-# The number of empty strings reduced from 9500 to zero.
-
-# Check their value
-df[df['verb']=='Run.Debugger']['filename'].unique()
+len(df_clean[df_clean['verb'] == 'Run.Command']['commandRan'].unique())
 
 # +
-# Test for values with different pattern in filename of Run.Debugger
-pattern = re.compile(r'^[\w\-]+\.py$') # Pattern : name(any number or space).py
+total_PcodeState_empty = (df_clean[df_clean['verb'] == 'Run.Command']['P_codeState'] == "").sum()
+total_FcodeState_empty = (df_clean[df_clean['verb'] == 'Run.Command']['F_codeState'] == "").sum()
 
-filenames       = df[df['verb']=='Run.Debugger']['filename']
-invalid_indices = filenames[~filenames.apply(lambda val: isinstance(val, str) and bool(pattern.fullmatch(val.strip())))].index # Extract invalid index
-
-print(f"Total rows    : {len(df[df['verb']=='Run.Debugger']['filename'])}")
-print(f"Invalid rows  : {len(invalid_indices)}")
+print(f"Total number of empty strings in P_codeState in Run.command : {total_PcodeState_empty}")
+print(f"Total number of empty strings in F_codeState in Run.command : {total_FcodeState_empty}")
 # -
 
-unique_invalid_value = df.loc[list(invalid_indices)]['filename'].unique()
-len(unique_invalid_value), unique_invalid_value
+# **Interpretation**
+#
+# There are 22461 different values in commandRan for Run.command, we can't use or analyze each single value, and since all values for Run.Command in P_codeState or F_codeState are empty we analyze them in the part of analyze each TP alone.
 
-# There is no empty string, and from 402, there are actually 70 values (remove the redundents), they are in the format name.py but they are maybe correct.
+# #### 2.6 Check empty filename_infere of **File.Open**
 
 # +
-# Until now how many filename left
-total       = len(df)
-total_nan   = df['filename'].isna().sum()
-total_empty = (df['filename'] == '').sum()
+# Before
+total_File_Open       = len(df_clean[df_clean['verb']  == 'File.Open'])
+total_File_Open_empty = (df_clean[df_clean['verb'] == 'File.Open']['filename_infere'] == '').sum()
+total_File_Open_nan   = df_clean[df_clean['verb'] == 'File.Open']['filename_infere'].isna().sum()
 
-print(f"Total rows of df                        : {total}")
-print(f"Total rows of Nan in filename           : {total_nan}")
-print(f"Total rows of empty strings in filename : {total_empty}")
-
-total_empty = (df['filename'] == '').sum()
-total_empty
+print(f"Total number of traces in File.Open : {total_File_Open}")
+print(f"Total number of empty strings in filename_infere in File.Open : {total_File_Open_empty}")
+print(f"Total number of None in filename_infere in File.Open : {total_File_Open_nan}")
 # -
+
+# #### 2.7 Check empty filename_infere of **File.Save**
+
+# +
+total_File_Save       = len(df_clean[df_clean['verb']  == 'File.Save'])
+total_File_Save_empty = (df_clean[df_clean['verb'] == 'File.Save']['filename_infere'] == '').sum()
+total_File_Save_nan   = df_clean[df_clean['verb'] == 'File.Save']['filename_infere'].isna().sum()
+
+print(f"Total number of traces in File.Save : {total_File_Save}")
+print(f"Total number of empty strings in filename_infere in File.Save : {total_File_Save_empty}")
+print(f"Total number of None in filename_infere in File.Save : {total_File_Save_nan}")
+# -
+
+# #### 2.8 Check empty filename_infere of **Docstring.Generate**
+
+# +
+total_Docstring       = len(df_clean[df_clean['verb']  == 'Docstring.Generate'])
+total_Docstring_empty = (df_clean[df_clean['verb'] == 'Docstring.Generate']['filename_infere'] == '').sum()
+total_Docstring_nan   = df_clean[df_clean['verb'] == 'Docstring.Generate']['filename_infere'].isna().sum()
+
+print(f"Total number of traces in Docstring.Generate : {total_Docstring}")
+print(f"Total number of empty strings in filename_infere in Docstring.Generate : {total_Docstring_empty}")
+print(f"Total number of None in filename_infere in Docstring.Generate : {total_Docstring_nan}")
+# -
+
+df_clean[df_clean['verb'] == 'Docstring.Generate']['function']
+
+# Question: don't know how should I fill it.
+
+# #### 3. check all filename_infere and fill the rest
+
+# Extract real students from week = DSi
+df_all_students = data_cleaning.extract_students_each_week(df_clean)
+list_students = df_all_students[df_all_students['week'] == 'DSi']['name_students'].iloc[0]
+list_students
+
+# ##### 3.1 TP2
+
+# +
+# Remove absent students
+present_students_semaine_2 = []
+
+for student in list_students:
+    if len(df_clean[(df_clean['seance'] == 'semaine_2') & (df_clean['actor'] == student)]) != 0:
+        present_students_semaine_2.append(student)
+
+print(f"Numbr of present students in semaine_2 : {len(present_students_semaine_2)}")
+
+# Extract indices for each student
+df_indices = pd.DataFrame(columns=['name_students', 'indices'])
+
+for student in present_students_semaine_2:
+    indices = data_cleaning.cut_df(df_clean,'semaine_2',student)
+
+    df_indices = pd.concat([
+        df_indices,
+        pd.DataFrame({'name_students': [student], 'indices': [indices]})
+    ], ignore_index=True)
+
+
+df_indices
+
+# +
+x = []
+
+for index, row in df_indices.iterrows():
+    print(f"Student : {row['name_students']}")  # print specific column
+    print(f"Number of activities : {len(row['indices'])}")
+    
+    for i in row['indices']:
+
+        if abs(i[0] - i[1]) < 2:
+            continue
+
+        print(f"Activiy : {i}")
+
+        total = ((df_clean.iloc[i[0]:i[1]]['filename_infere'] == "") & (df_clean.iloc[i[0]:i[1]]['verb'] != "Session.Start")).sum()
+        print(f"Total empty strings : {total}")
+        
+        subset = df_clean.iloc[i[0]:i[1]]
+        filtered = subset[(subset['filename_infere'] == '') & (subset['verb'] != "Session.Start")][['filename_infere','verb','commandRan','P_codeState','F_codeState']]
+        x.append(filtered)
+    break
+
+# -
+
+x[1]
+
+df_clean.loc[103359][['verb','P_codeState']]
+
+# ##### 3.2 TP3
+
+# ##### 3.3 TP4
+
+# ##### 3.4 TP5
 
 # ## Anonymize Data
 
@@ -391,31 +609,25 @@ total_empty
 
 #
 # # TODO
-# - Remove just / first
-# - don't put ipynb on git
-# - the correct one is email and prenom.nom.etu
-# - function to test the pattern email
-# - Finish filename cleaning
-# - extract_filename = extract_short_filename
+# - Second add column TP next to the column semaine (TP1, TP2, TP3 ...) DONE!
+# - Third add column next to TP column 'Type_TP' with two values : 1-TP_programmation 2-TP_manipulation (activite_range.py is manipulation)
+# - Forth add column filename_infere next to the filename DONE!
+# - change function names : extract_filename to extract_short_filename DONE!
+# <br>
+#
 # - P_codeState for Run.Program : check the name of function in P_codeState with the name function in variab_constant.py if okay put the name as the filename
 # - check utils.py in src/feature to see how thoma extract filename for P_codeState
-# - Check the Etude_sur_les_testes.py in notebook / Thomas version to calculate the number of student present of each week and each TP
+# - Check the Etude_sur_les_testes.py in notebook / Thomas version to calculate the number of student present of each week and each TP DONE!
 # - for File.txt or file.md look at the codestate and then remove it or not the name of the function and the content between <trace></tracte>
-# - add another column beside filename which put all the anme of files that we find it : filename_infere
 # - leave the semaine11
-# - create a copy of the dataframe to compare
 # - just keep the Prog because in the Run.Debugger there is TP that are manipulation which we don't need
 # - we want just Nom_TP_PPROGRAMMATION without the first week
-# - add column TP_programmation et TP_manipulation (activite_range.py is manipulation)
-# - Add a column TP1 et TP2....
-# - change main name to preparation data
-# - create a notebook for analyze is like Thomas did on Etude_sur_les_testes.py
 # - Leave the part after the print on Etude_sur_les_testes.py
-# - How to check if the student did the Test and continue the Test
-# - When the Test is red what did they do, did they continue or they did nothing
-# - Seperate the student that are very debutan and the student that already did some courses in programmation
 # - See cleaning.keep_research_data_only in notebooks/Init_data.py
+#
+# - For Docstring.Generate what should I do? take values from function column?
 # ## others:
+# - Analyze.ipynb
 # - add why there are empty filename after commandRan for Run.Program
 # - Decide what to do with empty strings of Run.Program
 # - Calculate the total name of student (after cleaning process)
@@ -425,3 +637,13 @@ total_empty
 # - Add column that trace the output ?? I don't remember
 # - Look at notebooknettoyage of Thomas to add a column
 # - Correct Readme
+#
+# ## Analyze.ipynb
+# - analyze by TP, and by students
+#
+# ## Three main thing for stage
+# - How to check if the student did the Test and continue the Test
+# - When the Test is red what did they do, did they continue or they did nothing
+# - Seperate the student that are very debutan and the student that already did some courses in programmation
+
+#
