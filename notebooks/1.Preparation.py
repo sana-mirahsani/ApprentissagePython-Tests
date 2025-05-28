@@ -34,7 +34,7 @@ import re
 import io_utils, data_cleaning, data_anonymization
 #from tests import test_preprocessing, test_anonymization
 from src.data.constants import INTERIM_DATA_DIR
-from src.data.variable_constant import SORTED_SEANCE, TP_NAME
+from src.data.variable_constant import SORTED_SEANCE, TP_NAME, FILES_BY_TP
 
 
 # ## Load DataFrame
@@ -164,10 +164,14 @@ print("Successful!") if total == 0 else print("Error!")
 
 # #### 6. Replace joker
 
+# Add the number total of matching marie is equal to the total occurance of two jokers
+
 # +
 # Before
 total_joker1 = (df_clean['binome'] == 'MI1304').sum()
 total_joker2 = (df_clean['binome'] == 'MI1301').sum()
+
+total = total_joker1 + total_joker2
 
 print(f"Total occurance of joker 1 : {total_joker1}")
 print(f"Total occurance of joker 2 : {total_joker2}")
@@ -184,11 +188,12 @@ df_clean = data_cleaning.replace_jokers(df_clean, ['actor','binome'],jokers_real
 # After
 total_joker1 = (df_clean['binome'] == 'MI1304').sum()
 total_joker2 = (df_clean['binome'] == 'MI1301').sum()
+total_new_name = (df_clean['binome'] == 'mariama-sere.sylla.etu').sum()
 
 print(f"Total occurance of joker 1 : {total_joker1}")
 print(f"Total occurance of joker 2 : {total_joker2}")
 
-print("Successful!") if total_joker1 == 0 and total_joker1 == 0 else print("Error!") 
+print("Successful!") if total_joker1 == 0 and total_joker1 == 0 and total_new_name == total else print("Error!") 
 # -
 
 
@@ -236,37 +241,36 @@ df_clean[['actor','binome']].head(10)
 # ### Clean **Filename** Field
 # Process:
 #
-# 1. Add Column 'TP'
+# 1. Fill 'filename_infere'
 #
-# 2. Add Column 'filename_infere'
+#     1.1 Fill filename_infere by filename values
 #
-#     2.1 Fill filename_infere by filename values
+#     1.2 Check empty filename_infere of **Run.Test**
 #
-#     2.2 Check empty filename_infere of **Run.Test**
+#     1.3 Check empty filename_infere of **Run.Program**
 #
-#     2.3 Check empty filename_infere of **Run.Program**
+#         1.3.1 Fill empty filename_infere of **Run.Program** by commandRan
 #
-#         2.3.1 Fill empty filename_infere of **Run.Program** by commandRan
+#         1.3.2 Fill empty filename_infere of **Run.Program** by P_codestate
 #
-#         2.3.2 Fill empty filename_infere of **Run.Program** by P_codestate
+#     1.4 Check empty filename_infere of **Run.Debugger**
 #
-#     2.4 Check empty filename_infere of **Run.Debugger**
+#         1.4.1 Fill empty filename_infere of **Run.Debugger** by commandRan
 #
-#         2.4.1 Fill empty filename_infere of **Run.Debugger** by commandRan
+#     1.5 Check empty filename_infere of **Run.Command**
 #
-#     2.5 Check empty filename_infere of **Run.Command**
+#     1.6 Check empty filename_infere of **File.Open**
 #
-#     2.6 Check empty filename_infere of **File.Open**
+#     1.7 Check empty filename_infere of **File.Save**
 #
-#     2.7 Check empty filename_infere of **File.Save**
+#     1.8 Check empty filename_infere of **Docstring.Generate** 
 #
-#     2.8 Check empty filename_infere of **Docstring.Generate** 
-#
-# 3. check all filename_infere and fill the rest
+# 2. Check the correctness 'filename_infere'
 #
 #     3.1 TP2 
 #
-# 4. Add Column 'Type_TP'
+# 4. Add Column 'TP'
+# 5. Add Column 'Type_TP'
 #
 
 # #### 1. Add column TP
@@ -290,14 +294,14 @@ df_clean['TP'] = df_clean['TP'].fillna('')
 print(f" Total number of nan in TP :{df_clean['TP'].isna().sum()}")
 # -
 
-# #### 2. Add Column 'filename_infere'
+# #### 1. Fill 'filename_infere'
 
 # create new column next to the filename
 col_index = df_clean.columns.get_loc('filename')
 df_clean.insert(col_index + 1, 'filename_infere', '') 
 df_clean.columns
 
-# #### 2.1 Fill filename_infere by filename values
+# #### 1.1 Fill filename_infere by filename values
 
 # +
 # Before
@@ -316,9 +320,10 @@ df_clean[['filename','filename_infere']].head(10)
 
 # Some filenames have already the name, we can fill filename_infere by them, which we filled some of them, reduced from 306914 to 151183
 
-# #### 2.2 Check empty filename_infere of **Run.Test**
+# #### 1.2 Check empty filename_infere of **Run.Test**
 
 # +
+# Before
 total_Run_Test       = len(df_clean[df_clean['verb']  == 'Run.Test'])
 total_Run_Test_empty = (df_clean[df_clean['verb'] =='Run.Test']['filename'] == '').sum()
 total_Run_Test_nan   = df_clean[df_clean['verb'] =='Run.Test']['filename_infere'].isna().sum()
@@ -330,23 +335,41 @@ print(f"Total number of None in filename_infere in Run.Test : {total_Run_Test_na
 
 # **Interpretation** There is no empty or none values for Run.Test, but we need to check the correctness of their name which we do later.
 
-# ####  2.3 Check empty filename_infere of **Run.Program**
+# ####  1.3 Check empty filename_infere of **Run.Program**
 
 # +
 # Before
 total_Run_Program       = len(df_clean[df_clean['verb']  == 'Run.Program'])
-total_Run_Program_empty = (df_clean[df_clean['verb']=='Run.Program']['filename_infere'] == '').sum()
-total_Run_Program_nan   = df_clean[df_clean['verb']=='Run.Program']['filename_infere'].isna().sum()
+total_Run_Program_empty = (df_clean[df_clean['verb'] =='Run.Program']['filename_infere'] == '').sum()
+total_Run_Program_nan   = df_clean[df_clean['verb'] =='Run.Program']['filename_infere'].isna().sum()
 
 print(f"Total number of traces in Run.Program : {total_Run_Program}")
 print(f"Total number of empty strings in filename_infere in Run.Program : {total_Run_Program_empty}")
 print(f"Total number of None in filename_infere in Run.Program : {total_Run_Program_nan}")
-
 # -
 
-# **Interpretation** All rows of Run.Program is empty so we first look at column **commandRan** and then if there is still any empty string, we look at **P_codeState**
+# **Interpretation** All rows of Run.Program is empty so we first look at column **P_codeState** since the filename between trace is correct and then if there is still any empty string, we look at **commandRan** which might not be a correct name but we don't care in this part.
 
-# ##### 2.3.1 Fill empty filename_infere of **Run.Program** by commandRan
+# ##### 1.3.1 Fill empty filename_infere of **Run.Program** by P_codestate
+
+# +
+# check if all values in P_codeState have <trace></trace>
+total_non_empty_codestate     = (df_clean[df_clean['verb']  == 'Run.Program']['P_codeState'] != '').sum()
+total_codestate_contain_trace = df_clean[df_clean['verb']  == 'Run.Program']['P_codeState'].str.contains(r'<trace>.*\.py</trace>', regex=True, na=False).sum()
+
+print(f"Total rows of not empty strings in P_codeState for Run.Program : {total_non_empty_codestate}")
+print(f"Total rows of P_codeState contian <trace> : {total_codestate_contain_trace}")
+# -
+
+# Apply
+mask = (df_clean['verb'] == 'Run.Program') & (df_clean['filename_infere'] == '')
+df_clean.loc[mask, 'filename_infere'] = df_clean.loc[mask, 'P_codeState'].map(data_cleaning.extract_short_filename_from_P_codestate_Run_Program)
+
+# After
+total_Run_Program_empty = (df_clean[df_clean['verb'] =='Run.Program']['filename_infere'] == '').sum()
+print(f"Total rows of empty strings in Run.Program : {total_Run_Program_empty}")
+
+# ##### 1.3.2 Fill empty filename_infere of **Run.Program** by commandRan
 
 # +
 # check if all values in commandRan starts with %Run
@@ -357,8 +380,10 @@ print(f"Total rows of not empty strings in commandRan for Run.Program : {total_n
 print(f"Total rows of commandRan starts with %Run in Run.Program : {total_commandRan_start_Run}")
 # -
 
+# **Interpretation** : Even though all values start wtih %Run, there are values contain %Run Editor which means there is not value for filename. 
+
 # Apply
-mask = df_clean['verb'] == 'Run.Program'
+mask = (df_clean['verb'] == 'Run.Program') & (df_clean['filename_infere'] == '')
 df_clean.loc[mask, 'filename_infere'] = data_cleaning.extract_short_filename_from_commandRan_Run_Program(df_clean.loc[mask, 'commandRan'])
 
 # +
@@ -368,24 +393,11 @@ total_Run_Program_empty = (df_clean[df_clean['verb']=='Run.Program']['filename_i
 print(f"Total rows of empty strings in Run.Program : {total_Run_Program_empty}")
 # -
 
-# **Interpretation** : we reduced empty filename_infere from 54352 to 5791, since they are still empty string, we need to look at **P_codeState** column.
-
-# ##### 2.3.2 Fill empty filename_infere of **Run.Program** by P_codestate
-
-# Apply
-mask = (df_clean['verb'] == 'Run.Program') & (df_clean['filename_infere'] == '')
-df_clean.loc[mask, 'filename_infere'] = df_clean.loc[mask, 'P_codeState'].map(data_cleaning.extract_short_filename_from_P_codestate_Run_Program)
-
-# +
-# After
-total_Run_Program_empty = (df_clean[df_clean['verb']=='Run.Program']['filename_infere'] == '').sum()
-
-print(f"Total rows of empty strings in Run.Program : {total_Run_Program_empty}")
-# -
+# **Interpretation** : we reduced empty filename_infere from 54352 to 5658 by **P_codeState** and **commandRan**. For the correctness and the other empty values we look in the second part.
 
 df_clean[(df_clean['verb'] == 'Run.Program') & (df_clean['filename_infere'] != '')][['filename_infere','commandRan','P_codeState']]
 
-# #### 2.4 Check empty filename_infere of **Run.Debugger**
+# #### 1.4 Check empty filename_infere of **Run.Debugger**
 
 # +
 # Before
@@ -400,7 +412,7 @@ print(f"Total number of None in filename_infere in Run.Debugger : {total_Run_Deb
 
 # Same as Run.Program we will do the same process
 
-# ##### 2.4.1 Fill empty filename_infere of **Run.Debugger** by commandRan
+# ##### 1.4.1 Fill empty filename_infere of **Run.Debugger** by commandRan
 
 # +
 # check if all values in commandRan starts with %Debug
@@ -413,6 +425,8 @@ print(f"Total rows of not empty strings in commandRan for Run.Debugger  : {total
 print(f"Total rows of commandRan starts with %Debug in Run.Debugger     : {total_commandRan_start_Debug}")
 print(f"Total rows of commandRan starts with %NiceDebug in Run.Debugger : {total_commandRan_start_NiceDebug}")
 print(f"Total rows of commandRan starts with %FastDebug in Run.Debugger : {total_commandRan_start_FastDebug}")
+
+
 # -
 
 # **Interpretation** All values in commandRan starts with %Debug, we can extract filename from commandRan.
@@ -427,7 +441,7 @@ print(f"Total number of empty strings in filename_infere in Run.Debugger : {tota
 
 df_clean[df_clean['verb'] == 'Run.Debugger']['filename_infere'].head(10)
 
-# #### 2.5 Check empty filename_infere of **Run.Command**
+# #### 1.5 Check empty filename_infere of **Run.Command**
 
 # +
 # Before
@@ -486,7 +500,7 @@ print(f"Total number of empty strings in F_codeState in Run.command : {total_Fco
 #
 # There are 22461 different values in commandRan for Run.command, we can't use or analyze each single value, and since all values for Run.Command in P_codeState or F_codeState are empty we analyze them in the part of analyze each TP alone.
 
-# #### 2.6 Check empty filename_infere of **File.Open**
+# #### 1.6 Check empty filename_infere of **File.Open**
 
 # +
 # Before
@@ -499,7 +513,7 @@ print(f"Total number of empty strings in filename_infere in File.Open : {total_F
 print(f"Total number of None in filename_infere in File.Open : {total_File_Open_nan}")
 # -
 
-# #### 2.7 Check empty filename_infere of **File.Save**
+# #### 1.7 Check empty filename_infere of **File.Save**
 
 # +
 total_File_Save       = len(df_clean[df_clean['verb']  == 'File.Save'])
@@ -511,7 +525,7 @@ print(f"Total number of empty strings in filename_infere in File.Save : {total_F
 print(f"Total number of None in filename_infere in File.Save : {total_File_Save_nan}")
 # -
 
-# #### 2.8 Check empty filename_infere of **Docstring.Generate**
+# #### 1.8 Check empty filename_infere of **Docstring.Generate**
 
 # +
 total_Docstring       = len(df_clean[df_clean['verb']  == 'Docstring.Generate'])
@@ -527,7 +541,27 @@ df_clean[df_clean['verb'] == 'Docstring.Generate']['function']
 
 # Question: don't know how should I fill it.
 
-# #### 3. check all filename_infere and fill the rest
+# #### 2. Check the correctness 'filename_infere'
+
+# +
+# Before
+pattern = '|'.join(FILES_BY_TP[1])
+pattern_not = '&'.join(FILES_BY_TP[1])
+
+total_semaine_2                  = (df_clean['seance'] == 'semaine_2').sum()
+total_empty_string_semaine_2     = (df_clean[df_clean['seance'] == 'semaine_2']['filename_infere'] == '').sum()
+total_nan_semaine_2              = df_clean[df_clean['seance'] == 'semaine_2']['filename_infere'].isna().sum()
+total_correct_name_semaine_2     = df_clean[df_clean['seance'] == 'semaine_2']['filename_infere'].str.contains(pattern, na = False).sum()
+total_NOT_correct_name_semaine_2 = total_semaine_2 - total_empty_string_semaine_2 - total_correct_name_semaine_2
+
+print(f"Total number of rows in semaine_2 : {total_semaine_2}")
+print(f"Total number of empty string : {total_empty_string_semaine_2}")
+print(f"Total number of Nan : {total_nan_semaine_2}")
+print(f"Total number of correct name : {total_correct_name_semaine_2}")
+print(f"Total number of NOT correct name : {total_NOT_correct_name_semaine_2}")
+# -
+
+# About these 6413 : maybe there the name of TP1 or TP3 and they are even in a correct format
 
 # Extract real students from week = DSi
 df_all_students = data_cleaning.extract_students_each_week(df_clean)
@@ -609,12 +643,23 @@ df_clean.loc[103359][['verb','P_codeState']]
 
 #
 # # TODO
-# - Second add column TP next to the column semaine (TP1, TP2, TP3 ...) DONE!
+# - First look at the functions name from the variable_constatnt.py and check if they exist in the P_codeState or commandRan
+#
+# - Second add column TP next to the column semaine (TP1, TP2, TP3 ...) Change
 # - Third add column next to TP column 'Type_TP' with two values : 1-TP_programmation 2-TP_manipulation (activite_range.py is manipulation)
 # - Forth add column filename_infere next to the filename DONE!
 # - change function names : extract_filename to extract_short_filename DONE!
 # <br>
 #
+# - Add the number total of matching marie is equal to the total occurance of two jokers: Done!
+# - add column TP after add column filename_infere, to find which student worked on what TP
+# - add interepareation for Run.program that there are Editor content and add the test for P_codeState: Done!
+# - change the name of TP to notion , there is possiblity that in the semaine_3 there student that worked on notion or TP 2 should check by the name of the filename_infere
+# - correct function remove_emptysession in process raw data with =< parametre check the e-mail : 23/05 she will do it mirabelle
+# - new dataframe for deleteing some rows
+# - check the process raw data
+# - look at the functions name from the variable_constatnt.py and check if they exist in the P_codeState or commandRan
+# - delete the traces where there is "ODI" in the P_codeState even if there is a filename (waiting for mirabelle response)
 # - P_codeState for Run.Program : check the name of function in P_codeState with the name function in variab_constant.py if okay put the name as the filename
 # - check utils.py in src/feature to see how thoma extract filename for P_codeState
 # - Check the Etude_sur_les_testes.py in notebook / Thomas version to calculate the number of student present of each week and each TP DONE!
