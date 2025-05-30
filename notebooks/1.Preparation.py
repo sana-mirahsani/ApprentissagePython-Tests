@@ -31,6 +31,7 @@ import sys
 sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
 import pandas as pd
 import re
+import numpy as np
 import io_utils, data_cleaning, data_anonymization
 #from tests import test_preprocessing, test_anonymization
 from src.data.constants import INTERIM_DATA_DIR
@@ -425,8 +426,6 @@ print(f"Total rows of not empty strings in commandRan for Run.Debugger  : {total
 print(f"Total rows of commandRan starts with %Debug in Run.Debugger     : {total_commandRan_start_Debug}")
 print(f"Total rows of commandRan starts with %NiceDebug in Run.Debugger : {total_commandRan_start_NiceDebug}")
 print(f"Total rows of commandRan starts with %FastDebug in Run.Debugger : {total_commandRan_start_FastDebug}")
-
-
 # -
 
 # **Interpretation** All values in commandRan starts with %Debug, we can extract filename from commandRan.
@@ -543,10 +542,11 @@ df_clean[df_clean['verb'] == 'Docstring.Generate']['function']
 
 # #### 2. Check the correctness 'filename_infere'
 
+# #### 2.1 seance = semaine_2
+
 # +
 # Before
 pattern = '|'.join(FILES_BY_TP[1])
-pattern_not = '&'.join(FILES_BY_TP[1])
 
 total_semaine_2                  = (df_clean['seance'] == 'semaine_2').sum()
 total_empty_string_semaine_2     = (df_clean[df_clean['seance'] == 'semaine_2']['filename_infere'] == '').sum()
@@ -561,7 +561,52 @@ print(f"Total number of correct name : {total_correct_name_semaine_2}")
 print(f"Total number of NOT correct name : {total_NOT_correct_name_semaine_2}")
 # -
 
-# About these 6413 : maybe there the name of TP1 or TP3 and they are even in a correct format
+# About these 6413 : maybe there are the name of TP1 or TP3 and they are even in a correct format but we don't know
+
+# #### 2.1.1 check the empty strings and Not correct filename_infere for each student
+
+# +
+df_all_students = data_cleaning.extract_students_each_week(df_clean)
+
+students_semaine_2 = list(df_all_students[df_all_students['week'] == 'semaine_2']['name_students'].iloc[0])
+students_semaine_2 = [item for item in students_semaine_2 if isinstance(item, str) and item.strip() != "" and item.lower() != "nan"] # remove the empty strings or nan
+# -
+
+df_analyze_students_semaine2 = data_cleaning.get_student_totals_each_week(df_clean, students_semaine_2, pattern) # takes maximum 1 min, it's normal
+
+df_analyze_students_semaine2
+
+# #### 2.1.2 check and fill students with zero trace in semaine_2
+
+# Before
+students_trace_zero = df_analyze_students_semaine2[df_analyze_students_semaine2['total_trace'] == 0]['name'].unique()
+print(f" Number of students with zero trace in semaine_2 : {len(students_trace_zero)}")
+
+# Interpretation : they are students who were binome of an actor, that's why they don't have any trace, but it doesn't mean that they didn't work during this semaine, so we have to pick the values from their actors and put as their value in df_analyze_students_semaine2.
+
+# Apply : Find actors 
+df_of_students_zero_trace = data_cleaning.actors_of_student_with_zero_trace(df_clean, students_trace_zero)
+df_of_students_zero_trace
+
+# check if there is any binome with more than one actor
+errors = df_of_students_zero_trace[df_of_students_zero_trace['its_actor'].apply(lambda x: not (isinstance(x, (list, np.ndarray)) and len(x) == 1))]
+if errors.empty:
+    print("No there is no binome with more than one actor")
+
+# Apply : Fill values of binome by their atcor's values
+df_analyze_students_semaine2 = data_cleaning.fill_values_of_binome_with_zero_trace(df_of_students_zero_trace,df_analyze_students_semaine2)
+
+# +
+# After
+students_trace_zero = df_analyze_students_semaine2[df_analyze_students_semaine2['total_trace'] == 0]['name'].unique()
+print(f" Number of students with zero trace in semaine_2 : {len(students_trace_zero)}")
+
+print("successful!") if len(students_trace_zero) == 0 else print("Error!")
+# -
+
+# Interpretation : Now those students which were binome of a student during this seance, they have the same trace which they should because they worked together.
+
+# Now check the values for each group (actor and binome) and what are the empty string and incorrect name of their filename_infere, find theyr activities (session.start and session.end for each and decide the name by looking at the Files_by_TP and their value in commandRan or P_codeState or other filename_infere for the same day and the same group)
 
 # Extract real students from week = DSi
 df_all_students = data_cleaning.extract_students_each_week(df_clean)

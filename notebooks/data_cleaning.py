@@ -9,6 +9,7 @@ import sys
 sys.path.append('../')
 from pandas import to_datetime, to_timedelta
 import re
+import numpy 
 from src.data.variable_constant import SORTED_SEANCE
 #------------------------------------------------
 #                  Functions
@@ -344,6 +345,7 @@ def extract_short_filename_from_commandRan_Run_Debugger(commandRan_Run_Debugger:
 
 # Fill empty values of filename with clean commandRan column
 def extract_short_filename_from_commandRan_Run_Command(commandRan_Run_Command: pd.Series) -> pd.Series:
+
     '''
     Get a Dataframe and fill filename column of Run.Command by
     cleaned commandRan column.
@@ -365,3 +367,102 @@ def extract_short_filename_from_commandRan_Run_Command(commandRan_Run_Command: p
     
     # Return a Series with only the cleaned values, aligned with original index
     return cleaned
+
+
+# Get student totals in a seance
+def get_student_totals_each_week(df: pd.DataFrame, students_semaine : list, pattern : str)-> pd.DataFrame:
+    '''
+    Get a Dataframe and the list of students in a seance and calculate the totals for each students  
+    and put them into a new dataframe.
+
+    Args:
+        df : The original dataframe.
+        students_semaine : The list of students in a seance.
+
+    Returns:
+        df: A new dataframe with 6 columns for each students.
+    '''
+
+    df_analyze_students = pd.DataFrame(columns=['name', 'total_trace' ,'total_correct_filename_infere' , 'total_empty_string_filename_infere','total_NOT_correct_filename_infere', 'binome'])
+
+    for student in students_semaine:
+
+        # calculate
+        total_trace        = ((df['seance'] == 'semaine_2') & (df['actor'] == student)).sum()
+        total_correct      = df[(df['seance'] == 'semaine_2') & (df['actor'] == student)]['filename_infere'].str.contains(pattern, na = False).sum()
+        total_empty_string = ((df['seance'] == 'semaine_2') & (df['actor'] == student) & (df['filename_infere'] == "")).sum()
+        total_NOT_correct  = total_trace - total_empty_string - total_correct
+
+        binome             = df[(df['seance'] == 'semaine_2') & (df['actor'] == student)]['binome'].unique()
+        binome_clean       = binome[binome != ""] # remove the empty string because python counts them as an element
+        
+        df_analyze_students = pd.concat([
+            df_analyze_students,
+            pd.DataFrame({'name': [student], 'total_trace': [total_trace], 'total_correct_filename_infere': [total_correct], 'total_empty_string_filename_infere': [total_empty_string] , 'total_NOT_correct_filename_infere': [total_NOT_correct], 'binome': [binome_clean]})
+        ], ignore_index=True)
+
+
+    return df_analyze_students
+
+# Get actors of student with zero trace
+def actors_of_student_with_zero_trace(df: pd.DataFrame, students_with_trace_zero : numpy.ndarray)-> pd.DataFrame:
+    '''
+    Get a Dataframe and the list of students iwith zero trace in a specific seance and find thir actor,
+    put the name of binome and its actor in a dataframe and return it.
+
+    Args:
+        df : The original dataframe.
+        students_with_trace_zero : Array of students with zero trace .
+
+    Returns:
+        df: A new dataframe with 2 columns for each students and their actor in the same seance.
+    '''
+
+    df_of_students_zero_trace = pd.DataFrame(columns=['binome_with_zero_trace', 'its_actor'])
+
+    for student in students_with_trace_zero:
+
+        actor       = df[(df['seance'] == 'semaine_2') & (df['binome'] == student)]['actor'].unique()
+        actor_clean = actor[actor != ""] # remove the empty string because python counts them as an element
+            
+        df_of_students_zero_trace = pd.concat([
+                df_of_students_zero_trace,
+                pd.DataFrame({'binome_with_zero_trace': [student], 'its_actor': [actor_clean] })
+            ], ignore_index=True)
+        
+
+    return df_of_students_zero_trace
+
+# Fill values of students with zero trace
+def fill_values_of_binome_with_zero_trace(df_of_students_zero_trace: pd.DataFrame, df_analyze_students : pd.DataFrame)-> pd.DataFrame:
+    '''
+    Get a Dataframe and the list of students iwith zero trace in a specific seance and find thir actor,
+    put the name of binome and its actor in a dataframe and return it.
+
+    Args:
+        df : The original dataframe.
+        students_with_trace_zero : Array of students with zero trace .
+
+    Returns:
+        df: A new dataframe with 2 columns for each students and their actor in the same seance.
+    '''
+
+    index = 0
+
+    for student in df_of_students_zero_trace['binome_with_zero_trace']:
+
+        actor = (df_of_students_zero_trace[df_of_students_zero_trace['binome_with_zero_trace'] == student]['its_actor']).loc[index] # extract its actor's name
+        actor = actor[0] # Just extract the string 
+        
+        mask_actor  = df_analyze_students['name'] == actor # filter on this actor
+        mask_binome = df_analyze_students['name'] == student # filter on binome
+        
+        # Fill values empty in binom by its actor
+        df_analyze_students.loc[mask_binome, 'total_trace']                        = df_analyze_students[mask_actor]['total_trace']   
+        df_analyze_students.loc[mask_binome, 'total_correct_filename_infere']      = df_analyze_students[mask_actor]['total_correct_filename_infere'] 
+        df_analyze_students.loc[mask_binome, 'total_empty_string_filename_infere'] = df_analyze_students[mask_actor]['total_empty_string_filename_infere'] 
+        df_analyze_students.loc[mask_binome, 'total_NOT_correct_filename_infere']  = df_analyze_students[mask_actor]['total_NOT_correct_filename_infere'] 
+
+        index += 1 # it's because of the problem in pandas, to have access the names as a string not array
+
+    return df_analyze_students
