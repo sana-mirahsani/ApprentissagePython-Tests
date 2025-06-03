@@ -235,8 +235,10 @@ def cut_df(df: pd.DataFrame, week: str, student_name: str) -> list:
         df_filtered = df[(df['seance'] == week) & (df['actor'] == student_name)]
 
         if len(df_filtered) == 0 :
-            print("Error!.")
-            return None
+            df_filtered = df[(df['seance'] == week) & (df['binome'] == student_name)]
+            if len(df_filtered) == 0 :
+                print("No trace with this name in semaine_2!")
+                return None
 
     except Exception as error:
         
@@ -430,7 +432,6 @@ def actors_of_student_with_zero_trace(df: pd.DataFrame, students_with_trace_zero
                 pd.DataFrame({'binome_with_zero_trace': [student], 'its_actor': [actor_clean] })
             ], ignore_index=True)
         
-
     return df_of_students_zero_trace
 
 # Fill values of students with zero trace
@@ -458,10 +459,10 @@ def fill_values_of_binome_with_zero_trace(df_of_students_zero_trace: pd.DataFram
         mask_binome = df_analyze_students['name'] == student # filter on binome
         
         # Fill values empty in binom by its actor
-        df_analyze_students.loc[mask_binome, 'total_trace']                        = df_analyze_students[mask_actor]['total_trace']   
-        df_analyze_students.loc[mask_binome, 'total_correct_filename_infere']      = df_analyze_students[mask_actor]['total_correct_filename_infere'] 
-        df_analyze_students.loc[mask_binome, 'total_empty_string_filename_infere'] = df_analyze_students[mask_actor]['total_empty_string_filename_infere'] 
-        df_analyze_students.loc[mask_binome, 'total_NOT_correct_filename_infere']  = df_analyze_students[mask_actor]['total_NOT_correct_filename_infere'] 
+        df_analyze_students.loc[mask_binome, 'total_trace']                        = df_analyze_students[mask_actor]['total_trace'].iloc[0]    
+        df_analyze_students.loc[mask_binome, 'total_correct_filename_infere']      = df_analyze_students[mask_actor]['total_correct_filename_infere'].iloc[0]  
+        df_analyze_students.loc[mask_binome, 'total_empty_string_filename_infere'] = df_analyze_students[mask_actor]['total_empty_string_filename_infere'].iloc[0]  
+        df_analyze_students.loc[mask_binome, 'total_NOT_correct_filename_infere']  = df_analyze_students[mask_actor]['total_NOT_correct_filename_infere'].iloc[0]  
 
         index += 1 # it's because of the problem in pandas, to have access the names as a string not array
 
