@@ -390,6 +390,7 @@ def get_student_totals_each_week(df: pd.DataFrame, students_semaine : list, patt
     for student in students_semaine:
 
         # calculate
+        
         total_trace        = ((df['seance'] == 'semaine_2') & (df['actor'] == student)).sum()
         total_correct      = df[(df['seance'] == 'semaine_2') & (df['actor'] == student)]['filename_infere'].str.contains(pattern, na = False).sum()
         total_empty_string = ((df['seance'] == 'semaine_2') & (df['actor'] == student) & (df['filename_infere'] == "")).sum()
