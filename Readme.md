@@ -40,3 +40,6 @@ Analyze L1 (first-year) students learning Python using the Thonny editor (with a
 
 **The whole idea until now is working on the same code of Thomas just make it better (remove the for) and more understandable**
 
+
+jupytext --sync *.ipynb
+

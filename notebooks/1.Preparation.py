@@ -244,17 +244,17 @@ df_clean[['actor','binome']].head(10)
 # ### Clean **Filename** Field
 # Process:
 #
-# 1. Fill 'filename_infere'
+# 1. First part : Fill 'filename_infere'
 #
-#     1.1 Fill filename_infere by filename values
+#     1.1 Fill filename_infere using filename values
 #
 #     1.2 Check empty filename_infere of **Run.Test**
 #
 #     1.3 Check empty filename_infere of **Run.Program**
 #
-#         1.3.1 Fill empty filename_infere of **Run.Program** by commandRan
+#         1.3.1 Fill empty filename_infere of **Run.Program** by **commandRan**
 #
-#         1.3.2 Fill empty filename_infere of **Run.Program** by P_codestate
+#         1.3.2 Fill empty filename_infere of **Run.Program** by **P_codestate**
 #
 #     1.4 Check empty filename_infere of **Run.Debugger**
 #
@@ -268,15 +268,31 @@ df_clean[['actor','binome']].head(10)
 #
 #     1.8 Check empty filename_infere of **Docstring.Generate** 
 #
-# 2. Check the correctness 'filename_infere'
+# 2. Second part : Validate 'filename_infere' values for each week
 #
-#     3.1 TP2 
+#     2.1 DF[seance] == semaine_2
+#
+#     2.2 DF[seance] == semaine_3
+#
+#     2.3 DF[seance] == semaine_4
+#
+#     2.4 DF[seance] == semaine_5
+#
+#     2.5 DF[seance] == semaine_6
+#
+#     2.6 DF[seance] == semaine_7
+#
+#     2.7 DF[seance] == semaine_8
+#
+#     2.8 DF[seance] == semaine_9
+#
+#     2.9 DF[seance] == semaine_10
+#
+#     2.10 DF[seance] == semaine_GAME
 #
 # 4. Add Column 'TP'
 # 5. Add Column 'Type_TP'
 #
-
-# #### 1. Add column TP
 
 # +
 # creat new list of TP with the same size as SORTED_SEANCE to use map
@@ -297,7 +313,7 @@ df_clean['TP'] = df_clean['TP'].fillna('')
 print(f" Total number of nan in TP :{df_clean['TP'].isna().sum()}")
 # -
 
-# #### 1. Fill 'filename_infere'
+# #### 1. First part : Fill 'filename_infere'
 
 # create new column next to the filename
 col_index = df_clean.columns.get_loc('filename')
@@ -542,9 +558,9 @@ df_clean[df_clean['verb'] == 'Docstring.Generate']['function']
 
 # Question: don't know how should I fill it.
 
-# #### 2. Check the correctness 'filename_infere'
+# #### 2. Second part : Validate 'filename_infere' values for each week
 
-# #### 2.1 seance = semaine_2
+# #### 2.1 **DF[seance] == semaine_2**
 
 df_new = df_clean.copy()
 
@@ -571,7 +587,7 @@ print(f"Total number of correct name : {total_correct_name_semaine_2}")
 print(f"Total number of NOT correct name : {total_NOT_correct_name_semaine_2}")
 # -
 
-# ### 2.1.1 Find index of session.Start and session.End
+# ##### 2.1.1 Find index of session.Start and session.End
 
 # +
 # Find actors of semaine_2
@@ -590,7 +606,7 @@ for student in list_students_semaine_2: # it takes 12 second maximum, it's norma
     ], ignore_index=True)
 # -
 
-# ### 2.1.2 Remove indices with length less than two
+# ##### 2.1.2 Remove indices with length less than two
 
 # +
 # Before
@@ -781,9 +797,10 @@ def correct_filename_infere_in_subset(subset,df):
                             print(f"here12:{filename_infere}")
 
 
+
 # -
 
-# ### 2.1.3 Checking the correctness in each session
+# ##### 2.1.3 Checking the correctness in each session
 
 # +
 for index, row in df_indices.iterrows():
@@ -824,7 +841,7 @@ print(f"Total number of correct name : {total_correct_name_semaine_2}")
 print(f"Total number of NOT correct name : {total_NOT_correct_name_semaine_2}")
 # -
 
-# ### 2.1.4 Check Session.Start and Session.End and Docstring as the empty string
+# ##### 2.1.4 Check Session.Start and Session.End and Docstring as the empty string
 
 # +
 subset_other_verb = df_clean[(df_clean['seance'] == 'semaine_2') & (df_clean['filename_infere'] == '')]
@@ -836,27 +853,14 @@ print(f"Total number of empty strings in filename_infere : {number_empty_string}
 
 # Interpretation : From 10726 empty string in semaine_2, there are 3133 trace with verbs : 'Session.Start', 'Session.End', 'Docstring.Generate' which we don't care! but for the rest we should find another way
 
-# ### 2.1.5 Exceptions : Empty strings
+# ##### 2.1.5 Exceptions : Empty strings
 
 subset_empty_strings = df_clean[(df_clean['seance'] == 'semaine_2') & (df_clean['filename_infere'] == '') & (df_clean['verb'] != 'Docstring.Generate')]
 subset_empty_strings[['verb','P_codeState', 'F_codeState', 'filename_infere']]
 
+
 # +
-# Extract indices for each student (actor)
-df_indices = pd.DataFrame(columns=['name_students', 'indices'])
-
-for student in list_students_semaine_2: # it takes 12 second maximum, it's normal
-    indices = data_cleaning.cut_df(subset_empty_strings,'semaine_2',student)
-
-    df_indices = pd.concat([
-        df_indices,
-        pd.DataFrame({'name_students': [student], 'indices': [indices]})
-    ], ignore_index=True)
-
-# -
-
-df_indices['indices'] = df_indices['indices'].apply(lambda lst: [pair for pair in lst if abs(pair[1] - pair[0]) > 2])
-
+# data.cleaning
 
 def most_common(filename_infere_list):
     
@@ -874,6 +878,22 @@ def most_common(filename_infere_list):
     else:
         return ''
 
+
+# +
+# Extract indices for each student (actor)
+df_indices = pd.DataFrame(columns=['name_students', 'indices'])
+
+for student in list_students_semaine_2: # it takes 12 second maximum, it's normal
+    indices = data_cleaning.cut_df(subset_empty_strings,'semaine_2',student)
+
+    df_indices = pd.concat([
+        df_indices,
+        pd.DataFrame({'name_students': [student], 'indices': [indices]})
+    ], ignore_index=True)
+
+# -
+
+df_indices['indices'] = df_indices['indices'].apply(lambda lst: [pair for pair in lst if abs(pair[1] - pair[0]) > 2])
 
 for index, row in df_indices.iterrows():
     
@@ -916,7 +936,7 @@ print(f"Total number of correct name : {total_correct_name_semaine_2}")
 print(f"Total number of NOT correct name : {total_NOT_correct_name_semaine_2}")
 # -
 
-# ### 2.1.6 Exceptions : Not correct name
+# ##### 2.1.6 Exceptions : Not correct name
 
 # +
 # Before
@@ -961,276 +981,61 @@ print(f"Total number of NOT correct name : {total_NOT_correct_name_semaine_2}")
 
 # Interpretation : 
 
-# #### 1.2.5 hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhFill out for each subset
+# #### 2.2 **DF[seance] == semaine_3**
 
-pattern_TP1 = '|'.join(FILES_BY_TP[0])
-pattern_TP2 = '|'.join(FILES_BY_TP[1])
-pattern_TP3 = '|'.join(FILES_BY_TP[2])
-pattern_TP1, pattern_TP2, pattern_TP3
+# #### 2.3 **DF[seance] == semaine_4**
 
+# #### 2.4 **DF[seance] == semaine_5**
 
-def find_filename(TP_files,codestate):
+# #### 2.5 **DF[seance] == semaine_6**
 
-    for item in TP_files.items():
-    
-        if len(item[1]) > 1:
-            pattern = '|'.join(item[1])
+# #### 2.6 **DF[seance] == semaine_7**
 
-        else: 
-            pattern = item[1][0]
+# #### 2.7 **DF[seance] == semaine_8**
 
-        match = re.findall(pattern, codestate)
+# #### 2.8 **DF[seance] == semaine_9**
 
-        if match:
-            if len(match) > 0:
-                filename_infere = item[0]
-                return filename_infere
-            
-    return '' # no match found!
+# #### 2.9 **DF[seance] == semaine_10**
 
+# #### 2.10 **DF[seance] == semaine_GAME**
 
-def find_similarity(TP_Files,filename_infere):
+# #### 3. Add column TP
 
-    for item in TP_Files.items():
-        correct_name = item[0]
-        similarity = difflib.SequenceMatcher(None, correct_name, filename_infere).ratio()
+# Add column TP
+# create new column next to the filename
+col_index = df_clean.columns.get_loc('seance')
+df_clean.insert(col_index + 1, 'TP', '') 
+df_clean.columns
 
-        if similarity > 0.6:
-            return correct_name
-        
-    return '' # Wasn't similar!
+df_clean[df_clean['seance'] == 'semaine_2'][['filename_infere', 'TP']]
 
-
-# check in each activity between session.Start and session.End
-def subset(subset,df):
-
-    for index, row in subset.iterrows():
-
-        filename_infere = row['filename_infere']
-        
-        # check the emptyness
-        if filename_infere == '':
-
-            if row['verb'] == 'File.Open' or row['verb'] == 'File.Save':
-
-                if row['F_codeState'] != '': # F_codeState has a content
-                    codestate   = row['F_codeState']
-                    match_state = re.search(pattern, codestate)
-
-                    if match_state: # if the name is in the F_codeState
-                        matched_filename = match_state.group()  # Extract the name
-                        filename_infere  = matched_filename
-                        try:
-                            df.at[index, 'filename_infere'] = filename_infere 
-                        except:
-                            print(f"here1:{filename_infere}")
-
-                    else: # if the exact name is not in F_codeState and student might removed the name part, so we check the match with the content
-                        codestate = row['F_codeState']
-                        filename_infere = find_filename(TP2_Files,codestate)
-                        try:
-                            df.at[index, 'filename_infere'] = filename_infere 
-    
-                        except:
-                            print(f"here2:{filename_infere}")
-
-                else: # filename and F_codeState are empty
-                    filename_infere  = ''
-                    try:
-                        df.at[index, 'filename_infere'] = filename_infere 
-                    except:
-                        print(f"here3:{filename_infere}")
-
-            elif row['verb'] == 'Run.Test' or row['verb'] == 'Run.Command' or row['verb'] == 'Run.Program' or row['verb'] == 'Run.Debugger' : 
-
-                if row['P_codeState'] != '': # P_codeState has a content
-                    codestate   = row['P_codeState']
-                    match_state = re.search(pattern, codestate)
-
-                    if match_state: # if the name is in the P_codeState
-                        matched_filename = match_state.group()  # Extract the name
-                        filename_infere  = matched_filename
-                        try:
-                            df.at[index, 'filename_infere'] = filename_infere 
-                        except:
-                            print(f"here4:{filename_infere}")
-
-                    else: # if the exact name is not in P_codeState and student might removed the name part, so we check the match with the content
-                        codestate = row['P_codeState']
-                        filename_infere = find_filename(TP2_Files,codestate)
-                        try:
-                            df.at[index, 'filename_infere'] = filename_infere 
-                        except:
-                            print(f"here5:{filename_infere}")
-
-                else: # filename and P_codeState are empty
-                    filename_infere  = ''
-                    try:
-                       df.at[index, 'filename_infere'] = filename_infere 
-                    except:
-                        print(f"here6:{filename_infere}")
-
-            # Docstring or session.start or session.end are ignored
-            
-        # check the correctness, if there is a name
-        else:
-            try:
-                match = re.search(pattern, filename_infere)
-            except Exception as errors:
-                print(errors)
-            if not match: # it is not correct
-                if row['verb'] == 'File.Open' or row['verb'] == 'File.Save':
-
-                    if row['F_codeState'] != '': # F_codeState has a content
-                        codestate   = row['F_codeState']
-                        match_state = re.search(pattern, codestate)
-
-                        if match_state: # if the name is in the F_codeState
-
-                            matched_filename = match_state.group()  # Extract the name
-                            filename_infere  = matched_filename
-                            try:
-                                df.at[index, 'filename_infere'] = filename_infere 
-                            except:
-                                print(f"here7:{filename_infere}")
-
-                        else: # if the exact name is not in F_codeState and student might removed the name part, so we check the match with the content
-                            codestate = row['F_codeState']
-                            filename_infere = find_filename(TP2_Files,codestate)
-                            try:
-                                 df.at[index, 'filename_infere'] = filename_infere 
-                            except:
-                                print(f"here8:{filename_infere}")
-
-                    else: # F_codestate is empty
-                        filename_infere = find_similarity(TP2_Files,filename_infere)
-                        try:
-                             df.at[index, 'filename_infere'] = filename_infere 
-                        except:
-                            print(f"here9:{filename_infere}")
-
-                elif row['verb'] == 'Run.Test' or row['verb'] == 'Run.Command' or row['verb'] == 'Run.Program' or row['verb'] == 'Run.Debugger' : 
-
-                    if row['P_codeState'] != '': # P_codeState has a content
-                        codestate   = row['P_codeState']
-                        match_state = re.search(pattern, codestate)
-
-                        if match_state: # if the name is in the P_codeState
-                            matched_filename = match_state.group()  # Extract the name
-                            filename_infere  = matched_filename
-                            try:
-                                 df.at[index, 'filename_infere'] = filename_infere 
-                            except:
-                                print(f"here10:{filename_infere}")
-                            
-                        else: # if the exact name is not in P_codeState and student might removed the name part, so we check the match with the content
-                            codestate = row['P_codeState']
-                            filename_infere = find_filename(TP2_Files,codestate)
-                            try:
-                                 df.at[index, 'filename_infere'] = filename_infere 
-                            except:
-                                print(f"here11:{filename_infere}")
-
-                    else: # filename and P_codeState are empty
-                        filename_infere  = ''
-                        try:
-                             df.at[index, 'filename_infere'] = filename_infere 
-                        except:
-                            print(f"here12:{filename_infere}")
-
+df_clean[(df_clean['seance'] == 'semaine_2') & (df_clean['filename_infere'] == 'pour_debogueur.py')][['filename_infere', 'TP']]
 
 # +
-for index, row in df_indices.iterrows():
+# creat new list of TP with the same size as SORTED_SEANCE to use map
+TP_name = {'TP1' : FILES_BY_TP[0], 'TP2' : FILES_BY_TP[1], 'TP3' : FILES_BY_TP[2], 'TP4' : FILES_BY_TP[3]}
 
-    for activity in row['indices']:
-        start = activity[0]
-        end   = activity[1]
-        
-        subset_df = df_clean.iloc[start:end]
+file_to_tp = {}
+for tp, files in TP_name.items():
+    for f in files:
+        file_to_tp[f] = tp
 
-        try:
-            subset(subset_df,df_clean)
-        
-        except Exception as errors:
-            name = row['name_students']
-            print(f'Student: {name}')
-            print(f'Activity in {start} : {end}')
-            print(errors)
-            break
-
-print('successful!!')        
+df_clean["TP"] = df_clean["filename_infere"].map(file_to_tp)
 # -
-
-df_clean[(df_clean['actor'] == 'antoine.vanhauwaert.etu') & (df_clean['seance'] == 'semaine_2')]
-
-# For now there are the names which could extract easily, for the rest which their value is None in filename_infere, use another loop and since we know they are the worst, they don't have any content or similarity, guess their name by the name most used in that session.start or pick the last filename infere specially if it is for verb File.Open or File.Save 
-
-df_all_students
-
-# Until here Extract real students from week = DSi
-df_all_students = data_cleaning.extract_students_each_week(df_clean)
-list_students = df_all_students[df_all_students['week'] == 'DSi']['name_students'].iloc[0]
-list_students
-
-# ##### 3.1 TP2
-
-# +
-# Remove absent students
-present_students_semaine_2 = []
-
-for student in list_students:
-    if len(df_clean[(df_clean['seance'] == 'semaine_2') & (df_clean['actor'] == student)]) != 0:
-        present_students_semaine_2.append(student)
-
-print(f"Numbr of present students in semaine_2 : {len(present_students_semaine_2)}")
-
-# Extract indices for each student
-df_indices = pd.DataFrame(columns=['name_students', 'indices'])
-
-for student in present_students_semaine_2:
-    indices = data_cleaning.cut_df(df_clean,'semaine_2',student)
-
-    df_indices = pd.concat([
-        df_indices,
-        pd.DataFrame({'name_students': [student], 'indices': [indices]})
-    ], ignore_index=True)
-
-
-df_indices
-
-# +
-x = []
-
-for index, row in df_indices.iterrows():
-    print(f"Student : {row['name_students']}")  # print specific column
-    print(f"Number of activities : {len(row['indices'])}")
-    
-    for i in row['indices']:
-
-        if abs(i[0] - i[1]) < 2:
-            continue
-
-        print(f"Activiy : {i}")
-
-        total = ((df_clean.iloc[i[0]:i[1]]['filename_infere'] == "") & (df_clean.iloc[i[0]:i[1]]['verb'] != "Session.Start")).sum()
-        print(f"Total empty strings : {total}")
-        
-        subset = df_clean.iloc[i[0]:i[1]]
-        filtered = subset[(subset['filename_infere'] == '') & (subset['verb'] != "Session.Start")][['filename_infere','verb','commandRan','P_codeState','F_codeState']]
-        x.append(filtered)
-    break
-
-# -
-
-x[1]
-
-df_clean.loc[103359][['verb','P_codeState']]
 
 # ##### 3.2 TP3
 
 # ##### 3.3 TP4
 
 # ##### 3.4 TP5
+
+# #### 4. Add column TP_Type
+
+# Add column TP
+# create new column next to the filename
+col_index = df_clean.columns.get_loc('TP')
+df_clean.insert(col_index + 1, 'Type_TP', '') 
+df_clean.columns
 
 # ## Anonymize Data
 
