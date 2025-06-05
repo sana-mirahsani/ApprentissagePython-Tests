@@ -152,7 +152,44 @@ plt.xticks(rotation=45)
 plt.tight_layout()
 plt.show()
 
+# %%
+# check if you need them or not 
+df_all_students = data_cleaning.extract_students_each_week(df_clean)
+
+students_semaine_2 = list(df_all_students[df_all_students['week'] == 'semaine_2']['name_students'].iloc[0])
+students_semaine_2 = [item for item in students_semaine_2 if isinstance(item, str) and item.strip() != "" and item.lower() != "nan"] # remove the empty strings or nan
+
+df_analyze_students_semaine2 = data_cleaning.get_student_totals_each_week(df_clean, students_semaine_2, pattern) # takes maximum 1 min, it's normal
+
+# %%
+# Before
+students_trace_zero = df_analyze_students_semaine2[df_analyze_students_semaine2['total_trace'] == 0]['name'].unique()
+print(f" Number of students with zero trace in semaine_2 : {len(students_trace_zero)}")
+
+# %% [markdown]
+# Interpretation : they are students who were binome of an actor, that's why they don't have any trace, but it doesn't mean that they didn't work during this semaine, so we have to pick the values from their actors and put as their value in df_analyze_students_semaine2.
+
+# %%
+# Apply : Find actors 
+df_of_students_zero_trace = data_cleaning.actors_of_student_with_zero_trace(df_clean, students_trace_zero)
+df_of_students_zero_trace
+
+# %%
+# check if there is any binome with more than one actor
+errors = df_of_students_zero_trace[df_of_students_zero_trace['its_actor'].apply(lambda x: not (isinstance(x, (list, np.ndarray)) and len(x) == 1))]
+if errors.empty:
+    print("No there is no binome with more than one actor")
+
+# %%
+# Apply : Fill values of binome by their atcor's values
+df_analyze_students_semaine2 = data_cleaning.fill_values_of_binome_with_zero_trace(df_of_students_zero_trace,df_analyze_students_semaine2)
+
 # %% [markdown]
 # # ToDo
 #
 # - change seance by TP
+# - change the nale x variable                                   
+#
+
+# %% [markdown]
+# +

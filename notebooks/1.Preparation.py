@@ -32,6 +32,7 @@ sys.path.append('../') # these two lines allow the notebook to find the path to 
 import pandas as pd
 import re
 import difflib
+from collections import Counter
 import numpy as np
 import io_utils, data_cleaning, data_anonymization
 #from tests import test_preprocessing, test_anonymization
@@ -773,12 +774,11 @@ def correct_filename_infere_in_subset(subset,df):
                                 print(f"here11:{filename_infere}")
 
                     else: # filename and P_codeState are empty
-                        filename_infere  = ''
+                        filename_infere = find_similarity(TP2_Files,filename_infere)
                         try:
                              df.at[index, 'filename_infere'] = filename_infere 
                         except:
                             print(f"here12:{filename_infere}")
-
 
 
 # -
@@ -836,7 +836,7 @@ print(f"Total number of empty strings in filename_infere : {number_empty_string}
 
 # Interpretation : From 10726 empty string in semaine_2, there are 3133 trace with verbs : 'Session.Start', 'Session.End', 'Docstring.Generate' which we don't care! but for the rest we should find another way
 
-# ### 2.1.5 Exceptions (empty strings)
+# ### 2.1.5 Exceptions : Empty strings
 
 subset_empty_strings = df_clean[(df_clean['seance'] == 'semaine_2') & (df_clean['filename_infere'] == '') & (df_clean['verb'] != 'Docstring.Generate')]
 subset_empty_strings[['verb','P_codeState', 'F_codeState', 'filename_infere']]
@@ -857,8 +857,6 @@ for student in list_students_semaine_2: # it takes 12 second maximum, it's norma
 
 df_indices['indices'] = df_indices['indices'].apply(lambda lst: [pair for pair in lst if abs(pair[1] - pair[0]) > 2])
 
-# +
-from collections import Counter
 
 def most_common(filename_infere_list):
     
@@ -876,8 +874,6 @@ def most_common(filename_infere_list):
     else:
         return ''
 
-
-# -
 
 for index, row in df_indices.iterrows():
     
@@ -920,11 +916,22 @@ print(f"Total number of correct name : {total_correct_name_semaine_2}")
 print(f"Total number of NOT correct name : {total_NOT_correct_name_semaine_2}")
 # -
 
-# ### 2.1.6 Exceptions (Not correct name)
+# ### 2.1.6 Exceptions : Not correct name
 
+# +
+# Before
 subset = df_clean[(df_clean['seance'] == 'semaine_2') & (df_clean['filename_infere'] != '')]
 subset_df = subset[~ subset['filename_infere'].str.contains(pattern, na = False)]
-correct_filename_infere_in_subset(subset_df,df_clean)
+
+total_not_correct = len(subset_df)
+print(f"Total number of invalid names : {total_not_correct}")
+# -
+
+# Apply
+try:
+    correct_filename_infere_in_subset(subset_df,df_clean)
+except Exception as errors:
+    print(errors) 
 
 # +
 subset = df_clean[(df_clean['seance'] == 'semaine_2') & (df_clean['filename_infere'] != '')]
@@ -936,6 +943,7 @@ print('successful!') if len(subset_df) == 0 else print('Error!')
 # After
 total_semaine_2               = (df_clean['seance'] == 'semaine_2').sum()
 total_empty_string_semaine_2  = (df_clean[df_clean['seance'] == 'semaine_2']['filename_infere'] == '').sum()
+total_empty_string_semaine_2_valid_verb  = ((df_clean['seance'] == 'semaine_2') & (df_clean['filename_infere'] == '') & (df_clean['verb'] != 'Session.Start') & (df_clean['verb'] != 'Session.End') & (df_clean['verb'] != 'Docstring.Generate')).sum()
 total_nan_semaine_2           = df_clean[df_clean['seance'] == 'semaine_2']['filename_infere'].isna().sum()
 
 subset = df_clean[(df_clean['seance'] == 'semaine_2') & (df_clean['filename_infere'] != '')]
@@ -945,10 +953,13 @@ total_NOT_correct_name_semaine_2 = (~ subset['filename_infere'].str.contains(pat
 
 print(f"Total number of rows in semaine_2 : {total_semaine_2}")
 print(f"Total number of empty string : {total_empty_string_semaine_2}")
+print(f"Total number of empty string for valid verb : {total_empty_string_semaine_2_valid_verb}")
 print(f"Total number of Nan : {total_nan_semaine_2}")
 print(f"Total number of correct name : {total_correct_name_semaine_2}")
 print(f"Total number of NOT correct name : {total_NOT_correct_name_semaine_2}")
 # -
+
+# Interpretation : 
 
 # #### 1.2.5 hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhFill out for each subset
 
