@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.17.1
+#       jupytext_version: 1.17.0
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
@@ -629,7 +629,7 @@ print(f"total_number_of_students_with_small_activity : {total}")
 
 # +
 # data_cleaning
-def find_filename(TP_files,codestate):
+def find_filename_by_function_name(TP_files,codestate):
 
     for item in TP_files.items():
     
@@ -668,39 +668,10 @@ def correct_filename_infere_in_subset(subset,df):
         
         # check the emptyness
         if filename_infere == '':
-
+            
             if row['verb'] == 'File.Open' or row['verb'] == 'File.Save':
-
-                if row['F_codeState'] != '': # F_codeState has a content
-                    codestate   = row['F_codeState']
-                    match_state = re.search(pattern, codestate)
-
-                    if match_state: # if the name is in the F_codeState
-                        matched_filename = match_state.group()  # Extract the name
-                        filename_infere  = matched_filename
-                        try:
-                            df.at[index, 'filename_infere'] = filename_infere 
-                        except:
-                            print(f"here1:{filename_infere}")
-
-                    else: # if the exact name is not in F_codeState and student might removed the name part, so we check the match with the content
-                        codestate = row['F_codeState']
-                        filename_infere = find_filename(TP2_Files,codestate)
-                        try:
-                            df.at[index, 'filename_infere'] = filename_infere 
-    
-                        except:
-                            print(f"here2:{filename_infere}")
-
-                else: # filename and F_codeState are empty
-                    filename_infere  = ''
-                    try:
-                        df.at[index, 'filename_infere'] = filename_infere 
-                    except:
-                        print(f"here3:{filename_infere}")
-
+                assert(False)
             elif row['verb'] == 'Run.Test' or row['verb'] == 'Run.Command' or row['verb'] == 'Run.Program' or row['verb'] == 'Run.Debugger' : 
-
                 if row['P_codeState'] != '': # P_codeState has a content
                     codestate   = row['P_codeState']
                     match_state = re.search(pattern, codestate)
@@ -731,7 +702,7 @@ def correct_filename_infere_in_subset(subset,df):
             # Docstring or session.start or session.end are ignored
             
         # check the correctness, if there is a name
-        else:
+        else:# filename_infere non vide
             try:
                 match = re.search(pattern, filename_infere)
             except Exception as errors:
@@ -800,6 +771,8 @@ def correct_filename_infere_in_subset(subset,df):
 
 # -
 
+TP2_Files
+
 # ##### 2.1.3 Checking the correctness in each session
 
 # +
@@ -862,7 +835,7 @@ subset_empty_strings[['verb','P_codeState', 'F_codeState', 'filename_infere']]
 # +
 # data.cleaning
 
-def most_common(filename_infere_list):
+def sandwich(filename_infere_list):
     
     filtered_list = [value for value in filename_infere_list if value != '']
 
@@ -904,9 +877,10 @@ for index, row in df_indices.iterrows():
         subset_new = df_clean.iloc[start:end]
         
         if (subset_new['filename_infere'] == '').sum() != 0:
-            filename_infere_list = subset_new['filename_infere'].tolist()
             
-            most_common_filename_infere = most_common(filename_infere_list)
+            most_common_filename_infere = sandwich
+            
+            (filename_infere_list)
 
             # Get the index positions for the range
             subset_indices = df_clean.iloc[start:end].index
@@ -935,6 +909,9 @@ print(f"Total number of Nan : {total_nan_semaine_2}")
 print(f"Total number of correct name : {total_correct_name_semaine_2}")
 print(f"Total number of NOT correct name : {total_NOT_correct_name_semaine_2}")
 # -
+
+subset[~ subset['filename_infere'].str.contains(pattern, na = False)]
+
 
 # ##### 2.1.6 Exceptions : Not correct name
 
