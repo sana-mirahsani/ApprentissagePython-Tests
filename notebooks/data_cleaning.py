@@ -239,11 +239,11 @@ def cut_df(df: pd.DataFrame, week: str, student_name: str) -> list:
         if len(df_filtered) == 0 :
             df_filtered = df[(df['seance'] == week) & (df['binome'] == student_name)]
             if len(df_filtered) == 0 :
-                print("No trace with this name in semaine_2!")
-                return None
+                print(f"No trace with this name in semaine!{student_name}")
+                
 
     except Exception as error:
-        
+        print('here1')
         print(error)
 
     indices = df_filtered.index[df_filtered['verb'].isin(['Session.Start', 'Session.End'])].tolist()
@@ -258,9 +258,9 @@ def cut_df(df: pd.DataFrame, week: str, student_name: str) -> list:
                 start_idx = indices[i]
                 end_idx   = indices[i+1]
 
-                if abs(start_idx -end_idx) <= 2:
-                    #print(f'{start_idx,end_idx}')
+                if abs(start_idx - end_idx) <= 2:
                     df = df.drop(index=range(start_idx , end_idx + 1)) # remove useless indices
+                        
                 else:
                     pairs.append([start_idx,end_idx])
                 
@@ -270,6 +270,7 @@ def cut_df(df: pd.DataFrame, week: str, student_name: str) -> list:
                 i += 1  # skip if it's not a valid pair
 
         except Exception as error:
+            
             print(error)
 
     # return all indices
