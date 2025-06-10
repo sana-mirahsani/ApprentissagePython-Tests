@@ -10,7 +10,9 @@ sys.path.append('../')
 from pandas import to_datetime, to_timedelta
 import re
 import numpy 
+import difflib
 from src.data.variable_constant import SORTED_SEANCE
+from src.data.variable_constant import SORTED_SEANCE, TP_NAME, FILES_BY_TP, FUNCTIONS_TP2 , all_TP_functions_name 
 #------------------------------------------------
 #                  Functions
 #------------------------------------------------
@@ -255,17 +257,23 @@ def cut_df(df: pd.DataFrame, week: str, student_name: str) -> list:
             
                 start_idx = indices[i]
                 end_idx   = indices[i+1]
-            
-                pairs.append([start_idx,end_idx])
+
+                if abs(start_idx -end_idx) <= 2:
+                    #print(f'{start_idx,end_idx}')
+                    df = df.drop(index=range(start_idx , end_idx + 1)) # remove useless indices
+                else:
+                    pairs.append([start_idx,end_idx])
+                
                 i += 2  # move past the 1 and 2
             else:
+                print(f"invalid pair {indices[i]}")
                 i += 1  # skip if it's not a valid pair
 
         except Exception as error:
             print(error)
 
     # return all indices
-    return pairs
+    return pairs, df
 
 # Extract filename for not None value
 def extract_short_filename(series: pd.Series) -> pd.Series:
@@ -370,101 +378,122 @@ def extract_short_filename_from_commandRan_Run_Command(commandRan_Run_Command: p
     # Return a Series with only the cleaned values, aligned with original index
     return cleaned
 
+# Find filename_infere by checking the name of functions in codestate
+def find_filename_by_function_name(TP_files,codestate):
 
-# Get student totals in a seance
-def get_student_totals_each_week(df: pd.DataFrame, students_semaine : list, pattern : str)-> pd.DataFrame:
-    '''
-    Get a Dataframe and the list of students in a seance and calculate the totals for each students  
-    and put them into a new dataframe.
+    for item in TP_files.items():
+    
+        if len(item[1]) > 1:
+            pattern = '|'.join(item[1])
 
-    Args:
-        df : The original dataframe.
-        students_semaine : The list of students in a seance.
+        else: 
+            pattern = item[1][0]
 
-    Returns:
-        df: A new dataframe with 6 columns for each students.
-    '''
+        match = re.search(pattern, codestate)
 
-    df_analyze_students = pd.DataFrame(columns=['name', 'total_trace' ,'total_correct_filename_infere' , 'total_empty_string_filename_infere','total_NOT_correct_filename_infere', 'binome'])
-
-    for student in students_semaine:
-
-        # calculate
-        
-        total_trace        = ((df['seance'] == 'semaine_2') & (df['actor'] == student)).sum()
-        total_correct      = df[(df['seance'] == 'semaine_2') & (df['actor'] == student)]['filename_infere'].str.contains(pattern, na = False).sum()
-        total_empty_string = ((df['seance'] == 'semaine_2') & (df['actor'] == student) & (df['filename_infere'] == "")).sum()
-        total_NOT_correct  = total_trace - total_empty_string - total_correct
-
-        binome             = df[(df['seance'] == 'semaine_2') & (df['actor'] == student)]['binome'].unique()
-        binome_clean       = binome[binome != ""] # remove the empty string because python counts them as an element
-        
-        df_analyze_students = pd.concat([
-            df_analyze_students,
-            pd.DataFrame({'name': [student], 'total_trace': [total_trace], 'total_correct_filename_infere': [total_correct], 'total_empty_string_filename_infere': [total_empty_string] , 'total_NOT_correct_filename_infere': [total_NOT_correct], 'binome': [binome_clean]})
-        ], ignore_index=True)
-
-
-    return df_analyze_students
-
-# Get actors of student with zero trace
-def actors_of_student_with_zero_trace(df: pd.DataFrame, students_with_trace_zero : numpy.ndarray)-> pd.DataFrame:
-    '''
-    Get a Dataframe and the list of students iwith zero trace in a specific seance and find thir actor,
-    put the name of binome and its actor in a dataframe and return it.
-
-    Args:
-        df : The original dataframe.
-        students_with_trace_zero : Array of students with zero trace .
-
-    Returns:
-        df: A new dataframe with 2 columns for each students and their actor in the same seance.
-    '''
-
-    df_of_students_zero_trace = pd.DataFrame(columns=['binome_with_zero_trace', 'its_actor'])
-
-    for student in students_with_trace_zero:
-
-        actor       = df[(df['seance'] == 'semaine_2') & (df['binome'] == student)]['actor'].unique()
-        actor_clean = actor[actor != ""] # remove the empty string because python counts them as an element
+        if match: 
+            filename_infere = item[0]
+            return filename_infere
             
-        df_of_students_zero_trace = pd.concat([
-                df_of_students_zero_trace,
-                pd.DataFrame({'binome_with_zero_trace': [student], 'its_actor': [actor_clean] })
-            ], ignore_index=True)
+    return '' # no match found!
+
+# Find the correct filename by checking the similarity
+def find_similarity(TP_Files,filename_infere):
+
+    for item in TP_Files.items():
+        correct_name = item[0]
+        similarity = difflib.SequenceMatcher(None, correct_name, filename_infere).ratio()
+
+        if similarity > 0.6:
+            return correct_name
         
-    return df_of_students_zero_trace
+    return '' # Wasn't similar!
 
-# Fill values of students with zero trace
-def fill_values_of_binome_with_zero_trace(df_of_students_zero_trace: pd.DataFrame, df_analyze_students : pd.DataFrame)-> pd.DataFrame:
-    '''
-    Get a Dataframe and the list of students iwith zero trace in a specific seance and find thir actor,
-    put the name of binome and its actor in a dataframe and return it.
+# find filename by checking the name of the file in codestate
+def find_filename_by_codestate(pattern, codestate):
 
-    Args:
-        df : The original dataframe.
-        students_with_trace_zero : Array of students with zero trace .
+    match_state = re.search(pattern, codestate)
 
-    Returns:
-        df: A new dataframe with 2 columns for each students and their actor in the same seance.
-    '''
+    if match_state: # if the name is in the P_codeState
+        matched_filename = match_state.group()  # Extract the name
+        return matched_filename
 
-    index = 0
+    else: # if the exact name is not in P_codeState and student might removed the name part, we check the match with the content
+        filename_infere = find_filename_by_function_name(all_TP_functions_name,codestate)
+        return filename_infere
+    
 
-    for student in df_of_students_zero_trace['binome_with_zero_trace']:
+# check and correct the filename_infere between each session.Start and session.End
+def correct_filename_infere_in_subset(subset,df,pattern):
 
-        actor = (df_of_students_zero_trace[df_of_students_zero_trace['binome_with_zero_trace'] == student]['its_actor']).loc[index] # extract its actor's name
-        actor = actor[0] # Just extract the string 
+    for index in subset.index:
+        row = df.loc[index]
+
+        filename_infere = row['filename_infere']
         
-        mask_actor  = df_analyze_students['name'] == actor # filter on this actor
-        mask_binome = df_analyze_students['name'] == student # filter on binome
-        
-        # Fill values empty in binom by its actor
-        df_analyze_students.loc[mask_binome, 'total_trace']                        = df_analyze_students[mask_actor]['total_trace'].iloc[0]    
-        df_analyze_students.loc[mask_binome, 'total_correct_filename_infere']      = df_analyze_students[mask_actor]['total_correct_filename_infere'].iloc[0]  
-        df_analyze_students.loc[mask_binome, 'total_empty_string_filename_infere'] = df_analyze_students[mask_actor]['total_empty_string_filename_infere'].iloc[0]  
-        df_analyze_students.loc[mask_binome, 'total_NOT_correct_filename_infere']  = df_analyze_students[mask_actor]['total_NOT_correct_filename_infere'].iloc[0]  
+        # check the emptyness (only for Run.Command and Run.Program, Ignore Docstring,session.start,session.end)
+        if filename_infere == '':
+            
+            if row['verb'] in ['Run.Command', 'Run.Program']:
 
-        index += 1 # it's because of the problem in pandas, to have access the names as a string not array
+                if row['P_codeState'] != '': # P_codeState has a content
+                    filename_infere = find_filename_by_codestate(pattern,row['P_codeState'])
+            
+        # filename_infere non vide
+        else:
+            match = re.search(pattern, filename_infere)
+            
+            if not match: # filename is not correct
+                if row['verb'] in ['File.Open', 'File.Save']:
 
-    return df_analyze_students
+                    if row['F_codeState'] != '': # F_codeState has a content
+                        filename_infere = find_filename_by_codestate(pattern,row['F_codeState'])
+                   
+                    else: # F_codestate is empty
+                        filename_infere = find_similarity(all_TP_functions_name,filename_infere)
+
+                elif row['verb'] in ['Run.Test', 'Run.Command', 'Run.Program', 'Run.Debugger']:
+
+                    if row['P_codeState'] != '': # P_codeState has a content
+                        filename_infere = find_filename_by_codestate(pattern,row['P_codeState'])
+
+                    else: # filename and P_codeState are empty
+                        filename_infere = find_similarity(all_TP_functions_name,filename_infere)
+                       
+        # change filename_infere of df with the correct name
+        df.at[index, 'filename_infere'] = filename_infere 
+
+# Fill empty string by using sandwich method
+def sandwich(subset,df):
+
+    last_filename_infere   = subset.loc[subset['filename_infere'] != '', 'filename_infere'].iloc[0] # get the first not empty string in subset
+    empty_filename_indices = []
+
+    # check values before last_filename_infere
+    last_filename_infere = subset.loc[subset['filename_infere'] != '', 'filename_infere'].iloc[0]
+    last_filename_infere_index = subset.loc[subset['filename_infere'] != '', 'filename_infere'].index[0]
+
+    to_fill_indices = subset.loc[
+            (subset.index < last_filename_infere_index) & 
+            (subset['filename_infere'] == '')
+        ].index
+
+    df.loc[to_fill_indices, 'filename_infere'] = last_filename_infere # fill values before the first value
+    start_index = last_filename_infere_index # start from the first not empty value
+
+    for index, row in subset.loc[start_index:].iterrows():
+
+        if row['filename_infere'] == '':
+            empty_filename_indices.append(index)
+
+        elif row['filename_infere'] != '':
+
+            df.loc[empty_filename_indices, 'filename_infere'] = last_filename_infere # Fill all empty string
+            empty_filename_indices = [] # Reset the empty indices
+
+            if row['filename_infere'] != last_filename_infere:
+                last_filename_infere = row['filename_infere']
+
+    # if the rest of the values are empty after the first filename_infere
+    if empty_filename_indices:
+        df.loc[empty_filename_indices, 'filename_infere'] = last_filename_infere

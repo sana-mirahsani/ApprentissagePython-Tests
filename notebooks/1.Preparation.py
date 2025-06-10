@@ -31,13 +31,11 @@ import sys
 sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
 import pandas as pd
 import re
-import difflib
-from collections import Counter
 import numpy as np
 import io_utils, data_cleaning, data_anonymization
 #from tests import test_preprocessing, test_anonymization
 from src.data.constants import INTERIM_DATA_DIR
-from src.data.variable_constant import SORTED_SEANCE, TP_NAME, FILES_BY_TP, FUNCTIONS_TP2 , TP2_Files
+from src.data.variable_constant import SORTED_SEANCE, TP_NAME, FILES_BY_TP, FUNCTIONS_TP2 , all_TP_functions_name 
 
 
 # ## Load DataFrame
@@ -549,120 +547,24 @@ df_clean = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='phase1_n
 
 # #### 2. Second part : Validate 'filename_infere' values for each week
 
+# +
+# create pattern of filename of All TP
+
+pattern = ''
+for tp_name in FILES_BY_TP:
+
+    file_name = '|'.join(tp_name)
+    pattern = pattern +  file_name + '|'
+    
+pattern = pattern  +'TP_manipulation'
+# -
+
 # #### 2.1 **DF[seance] == semaine_2**
 
 df_clean
 
 # +
-
-FUNCTIONS_TP2_Prog = [
-    "repetition",
-    "moyenne_entiere",
-    "moyenne_entiere_ponderee",
-    "heure2minute",
-    "jour2heure",
-    "en_minutes",
-    "message",
-    "bonbons_par_enfant"
-]
-
-FUNCTIONS_TP2_Manip = [
-    "imperial2metrique",
-    "poly1",
-    "poly2"
-]
-
-# TP3
-FUNCTIONS_TP3_Prog = [
-    "est_non_vide\(",
-    "est_reponse\(",
-    "est_beneficiaire\(",
-    "est_reponse_correcte\(",
-    "est_en_ete\(",
-    "est_nombre_mystere\(",
-    "ont_intersection_vide\(",
-    "intervalle1_contient_intervalle2\(",
-    "sont_intervalles_recouvrants\(",
-    "est_gagnant\(",
-    "est_strict_anterieure_a\(",
-    "est_mineur_a_date\(",
-    "est_senior_a_date\(",
-    "a_tarif_reduit_a_date\(",
-]
-
-FUNCTIONS_TP3_Manip = [
-    "fonction2\(",
-    "fonction3\(",
-    "fonction4\(",
-    "fonction5\(",
-    "fonction1\(",
-    "pred1\(",
-    "pred2\(",
-    "pred3\(",
-    "pred4\(",
-    "pred5\(",
-    "pred9\("
-]
-
-# TP4 
-FUNCTIONS_TP4_Prog = [
-    "numero_jour\(",
-    "nom_jour\(",
-    "est_date_valide\(",
-    "est_jour_valide\(",
-    "nombre_jours\(",
-    "est_mois_valide\(",
-    "calcul_gain\(",
-    "montant_facture\(",
-    "nombre_exemplaires\(",
-    "conseil_voiture\(",
-    "argminimum\(",
-    "cout_location\(",
-    "minimum3\(",
-    "compare\(",
-    "maximum\(", 
-    "est_bissextile\("
-]
-
-FUNCTIONS_TP4_Manip = [
-    "categorie_tir_arc_v1\(",
-    "categorie_tir_arc_v2\(",
-    "categorie_tir_arc_v3\(",
-    "categorie_tir_arc_v4\(",
-    "mon_abs\(",
-    "signe1\(",
-    "signe2\(",
-    "en_tete1\(",
-    "int2str\(",
-    "pile_ou_face1\(",
-    "pile_ou_face2\("
-    
-]
-
-all_TP_functions_name = {
-    'note_UE.py' : '# TP PROG semaine 1' , 'pour_debogueur.py' : '# TP PROG semaine 1' , 'calcul_interets.py' : '# TP PROG semaine 1' , # TP1
-    'fonctions.py': FUNCTIONS_TP2_Prog, 'mesure.py': FUNCTIONS_TP2_Manip[0], 'polynomes.py': [FUNCTIONS_TP2_Manip[1],FUNCTIONS_TP2_Manip[2]], # TP2
-    'booleens.py' : FUNCTIONS_TP3_Prog, 'erreurs_multiples.py': FUNCTIONS_TP3_Manip[:4], 'manipulations.py' : FUNCTIONS_TP3_Manip[4:], # TP3
-    'conditionnelles.py' : FUNCTIONS_TP4_Prog, 'categories.py' : FUNCTIONS_TP4_Manip[:4] , 'erreurs_cond.py' : FUNCTIONS_TP4_Manip[4:] # TP4
-    
-    }
-
-# +
 # Before
-pattern_TP1 = '|'.join(FILES_BY_TP[0])
-pattern_TP2 = '|'.join(FILES_BY_TP[1])
-pattern_TP3 = '|'.join(FILES_BY_TP[2])
-pattern_TP4 = '|'.join(FILES_BY_TP[3])
-pattern_TP5 = '|'.join(FILES_BY_TP[4])
-pattern_TP6 = '|'.join(FILES_BY_TP[5])
-pattern_TP7 = '|'.join(FILES_BY_TP[6])
-pattern_TP8 = '|'.join(FILES_BY_TP[7])
-pattern_TP9 = '|'.join(FILES_BY_TP[8])
-pattern_TP10 = '|'.join(FILES_BY_TP[9])
-pattern_TPGAME = '|'.join(FILES_BY_TP[10])
-
-pattern     = pattern_TP1 + '|' + pattern_TP2 + '|' + pattern_TP3 + '|' + pattern_TP4 + '|' + pattern_TP5 + '|' + pattern_TP6 + '|' + pattern_TP7 + '|' + pattern_TP8 + '|' + pattern_TP9 + '|' + pattern_TPGAME
-
 total_semaine_2                  = (df_clean['seance'] == 'semaine_2').sum()
 total_empty_string_semaine_2     = (df_clean[df_clean['seance'] == 'semaine_2']['filename_infere'] == '').sum()
 total_nan_semaine_2              = df_clean[df_clean['seance'] == 'semaine_2']['filename_infere'].isna().sum()
@@ -689,8 +591,8 @@ list_students_semaine_2
 # Extract indices for each student (actor)
 df_indices = pd.DataFrame(columns=['name_students', 'indices'])
 
-for student in list_students_semaine_2: # it takes 12 second maximum, it's normal
-    indices = data_cleaning.cut_df(df_clean,'semaine_2',student)
+for student in list_students_semaine_2: # it takes 15 second maximum, it's normal
+    indices , df_clean= data_cleaning.cut_df(df_clean,'semaine_2',student)
 
     df_indices = pd.concat([
         df_indices,
@@ -698,34 +600,41 @@ for student in list_students_semaine_2: # it takes 12 second maximum, it's norma
     ], ignore_index=True)
 # -
 
-# ##### 2.1.2 Remove indices with length less than two
+# ##### 2.1.2 check indices with length less than two
 
 # +
-# Before
 df_indices['num_2_traces'] = df_indices['indices'].apply(lambda lst: len([pair for pair in lst if abs(pair[1] - pair[0]) <= 2]))
 total = (df_indices['num_2_traces'] != 0).sum()
 
 print(f"total_number_of_students_with_small_activity : {total}")
+
+# +
+total_semaine_2                  = (df_clean['seance'] == 'semaine_2').sum()
+total_empty_string_semaine_2     = (df_clean[df_clean['seance'] == 'semaine_2']['filename_infere'] == '').sum()
+total_nan_semaine_2              = df_clean[df_clean['seance'] == 'semaine_2']['filename_infere'].isna().sum()
+
+subset = df_clean[(df_clean['seance'] == 'semaine_2') & (df_clean['filename_infere'] != '')]
+
+total_correct_name_semaine_2     = subset['filename_infere'].str.contains(pattern, na = False).sum()
+total_NOT_correct_name_semaine_2 = (~ subset['filename_infere'].str.contains(pattern, na = False)).sum()
+
+print(f"Total number of rows in semaine_2 : {total_semaine_2}")
+print(f"Total number of empty string : {total_empty_string_semaine_2}")
+print(f"Total number of Nan : {total_nan_semaine_2}")
+print(f"Total number of correct name : {total_correct_name_semaine_2}")
+print(f"Total number of NOT correct name : {total_NOT_correct_name_semaine_2}")
 # -
 
-# Apply : remove any paire that there is only 1 or 2 verb
-df_indices['indices'] = df_indices['indices'].apply(lambda lst: [pair for pair in lst if abs(pair[1] - pair[0]) > 2])
+# All useless traces are removed even those who has the correct filename_infere or invalid name.
 
 # +
-# After
-df_indices['num_2_traces'] = df_indices['indices'].apply(lambda lst: len([pair for pair in lst if abs(pair[1] - pair[0]) <= 2]))
-total = (df_indices['num_2_traces'] != 0).sum()
-
-print(f"total_number_of_students_with_small_activity : {total}")
-
-# +
-# check
-total_number_emptystring_FO = ((df_clean['verb'] == 'File.Open') & (df_clean['filename_infere'] == '')).sum()
-total_number_emptystring_FS = ((df_clean['verb'] == 'File.Save') & (df_clean['filename_infere'] == '')).sum()
-total_number_emptystring_RT = ((df_clean['verb'] == 'Run.Test') & (df_clean['filename_infere'] == '')).sum()
-total_number_emptystring_RD = ((df_clean['verb'] == 'Run.Debugger') & (df_clean['filename_infere'] == '')).sum()
-total_number_emptystring_RP = ((df_clean['verb'] == 'Run.Program') & (df_clean['filename_infere'] == '')).sum()
-total_number_emptystring_RC = ((df_clean['verb'] == 'Run.Command') & (df_clean['filename_infere'] == '')).sum()
+# check empty string in each verb
+total_number_emptystring_FO = ((df_clean['verb'] == 'File.Open') & (df_clean['filename_infere'] == '')).sum()    # File.Open
+total_number_emptystring_FS = ((df_clean['verb'] == 'File.Save') & (df_clean['filename_infere'] == '')).sum()    # File.Save
+total_number_emptystring_RT = ((df_clean['verb'] == 'Run.Test') & (df_clean['filename_infere'] == '')).sum()     # Run.Test
+total_number_emptystring_RD = ((df_clean['verb'] == 'Run.Debugger') & (df_clean['filename_infere'] == '')).sum() # Run.Debugger
+total_number_emptystring_RP = ((df_clean['verb'] == 'Run.Program') & (df_clean['filename_infere'] == '')).sum()  # Run.Program
+total_number_emptystring_RC = ((df_clean['verb'] == 'Run.Command') & (df_clean['filename_infere'] == '')).sum()  # Run.Command
 
 print(f"Total number of emptystring for File.Open : {total_number_emptystring_FO}")
 print(f"Total number of emptystring for File.Save : {total_number_emptystring_FS}")
@@ -733,62 +642,13 @@ print(f"Total number of emptystring for Run.Test : {total_number_emptystring_RT}
 print(f"Total number of emptystring for Run.Debugger : {total_number_emptystring_RD}")
 print(f"Total number of emptystring for Run.Program : {total_number_emptystring_RP}")
 print(f"Total number of emptystring for Run.Command : {total_number_emptystring_RC}")
-
-
 # -
 
-# Since there is no empty string of filename_infere for File.Open, File.Save, Run.Test and Run.Debugger we don't need them to check in the condition where filename_infere is empty, we only need to just check them in the condtion where there is already a name of filenamei_infere and we need to juts check if it's correct or not. But for the ithers we should check in both condition where there is a filename_infere and where there is not.
-
-# data_cleaning
-def find_filename_by_function_name(TP_files,codestate):
-
-    for item in TP_files.items():
-    
-        if len(item[1]) > 1:
-            pattern = '|'.join(item[1])
-
-        else: 
-            pattern = item[1][0]
-
-        match = re.search(pattern, codestate)
-
-        if match: 
-            filename_infere = item[0]
-            return filename_infere
-            
-    return '' # no match found!
+# Since there is no empty string of filename_infere for File.Open, File.Save, Run.Test and Run.Debugger we don't need them to check in the condition where filename_infere is empty, we only need to check the correctness of filename_infere (in the second condition). Also, for Run.Program and Run.Command, since there are empty strings and filename_infere, we need to check in both condition, the first one to fill the empty strings and the second for the correctness fo filename_infere.
 
 
-# data_cleaning
-def find_similarity(TP_Files,filename_infere):
 
-    for item in TP_Files.items():
-        correct_name = item[0]
-        similarity = difflib.SequenceMatcher(None, correct_name, filename_infere).ratio()
-
-        if similarity > 0.6:
-            return correct_name
-        
-    return '' # Wasn't similar!
-
-
-# data_cleaning
-def find_filename_by_codestate(pattern, codestate):
-
-    match_state = re.search(pattern, codestate)
-
-    if match_state: # if the name is in the P_codeState
-        matched_filename = match_state.group()  # Extract the name
-        return matched_filename
-
-    else: # if the exact name is not in P_codeState and student might removed the name part, we check the match with the content
-        filename_infere = find_filename_by_function_name(all_TP_functions_name,codestate)
-        return filename_infere
-
-
-# # change TP2_Files to all functions name and TP names
-
-# data_cleaning
+# Will be moved to data_cleaning.py
 # check in each activity between session.Start and session.End
 def correct_filename_infere_in_subset(subset,df):
 
@@ -796,13 +656,8 @@ def correct_filename_infere_in_subset(subset,df):
         row = df.loc[index]
 
         filename_infere = row['filename_infere']
-        x = False
-        if filename_infere == 'DEVOIR PROGRAMMATION.py': 
-            print(index)
-            print(filename_infere)
-            x = True
         
-        # check the emptyness (only for Run.Command and Run.Program we ignore Docstring or session.start or session.end)
+        # check the emptyness (only for Run.Command and Run.Program, Ignore Docstring,session.start,session.end)
         if filename_infere == '':
             
             if row['verb'] in ['Run.Command', 'Run.Program']:
@@ -814,7 +669,7 @@ def correct_filename_infere_in_subset(subset,df):
         else:
             match = re.search(pattern, filename_infere)
             
-            if not match: # it is not correct
+            if not match: # filename is not correct
                 if row['verb'] in ['File.Open', 'File.Save']:
 
                     if row['F_codeState'] != '': # F_codeState has a content
@@ -832,16 +687,10 @@ def correct_filename_infere_in_subset(subset,df):
                         filename_infere = find_similarity(all_TP_functions_name,filename_infere)
                        
         # change filename_infere of df with the correct name
-        if x == True:
-            print(filename_infere)
-
-       #if index == 280600:
-        #    print('here')
-        
         df.at[index, 'filename_infere'] = filename_infere 
 
 
-# ##### 2.1.3 Checking the correctness in each session
+# ##### 2.1.3 Correcting filename_infere for semaine_2
 
 # +
 for index, row in df_indices.iterrows():
@@ -850,7 +699,7 @@ for index, row in df_indices.iterrows():
         start = activity[0]
         end   = activity[1]
         
-        subset_df = df_clean.iloc[start:end]
+        subset_df = df_clean.loc[start:end]
 
         try:
             correct_filename_infere_in_subset(subset_df,df_clean)
@@ -869,7 +718,7 @@ print('successful!!')
 total_semaine_2               = (df_clean['seance'] == 'semaine_2').sum()
 total_empty_string_semaine_2  = (df_clean[df_clean['seance'] == 'semaine_2']['filename_infere'] == '').sum()
 total_nan_semaine_2           = df_clean[df_clean['seance'] == 'semaine_2']['filename_infere'].isna().sum()
-
+subset = None
 subset = df_clean[(df_clean['seance'] == 'semaine_2') & (df_clean['filename_infere'] != '')]
 
 total_correct_name_semaine_2     = subset['filename_infere'].str.contains(pattern, na = False).sum()
@@ -884,78 +733,61 @@ print(f"Total number of NOT correct name : {total_NOT_correct_name_semaine_2}")
 
 # ##### 2.1.4 Exceptions : Not correct name
 
-df_clean.loc[280628:280631, ['verb', 'filename_infere','actor','binome','seance']]
+# No need to correct the invalid names because there are no invalid filename_infere in semaine_2 anymore.
 
-
-# The 39 values which aren't correct, are the rows with only 2 traces like example above, so we need to remove them, that's why they didn't change even though their name can get correct in function correct_filename_infere_in_subset.
-
-# +
-subset = df_clean[(df_clean['seance'] == 'semaine_2') & (df_clean['filename_infere'] != '')]
-incorrect_names       = subset[~ subset['filename_infere'].str.contains(pattern, na = False)]
-incorrect_names_index = incorrect_names.index
-
-for i in incorrect_names_index:
-    
-    if len(df_clean.loc[i - 1 :i + 1]) == 3: # there is only one trace between session.start and session.end
-
-        print(f"Delete index : {i}")
-        df_clean.drop(i, inplace=True)
-
-subset = df_clean[(df_clean['seance'] == 'semaine_2') & (df_clean['filename_infere'] != '')]
-total_NOT_correct_name_semaine_2 = (~ subset['filename_infere'].str.contains(pattern, na = False)).sum()
-print(f"Total number of NOT correct name : {total_NOT_correct_name_semaine_2}")
-
-# -
-
-# ##### 2.1.5 Check Session.Start and Session.End and Docstring as the empty string
+# ##### 2.1.5 Exceptions : Empty strings
 
 # +
 subset_other_verb = df_clean[(df_clean['seance'] == 'semaine_2') & (df_clean['filename_infere'] == '')]
-
 number_empty_string = ((subset_other_verb['verb'] == 'Session.Start' ) | (subset_other_verb['verb'] == 'Docstring.Generate' ) | (subset_other_verb['verb'] == 'Session.End')).sum()
 
-print(f"Total number of empty strings in filename_infere : {number_empty_string}")
+print(f"Total number of empty string : {total_empty_string_semaine_2}")
+print(f"Numbers of filename_infere for verbs Session.Start, Session.End, Docstring.Generate : {number_empty_string}")
+print(f"Numbers of filename_infere for other verbs : {total_empty_string_semaine_2 - number_empty_string}")
+
 # -
 
-# Interpretation : From 10726 empty string in semaine_2, there are 3133 trace with verbs : 'Session.Start', 'Session.End', 'Docstring.Generate' which we don't care! but for the rest we should find another way
-
-# ##### 2.1.6 Exceptions : Empty strings
+# Interpretation : From 10471 empty string in semaine_2, there are 2917 trace with verbs : 'Session.Start', 'Session.End', 'Docstring.Generate' which we don't care! but for the 7554 filename we fill them with the sandwich function.
 
 subset_empty_strings = df_clean[(df_clean['seance'] == 'semaine_2') & (df_clean['filename_infere'] == '') & (df_clean['verb'] != 'Docstring.Generate')]
 subset_empty_strings[['verb','P_codeState', 'F_codeState', 'filename_infere']]
 
 
-# function sandwich:
-# - only for filename_infere that are empty (they didn't have any P_codeState or F_codeState)
-# - take the first filename_infere appear in a session, (it is correct since we are already check there is no more incorrect name)
-# - if the filename_infere is not empty keep it as the last_filename_infere
-#     - then check the next filename_infere, if it is empty contiue until you get the filename_infere which in not empty
-#         - you check the new filename_infere, Is it the same as last_filenanme_infere, if so for all the filename_infere empty between these tow name, you put the same name
-#         - if the filename_infere is not same as the previous, and there are empty filename_infere between these two, you pick the last filename_infere for all the filename_infere empty which were before this one, and then you change the last_filename_infere with the new filename_infere which is not empty.
-# - if new filename_infere is not empty, then change the value of last filename_infere by this name
-#
-# when function above is finished, check how many filename_infere you have still, which means these filename_infere all of them are empty in a session, check if they are like this, then put the name TP_manip for all of them
-#
-# by these two function I don't think so there will be any other empty filename_infere
+# Will be moved to data.cleaning.py
+def sandwich(subset,df):
 
-# +
-# data.cleaning
+    last_filename_infere   = subset.loc[subset['filename_infere'] != '', 'filename_infere'].iloc[0] # get the first not empty string in subset
+    empty_filename_indices = []
 
-def sandwich(filename_infere_list):
-    
-    filtered_list = [value for value in filename_infere_list if value != '']
+    # check values before last_filename_infere
+    last_filename_infere = subset.loc[subset['filename_infere'] != '', 'filename_infere'].iloc[0]
+    last_filename_infere_index = subset.loc[subset['filename_infere'] != '', 'filename_infere'].index[0]
 
-    # Count frequency of each string
-    counter = Counter(filtered_list)
+    to_fill_indices = subset.loc[
+            (subset.index < last_filename_infere_index) & 
+            (subset['filename_infere'] == '')
+        ].index
 
-    # Get the most common string
-    if len(counter) != 0: # if there is any name
-    
-        most_common_string, count = counter.most_common(1)[0]
-        return most_common_string
-    
-    else:
-        return ''
+    df_clean.loc[to_fill_indices, 'filename_infere'] = last_filename_infere # fill values before the first value
+    start_index = last_filename_infere_index # start from the first not empty value
+
+    for index, row in subset.loc[start_index:].iterrows():
+
+        if row['filename_infere'] == '':
+            empty_filename_indices.append(index)
+
+        elif row['filename_infere'] != '':
+
+            df.loc[empty_filename_indices, 'filename_infere'] = last_filename_infere # Fill all empty string
+            empty_filename_indices = [] # Reset the empty indices
+
+            if row['filename_infere'] != last_filename_infere:
+                last_filename_infere = row['filename_infere']
+
+    # if the rest of the values are empty after the first filename_infere
+    if empty_filename_indices:
+        df.loc[empty_filename_indices, 'filename_infere'] = last_filename_infere
+
 
 
 # +
@@ -963,7 +795,7 @@ def sandwich(filename_infere_list):
 df_indices = pd.DataFrame(columns=['name_students', 'indices'])
 
 for student in list_students_semaine_2: # it takes 12 second maximum, it's normal
-    indices = data_cleaning.cut_df(subset_empty_strings,'semaine_2',student)
+    indices, _  = data_cleaning.cut_df(subset_empty_strings,'semaine_2',student)
 
     df_indices = pd.concat([
         df_indices,
@@ -972,30 +804,23 @@ for student in list_students_semaine_2: # it takes 12 second maximum, it's norma
 
 # -
 
-df_indices['indices'] = df_indices['indices'].apply(lambda lst: [pair for pair in lst if abs(pair[1] - pair[0]) > 2])
-
-for index, row in df_indices.iterrows():
+for index, row in df_indices.iterrows(): # takes maximum 17s, it's ok
     
     for i in row['indices']:
         start = i[0]
         end = i[1]
         
-        subset_new = df_clean.iloc[start:end]
+        subset_new = df_clean.loc[start:end]
         
-        if (subset_new['filename_infere'] == '').sum() != 0:
-            
-            most_common_filename_infere = sandwich
-            
-            (filename_infere_list)
+        # check if all the values in filename_infere are empty
+        if (subset_new['filename_infere'] == '').all():
+            df_clean.loc[subset_new.index, 'filename_infere'] = 'TP_manipulation'
 
-            # Get the index positions for the range
-            subset_indices = df_clean.iloc[start:end].index
-            excluded_verbs = ['Docstring.Generate', 'session.Start', 'session.End']
-
-            # Update only rows with empty string in 'filename_infere'
-            mask = (df_clean.loc[subset_indices, 'filename_infere'] == '') & ~df_clean.loc[subset_indices, 'verb'].isin(excluded_verbs)
-
-            df_clean.loc[subset_indices[mask], 'filename_infere'] = most_common_filename_infere
+        else:
+            try:
+                sandwich(subset_new,df_clean)
+            except Exception as error:
+                print(error)
 
 
 # +
@@ -1016,66 +841,7 @@ print(f"Total number of correct name : {total_correct_name_semaine_2}")
 print(f"Total number of NOT correct name : {total_NOT_correct_name_semaine_2}")
 # -
 
-x = subset[~ subset['filename_infere'].str.contains(pattern, na = False)]
-x
-
-codestate = df_clean.iloc[280629]['F_codeState']
-find_filename_by_codestate(pattern,codestate)
-
-
-pattern
-
-# +
-x = subset[~ subset['filename_infere'].str.contains(pattern, na = False)]
-
-correct_filename_infere_in_subset(x,df_clean)
-# -
-
-
-# ##### 2.1.6 Exceptions : Not correct name
-
-# +
-# Before
-subset = df_clean[(df_clean['seance'] == 'semaine_2') & (df_clean['filename_infere'] != '')]
-subset_df = subset[~ subset['filename_infere'].str.contains(pattern, na = False)]
-
-total_not_correct = len(subset_df)
-print(f"Total number of invalid names : {total_not_correct}")
-# -
-
-# Apply
-try:
-    correct_filename_infere_in_subset(subset_df,df_clean)
-except Exception as errors:
-    print(errors) 
-
-# +
-subset = df_clean[(df_clean['seance'] == 'semaine_2') & (df_clean['filename_infere'] != '')]
-subset_df = subset[~ subset['filename_infere'].str.contains(pattern, na = False)]
-
-print('successful!') if len(subset_df) == 0 else print('Error!')
-
-# +
-# After
-total_semaine_2               = (df_clean['seance'] == 'semaine_2').sum()
-total_empty_string_semaine_2  = (df_clean[df_clean['seance'] == 'semaine_2']['filename_infere'] == '').sum()
-total_empty_string_semaine_2_valid_verb  = ((df_clean['seance'] == 'semaine_2') & (df_clean['filename_infere'] == '') & (df_clean['verb'] != 'Session.Start') & (df_clean['verb'] != 'Session.End') & (df_clean['verb'] != 'Docstring.Generate')).sum()
-total_nan_semaine_2           = df_clean[df_clean['seance'] == 'semaine_2']['filename_infere'].isna().sum()
-
-subset = df_clean[(df_clean['seance'] == 'semaine_2') & (df_clean['filename_infere'] != '')]
-
-total_correct_name_semaine_2     = subset['filename_infere'].str.contains(pattern, na = False).sum()
-total_NOT_correct_name_semaine_2 = (~ subset['filename_infere'].str.contains(pattern, na = False)).sum()
-
-print(f"Total number of rows in semaine_2 : {total_semaine_2}")
-print(f"Total number of empty string : {total_empty_string_semaine_2}")
-print(f"Total number of empty string for valid verb : {total_empty_string_semaine_2_valid_verb}")
-print(f"Total number of Nan : {total_nan_semaine_2}")
-print(f"Total number of correct name : {total_correct_name_semaine_2}")
-print(f"Total number of NOT correct name : {total_NOT_correct_name_semaine_2}")
-# -
-
-# Interpretation : 
+# Interpretation : Finally we get to the point where there is no more invalid name or empty strings in semaine_2
 
 # #### 2.2 **DF[seance] == semaine_3**
 
