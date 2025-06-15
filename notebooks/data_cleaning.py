@@ -482,6 +482,7 @@ def correct_filename_infere_in_subset(subset,df,pattern):
 
                         if row['F_codeState'] != '': # F_codeState has a content
                             filename_infere = find_filename_by_codestate(pattern,row['F_codeState'])
+                            
                             if filename_infere == '':
                                 pass
                                 # Remove to test:
@@ -497,6 +498,7 @@ def correct_filename_infere_in_subset(subset,df,pattern):
 
                         if row['P_codeState'] != '': # P_codeState has a content
                             filename_infere = find_filename_by_codestate(pattern,row['P_codeState'])
+                            
                             if filename_infere == '':
                                 pass
                                 # Remove to test:
@@ -519,12 +521,11 @@ def correct_filename_infere_in_subset(subset,df,pattern):
 # Fill empty string by using sandwich method
 def sandwich(subset,df):
 
-    last_filename_infere   = subset.loc[subset['filename_infere'] != '', 'filename_infere'].iloc[0] # get the first not empty string in subset
-    empty_filename_indices = []
-
     # check values before last_filename_infere
     last_filename_infere = subset.loc[subset['filename_infere'] != '', 'filename_infere'].iloc[0]
     last_filename_infere_index = subset.loc[subset['filename_infere'] != '', 'filename_infere'].index[0]
+    
+    empty_filename_indices = []
 
     to_fill_indices = subset.loc[
             (subset.index < last_filename_infere_index) & 
