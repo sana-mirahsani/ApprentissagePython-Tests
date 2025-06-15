@@ -231,6 +231,7 @@ def cut_df(df: pd.DataFrame, week: str, student_name: str) -> list:
     '''
 
     pairs = []
+    empty_trace_pairs = []
 
     # Filter dataframe for the week and student
     try:
@@ -239,7 +240,7 @@ def cut_df(df: pd.DataFrame, week: str, student_name: str) -> list:
         if len(df_filtered) == 0 :
             df_filtered = df[(df['seance'] == week) & (df['binome'] == student_name)]
             if len(df_filtered) == 0 :
-                print(f"No trace with this name in semaine!{student_name}")
+                print(f"No trace with this name in semaine : {student_name}")
                 
 
     except Exception as error:
@@ -258,11 +259,12 @@ def cut_df(df: pd.DataFrame, week: str, student_name: str) -> list:
                 start_idx = indices[i]
                 end_idx   = indices[i+1]
 
-                if abs(start_idx - end_idx) <= 2:
-                    df = df.drop(index=range(start_idx , end_idx + 1)) # remove useless indices
-                        
-                else:
+                if abs(start_idx - end_idx) > 2: # put useful indices in pairs
+                    
                     pairs.append([start_idx,end_idx])
+                
+                else: # put useless indices in empty_trace_pairs to remove them later
+                    empty_trace_pairs.append([start_idx,end_idx])
                 
                 i += 2  # move past the 1 and 2
             else:
@@ -274,7 +276,7 @@ def cut_df(df: pd.DataFrame, week: str, student_name: str) -> list:
             print(error)
 
     # return all indices
-    return pairs, df
+    return pairs, empty_trace_pairs
 
 # Extract filename for not None value
 def extract_short_filename(series: pd.Series) -> pd.Series:
@@ -393,16 +395,17 @@ def find_filename_by_function_name(TP_files,codestate):
         match = re.search(pattern, codestate)
 
         if match: 
+            
             filename_infere = item[0]
             return filename_infere
             
     return '' # no match found!
 
 # Find the correct filename by checking the similarity
-def find_similarity(TP_Files,filename_infere):
+def find_similarity(TP_Files_name,filename_infere):
 
-    for item in TP_Files.items():
-        correct_name = item[0]
+    for correct_name in TP_Files_name:
+
         similarity = difflib.SequenceMatcher(None, correct_name, filename_infere).ratio()
 
         if similarity > 0.6:
@@ -421,11 +424,19 @@ def find_filename_by_codestate(pattern, codestate):
 
     else: # if the exact name is not in P_codeState and student might removed the name part, we check the match with the content
         filename_infere = find_filename_by_function_name(all_TP_functions_name,codestate)
+        
+        # Remove to test
+        #if filename_infere == '':
+            #print("Filename not found!")
         return filename_infere
     
 
 # check and correct the filename_infere between each session.Start and session.End
 def correct_filename_infere_in_subset(subset,df,pattern):
+
+    pattern_list = pattern.split('|')
+    # Remove to test:
+    #not_found_filename_index = []
 
     for index in subset.index:
         row = df.loc[index]
@@ -439,30 +450,71 @@ def correct_filename_infere_in_subset(subset,df,pattern):
 
                 if row['P_codeState'] != '': # P_codeState has a content
                     filename_infere = find_filename_by_codestate(pattern,row['P_codeState'])
-            
+                    
+                    if filename_infere == '':
+                        pass
+                        # Remove to test:
+                        #not_found_filename_index.append(index)
+
+                else:
+                    pass
+                    #print('here3')
+                    #not_found_filename_index.append(index)
+            else:
+                pass
+                # Remove to test:
+                #not_found_filename_index.append(index)   
+                #print(row['verb'])
+                #print(not_found_filename_index)
+
         # filename_infere non vide
         else:
-            match = re.search(pattern, filename_infere)
+            match = re.search(pattern, filename_infere) 
             
             if not match: # filename is not correct
-                if row['verb'] in ['File.Open', 'File.Save']:
+                
+                # Try to find the similar correct name
+                filename_infere = find_similarity(pattern_list,filename_infere)
 
-                    if row['F_codeState'] != '': # F_codeState has a content
-                        filename_infere = find_filename_by_codestate(pattern,row['F_codeState'])
-                   
-                    else: # F_codestate is empty
-                        filename_infere = find_similarity(all_TP_functions_name,filename_infere)
+                if filename_infere == '': # If the name is not similar
 
-                elif row['verb'] in ['Run.Test', 'Run.Command', 'Run.Program', 'Run.Debugger']:
+                    if row['verb'] in ['File.Open', 'File.Save']:
 
-                    if row['P_codeState'] != '': # P_codeState has a content
-                        filename_infere = find_filename_by_codestate(pattern,row['P_codeState'])
+                        if row['F_codeState'] != '': # F_codeState has a content
+                            filename_infere = find_filename_by_codestate(pattern,row['F_codeState'])
+                            if filename_infere == '':
+                                pass
+                                # Remove to test:
+                                #not_found_filename_index.append(index)
+                            
+                        else:
+                            pass
+                            # Remove to test:
+                            #print('here2')
+                            #not_found_filename_index.append(index)
 
-                    else: # filename and P_codeState are empty
-                        filename_infere = find_similarity(all_TP_functions_name,filename_infere)
-                       
+                    elif row['verb'] in ['Run.Test', 'Run.Command', 'Run.Program', 'Run.Debugger']:
+
+                        if row['P_codeState'] != '': # P_codeState has a content
+                            filename_infere = find_filename_by_codestate(pattern,row['P_codeState'])
+                            if filename_infere == '':
+                                pass
+                                # Remove to test:
+                                #not_found_filename_index.append(index)
+
+                        else:
+                            pass
+                            # Remove to test:
+                            #print('here1')
+                            #not_found_filename_index.append(index)
+
         # change filename_infere of df with the correct name
         df.at[index, 'filename_infere'] = filename_infere 
+
+    # Remove to test:
+    #if filename_infere == '':
+    #    print("Can't find filename for these indices:")
+    #    print(not_found_filename_index)
 
 # Fill empty string by using sandwich method
 def sandwich(subset,df):
@@ -498,3 +550,72 @@ def sandwich(subset,df):
     # if the rest of the values are empty after the first filename_infere
     if empty_filename_indices:
         df.loc[empty_filename_indices, 'filename_infere'] = last_filename_infere
+
+# Creat indices of each Session.Start and Session.End
+def creat_df_indices(list_students,df,week):
+
+    # creat df_indices 
+    df_indices = pd.DataFrame(columns=['name_students', 'indices'])
+
+    # Fill df_indices for each student in a week
+    for student in list_students: # it takes 15 second maximum, it's normal
+        indices, invalid_indices = cut_df(df,week,student)
+
+        df_indices = pd.concat([
+            df_indices,
+            pd.DataFrame({'name_students': [student], 'indices': [indices], 'invalid_indices': [invalid_indices]})
+        ], ignore_index=True)
+
+    return df_indices
+
+# Remove indices which has only one or two traces
+def remove_invalid_traces(df,df_indices):
+    
+    for index, row in df_indices.iterrows():
+
+            for activity in row['invalid_indices']:
+
+                start = activity[0]
+                end   = activity[1]
+
+                try:
+                    df = df.drop(index=range(start , end + 1)) # remove useless indices
+                except Exception as error:
+                    print(f"Error in removing useless traces : {error}")
+                    return None
+                
+            try:
+                row['invalid_indices'].clear()
+            except:
+                print("Removing failed!")
+                
+    return df
+
+# Clean traces with one or two verbs
+def check_invalid_names(df,week,pattern,df_indices): 
+
+    if (df_indices['invalid_indices'].apply(lambda x: len(x) == 0)).all():
+        print("There is no useless trace, if there are still invalid names, check them one by one!")
+        return df
+
+    else:
+        print('There are invalid traces, start to remove them...')
+
+    df = remove_invalid_traces(df,df_indices)
+
+    if df is not None:
+        print('Invalid traces are removed successfuly!')
+
+        # check if there is still any invalid names 
+        subset = df[(df['seance'] == week) & (df['filename_infere'] != '')]
+        total_invalid_names = (~ subset['filename_infere'].str.contains(pattern, na = False)).sum()
+        
+        if total_invalid_names == 0:
+            print('There is no more invalid names, YAY!')
+            return df
+
+        else:
+            print("There are still invalid names, something is wrong...")
+    
+    else:
+        print("Dataframe is None!")
