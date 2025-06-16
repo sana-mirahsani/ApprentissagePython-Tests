@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.17.1
+#       jupytext_version: 1.17.0
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: venv_jupyter
 #     language: python
-#     name: python3
+#     name: venv_jupyter
 # ---
 
 # # Preparation Workflow Overview:
@@ -51,6 +51,9 @@ df.head()
 # ## Create a copy of dataframe to compare later
 
 df_clean = df.copy()
+
+df_clean.columns
+
 
 # ## Clean DataFrame
 
@@ -231,9 +234,13 @@ print("Cleaning actor successful!") if len(incorrect_actor) == 0 and len(incorre
 
 # #### Save new dataframe
 
+type(df_clean)
+
 io_utils.write_csv(df_clean,INTERIM_DATA_DIR)
 
 # ### Read clean dataframe
+
+df_clean
 
 df_clean = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='acteur_nettoyage_2425.csv')
 
@@ -556,7 +563,7 @@ for tp_name in FILES_BY_TP:
     file_name = '|'.join(tp_name)
     pattern = pattern +  file_name + '|'
 
-pattern = pattern  +'TP_manipulation'
+pattern = pattern  + 'Irrelevant'
 
 # Create the global variables
 week = None
@@ -612,7 +619,7 @@ def find_filename_by_sandwich(df_index,df):
 
             # check if all the values in filename_infere are empty
             if (subset_df['filename_infere'] == '').all():
-                df.loc[subset_df.index, 'filename_infere'] = 'TP_manipulation'
+                df.loc[subset_df.index, 'filename_infere'] = 'Irrelevant'
             
             else:
                 try:
@@ -634,7 +641,9 @@ def find_filename_by_sandwich(df_index,df):
 
 data_testing.test_filename_infere_total(df_clean,pattern)
 
+# + [markdown] jp-MarkdownHeadingCollapsed=true
 # #### 2.2 **DF[seance] == semaine_2**
+# -
 
 week = 'semaine_2'
 
@@ -643,6 +652,8 @@ data_testing.test_filename_infere_each_week(week,df_clean,pattern)
 list_students_semaine = df_clean[df_clean['seance'] == week]['actor'].unique().tolist()
 
 df_indices = data_cleaning.creat_df_indices(list_students_semaine,df_clean,week)
+
+df_indices
 
 data_testing.get_number_of_empty_filename_for_week(week,df_clean)
 
@@ -684,6 +695,10 @@ df_clean = data_cleaning.check_invalid_names(df_clean,week,pattern,df_indices)
 
 data_testing.test_filename_infere_each_week(week,df_clean,pattern)
 
+list_index = df_clean[(df_clean['seance'] == week) & (df_clean['filename_infere'] == '')].index.to_list()
+
+list_index
+
 subset_empty_strings = df_clean[(df_clean['seance'] == week) & (df_clean['filename_infere'] == '') & (df_clean['verb'] != 'Docstring.Generate')]
 
 df_indices_new = data_cleaning.creat_df_indices(list_students_semaine,subset_empty_strings,week)
@@ -691,6 +706,8 @@ df_indices_new = data_cleaning.creat_df_indices(list_students_semaine,subset_emp
 find_filename_by_sandwich(df_indices_new,df_clean)
 
 data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+df_clean[(df_clean['seance'] == week) & (df_clean['filename_infere'] == '') & (df_clean['verb'] != 'Session.Start') & (df_clean['verb'] != 'Session.End') & (df_clean['verb'] != 'Docstring.Generate')][['verb','F_codeState','P_codeState','commandRan']]
 
 # #### 2.4 **DF[seance] == semaine_4**
 

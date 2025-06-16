@@ -527,12 +527,13 @@ def sandwich(subset,df):
     
     empty_filename_indices = []
 
-    to_fill_indices = subset.loc[
+    """to_fill_indices = subset.loc[
             (subset.index < last_filename_infere_index) & 
             (subset['filename_infere'] == '')
         ].index
 
     df.loc[to_fill_indices, 'filename_infere'] = last_filename_infere # fill values before the first value
+    """
     start_index = last_filename_infere_index # start from the first not empty value
 
     for index, row in subset.loc[start_index:].iterrows():
@@ -541,16 +542,19 @@ def sandwich(subset,df):
             empty_filename_indices.append(index)
 
         elif row['filename_infere'] != '':
+            
+            if row['filename_infere'] == last_filename_infere:
+                
+                df.loc[empty_filename_indices, 'filename_infere'] = last_filename_infere # Fill all empty string
+                empty_filename_indices = [] # Reset the empty indices
 
-            df.loc[empty_filename_indices, 'filename_infere'] = last_filename_infere # Fill all empty string
-            empty_filename_indices = [] # Reset the empty indices
-
-            if row['filename_infere'] != last_filename_infere:
+            else:
                 last_filename_infere = row['filename_infere']
+                empty_filename_indices = [] # Reset the empty indices
 
     # if the rest of the values are empty after the first filename_infere
-    if empty_filename_indices:
-        df.loc[empty_filename_indices, 'filename_infere'] = last_filename_infere
+    #if empty_filename_indices:
+        #df.loc[empty_filename_indices, 'filename_infere'] = last_filename_infere
 
 # Creat indices of each Session.Start and Session.End
 def creat_df_indices(list_students,df,week):
