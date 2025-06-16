@@ -32,7 +32,7 @@ sys.path.append('../') # these two lines allow the notebook to find the path to 
 import pandas as pd
 import re
 import numpy as np
-from utils_module import io_utils, data_cleaning, data_anonymization, data_testing
+import io_utils, data_cleaning, data_anonymization, data_testing
 #from tests import test_preprocessing, test_anonymization
 from src.data.constants import INTERIM_DATA_DIR
 from src.data.variable_constant import SORTED_SEANCE, TP_NAME, FILES_BY_TP, FUNCTIONS_TP2 , all_TP_functions_name 
@@ -51,9 +51,6 @@ df.head()
 # ## Create a copy of dataframe to compare later
 
 df_clean = df.copy()
-
-df_clean.columns
-
 
 # ## Clean DataFrame
 
@@ -234,13 +231,9 @@ print("Cleaning actor successful!") if len(incorrect_actor) == 0 and len(incorre
 
 # #### Save new dataframe
 
-type(df_clean)
-
 io_utils.write_csv(df_clean,INTERIM_DATA_DIR)
 
 # ### Read clean dataframe
-
-df_clean
 
 df_clean = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='acteur_nettoyage_2425.csv')
 
@@ -563,8 +556,26 @@ for tp_name in FILES_BY_TP:
     file_name = '|'.join(tp_name)
     pattern = pattern +  file_name + '|'
 
-pattern = pattern  + 'Irrelevant'
+pattern = pattern  +'TP_manipulation'
 
+# Create the global variables
+week = None
+list_students_semaine = None
+df_indices = None
+subset_empty_strings = None
+df_indices_new = None
+
+# Reset global variables in each week
+def reset_variables():
+
+    global week, list_students_semaine, df_indices, subset_empty_strings, df_indices_new
+
+    week = None
+    list_students_semaine = None
+    df_indices = None
+    subset_empty_strings = None
+    df_indices_new = None
+    
 # Validate all filenames for each activiy
 def validate_process_of_filename(df_index,df,pattern):
 
@@ -601,7 +612,7 @@ def find_filename_by_sandwich(df_index,df):
 
             # check if all the values in filename_infere are empty
             if (subset_df['filename_infere'] == '').all():
-                df.loc[subset_df.index, 'filename_infere'] = 'Irrelevant'
+                df.loc[subset_df.index, 'filename_infere'] = 'TP_manipulation'
             
             else:
                 try:
@@ -619,161 +630,284 @@ def find_filename_by_sandwich(df_index,df):
 
 # -
 
-def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
-
-    print(f"------------------ Start process in : {week} ------------------")
-
-    # Test total for the current semaine
-    data_testing.test_filename_infere_each_week(week,df,pattern)
-    print('----------------------------------------')
-
-    # create the list of students of the current week
-    try:
-        print('creating list of students...')
-        list_students_semaine = df[df['seance'] == week]['actor'].unique().tolist()
-        print('process ok!')
-    except Exception as error:
-        print(f"Error!! {error}")
-
-    # create the dataframe of all sessions for each students in the current week
-    try:
-        print('creating df_indices...')
-        df_indices = data_cleaning.creat_df_indices(list_students_semaine,df,week)
-        print('process ok!')
-    except Exception as error:
-        print(f"Error!! {error}")
-
-    # save too_short_sessions in another dataframe before removing them
-    try:
-        print('saving too_short_sessions...')
-        io_utils.write_too_short_indices_to_csv(df_indices,INTERIM_DATA_DIR, week, filename='too_short_sessions')
-        print('process ok!')
-    except Exception as error:
-        print(f"Error!! {error}")
-
-    # test the total empty strings in the current week for each verb
-    try:
-        print('Get total number of empty strings...')
-        data_testing.get_number_of_empty_filename_for_week(week,df)
-    except Exception as error:
-        print(f"Error!! {error}")
-
-    # phase 1 :process of checking or filling the correct name in filename_infere
-    try:
-        print('Start validate process of filename...')
-        validate_process_of_filename(df_indices,df,pattern)
-    except Exception as error:
-        print(f"Error!! {error}")
-
-    # Test total for the current semaine
-    data_testing.test_filename_infere_each_week(week,df,pattern)
-    print('----------------------------------------')
-
-    # check if there too_short_indices, then remove them
-    try:
-        print('Start removing too_short_indices (if they exist!)...')
-        df = data_cleaning.check_invalid_names(df,df_indices)
-    except Exception as error:
-        print(f"Error!! {error}")
-
-    # test if there is any incorrect name even after removing too_short_indices
-    try:
-        print('Test incorrect names again:')
-        data_testing.test_incorrect_names(df, week, pattern)
-    except Exception as error:
-        print(f"Error!! {error}")
-
-    # Test total for the current semaine
-    data_testing.test_filename_infere_each_week(week,df,pattern)
-    print('----------------------------------------')
-
-    # creating new dataframe of only traces with filename_infere = ''
-    try:
-        print('creating new dataframe of empty filename_infere...')
-        subset_empty_strings = df[(df['seance'] == week) & (df['filename_infere'] == '') & (df['verb'] != 'Docstring.Generate')] 
-        print('process ok!')
-    except Exception as error:
-        print(f"Error!! {error}")
-
-    # create the dataframe of all sessions for each students in the current week
-    try:
-        print('creating df_indices_new...')
-        df_indices_new = data_cleaning.creat_df_indices(list_students_semaine,subset_empty_strings,week)
-        print('process ok!')
-    except Exception as error:
-        print(f"Error!! {error}")
-    
-    # phase 2: filling empty filename_infere by sandwich method
-    try:
-        print('start sandwich method...')
-        find_filename_by_sandwich(df_indices_new,df)
-    except Exception as error:
-        print(f"Error!! {error}")
-
-    # Test total for the current semaine
-    data_testing.test_filename_infere_each_week(week,df,pattern)
-    print('---------------Finish!------------------')
-
-    # Find the empty string that have no solution 
-    excluded_verbs = ['Session.Start', 'Session.End', 'Docstring.Generate']
-
-    # Filter conditions
-    mask = (
-        (df['seance'] == week) &
-        (df['filename_infere'] == '') &
-        (~df['verb'].isin(excluded_verbs))
-    )
-    
-    # Apply filter and select columns
-    df_empty_string = df[mask] 
-
-    print(f'The total number of empty string with no solution : {len(df_empty_string)}')
-
-    return df, df_empty_string
-
-
-
 # #### Test all traces before
 
 data_testing.test_filename_infere_total(df_clean,pattern)
 
-# + [markdown] jp-MarkdownHeadingCollapsed=true
 # #### 2.2 **DF[seance] == semaine_2**
-# -
 
-df_clean, df_empty_string_semaine_2 = main_process('semaine_2',df_clean,pattern)
+week = 'semaine_2'
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+list_students_semaine = df_clean[df_clean['seance'] == week]['actor'].unique().tolist()
+
+df_indices = data_cleaning.creat_df_indices(list_students_semaine,df_clean,week)
+
+data_testing.get_number_of_empty_filename_for_week(week,df_clean)
+
+validate_process_of_filename(df_indices,df_clean,pattern)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+df_clean = data_cleaning.check_invalid_names(df_clean,week,pattern,df_indices)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+subset_empty_strings = df_clean[(df_clean['seance'] == week) & (df_clean['filename_infere'] == '') & (df_clean['verb'] != 'Docstring.Generate')]
+
+df_indices_new = data_cleaning.creat_df_indices(list_students_semaine,subset_empty_strings,week)
+
+find_filename_by_sandwich(df_indices_new,df_clean)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
 
 # #### 2.3 **DF[seance] == semaine_3**
 
-df_clean, df_empty_string_semaine_3 = main_process('semaine_3',df_clean,pattern)
+reset_variables() # reset all global variables for the next week
+
+week = 'semaine_3'
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+list_students_semaine = df_clean[df_clean['seance'] == week]['actor'].unique().tolist()
+
+df_indices = data_cleaning.creat_df_indices(list_students_semaine,df_clean,week)
+
+data_testing.get_number_of_empty_filename_for_week(week,df_clean)
+
+validate_process_of_filename(df_indices,df_clean,pattern)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+df_clean = data_cleaning.check_invalid_names(df_clean,week,pattern,df_indices)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+subset_empty_strings = df_clean[(df_clean['seance'] == week) & (df_clean['filename_infere'] == '') & (df_clean['verb'] != 'Docstring.Generate')]
+
+df_indices_new = data_cleaning.creat_df_indices(list_students_semaine,subset_empty_strings,week)
+
+find_filename_by_sandwich(df_indices_new,df_clean)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
 
 # #### 2.4 **DF[seance] == semaine_4**
 
-df_clean, df_empty_string_semaine_4 = main_process('semaine_4',df_clean,pattern)
+reset_variables() # reset all global variables for the next week
+
+week = 'semaine_4'
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+list_students_semaine = df_clean[df_clean['seance'] == week]['actor'].unique().tolist()
+
+df_indices = data_cleaning.creat_df_indices(list_students_semaine,df_clean,week)
+
+data_testing.get_number_of_empty_filename_for_week(week,df_clean)
+
+validate_process_of_filename(df_indices,df_clean,pattern)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+df_clean = data_cleaning.check_invalid_names(df_clean,week,pattern,df_indices)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+subset_empty_strings = df_clean[(df_clean['seance'] == week) & (df_clean['filename_infere'] == '') & (df_clean['verb'] != 'Docstring.Generate')]
+
+df_indices_new = data_cleaning.creat_df_indices(list_students_semaine,subset_empty_strings,week)
+
+find_filename_by_sandwich(df_indices_new,df_clean)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
 
 # #### 2.5 **DF[seance] == semaine_5**
 
-df_clean, df_empty_string_semaine_5 = main_process('semaine_5',df_clean,pattern)
+reset_variables() # reset all global variables for the next week
+
+week = 'semaine_5'
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+list_students_semaine = df_clean[df_clean['seance'] == week]['actor'].unique().tolist()
+
+df_indices = data_cleaning.creat_df_indices(list_students_semaine,df_clean,week)
+
+data_testing.get_number_of_empty_filename_for_week(week,df_clean)
+
+validate_process_of_filename(df_indices,df_clean,pattern)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+df_clean = data_cleaning.check_invalid_names(df_clean,week,pattern,df_indices)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+subset_empty_strings = df_clean[(df_clean['seance'] == week) & (df_clean['filename_infere'] == '') & (df_clean['verb'] != 'Docstring.Generate')]
+
+df_indices_new = data_cleaning.creat_df_indices(list_students_semaine,subset_empty_strings,week)
+
+find_filename_by_sandwich(df_indices_new,df_clean)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
 
 # #### 2.6 **DF[seance] == semaine_6**
 
-df_clean, df_empty_string_semaine_6 = main_process('semaine_6',df_clean,pattern)
+# +
+# test: before and after functions validate and sandwich
+# df_clean.loc[302137], df_clean.loc[2283], df_clean.loc[173]
+#subset = df_clean[(df_clean['seance'] == week) & (df_clean['filename_infere'] != '')]
+# index_list = subset[~ subset['filename_infere'].str.contains(pattern, na = False)].index.tolist()
+# -
+
+reset_variables() # reset all global variables for the next week
+
+week = 'semaine_6'
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+list_students_semaine = df_clean[df_clean['seance'] == week]['actor'].unique().tolist()
+
+df_indices = data_cleaning.creat_df_indices(list_students_semaine,df_clean,week)
+
+data_testing.get_number_of_empty_filename_for_week(week,df_clean)
+
+validate_process_of_filename(df_indices,df_clean,pattern)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+df_clean = data_cleaning.check_invalid_names(df_clean,week,pattern,df_indices)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+subset_empty_strings = df_clean[(df_clean['seance'] == week) & (df_clean['filename_infere'] == '') & (df_clean['verb'] != 'Docstring.Generate')]
+
+df_indices_new = data_cleaning.creat_df_indices(list_students_semaine,subset_empty_strings,week)
+
+find_filename_by_sandwich(df_indices_new,df_clean)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
 
 # #### 2.7 **DF[seance] == semaine_7**
 
-df_clean, df_empty_string_semaine_7 = main_process('semaine_7',df_clean,pattern)
+reset_variables() # reset all global variables for the next week
+
+week = 'semaine_7'
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+list_students_semaine = df_clean[df_clean['seance'] == week]['actor'].unique().tolist()
+
+df_indices = data_cleaning.creat_df_indices(list_students_semaine,df_clean,week)
+
+data_testing.get_number_of_empty_filename_for_week(week,df_clean)
+
+validate_process_of_filename(df_indices,df_clean,pattern)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+df_clean = data_cleaning.check_invalid_names(df_clean,week,pattern,df_indices)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+subset_empty_strings = df_clean[(df_clean['seance'] == week) & (df_clean['filename_infere'] == '') & (df_clean['verb'] != 'Docstring.Generate')]
+
+df_indices_new = data_cleaning.creat_df_indices(list_students_semaine,subset_empty_strings,week)
+
+find_filename_by_sandwich(df_indices_new,df_clean)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
 
 # #### 2.8 **DF[seance] == semaine_8**
 
-df_clean, df_empty_string_semaine_8 = main_process('semaine_8',df_clean,pattern)
+reset_variables() # reset all global variables for the next week
+
+week = 'semaine_8'
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+list_students_semaine = df_clean[df_clean['seance'] == week]['actor'].unique().tolist()
+
+df_indices = data_cleaning.creat_df_indices(list_students_semaine,df_clean,week)
+
+data_testing.get_number_of_empty_filename_for_week(week,df_clean)
+
+validate_process_of_filename(df_indices,df_clean,pattern)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+df_clean = data_cleaning.check_invalid_names(df_clean,week,pattern,df_indices)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+subset_empty_strings = df_clean[(df_clean['seance'] == week) & (df_clean['filename_infere'] == '') & (df_clean['verb'] != 'Docstring.Generate')]
+
+df_indices_new = data_cleaning.creat_df_indices(list_students_semaine,subset_empty_strings,week)
+
+find_filename_by_sandwich(df_indices_new,df_clean)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
 
 # #### 2.9 **DF[seance] == semaine_9**
 
-df_clean, df_empty_string_semaine_9 = main_process('semaine_9',df_clean,pattern)
+reset_variables() # reset all global variables for the next week
+
+week = 'semaine_9'
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+list_students_semaine = df_clean[df_clean['seance'] == week]['actor'].unique().tolist()
+
+df_indices = data_cleaning.creat_df_indices(list_students_semaine,df_clean,week)
+
+data_testing.get_number_of_empty_filename_for_week(week,df_clean)
+
+validate_process_of_filename(df_indices,df_clean,pattern)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+df_clean = data_cleaning.check_invalid_names(df_clean,week,pattern,df_indices)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+subset_empty_strings = df_clean[(df_clean['seance'] == week) & (df_clean['filename_infere'] == '') & (df_clean['verb'] != 'Docstring.Generate')]
+
+df_indices_new = data_cleaning.creat_df_indices(list_students_semaine,subset_empty_strings,week)
+
+find_filename_by_sandwich(df_indices_new,df_clean)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
 
 # #### 2.10 **DF[seance] == semaine_10**
 
-df_clean, df_empty_string_semaine_10 = main_process('semaine_10',df_clean,pattern)
+reset_variables() # reset all global variables for the next week
+
+week = 'semaine_10'
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+list_students_semaine = df_clean[df_clean['seance'] == week]['actor'].unique().tolist()
+
+df_indices = data_cleaning.creat_df_indices(list_students_semaine,df_clean,week)
+
+data_testing.get_number_of_empty_filename_for_week(week,df_clean)
+
+validate_process_of_filename(df_indices,df_clean,pattern)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+df_clean = data_cleaning.check_invalid_names(df_clean,week,pattern,df_indices)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
+
+subset_empty_strings = df_clean[(df_clean['seance'] == week) & (df_clean['filename_infere'] == '') & (df_clean['verb'] != 'Docstring.Generate')]
+
+df_indices_new = data_cleaning.creat_df_indices(list_students_semaine,subset_empty_strings,week)
+
+find_filename_by_sandwich(df_indices_new,df_clean)
+
+data_testing.test_filename_infere_each_week(week,df_clean,pattern)
 
 # #### 2.11 **DF[seance] == semaine_GAME**
 
@@ -828,22 +962,24 @@ df_clean.columns
 #df[['actor', 'binom']] = df.apply(data_anonymization.anonymize_actor)
 # -
 
-# # TODO
-#
-# - See how the similarity gonna work: Done
-# - save the invalid indices in another csv before removing them : Done
-# - change the name invalid indices to 'too_short_session' (the name of the column in df_indices) : Done
-# - Put all codes in one function , and delete the global variables : DONE!
+# - See how the similarity gonna work
+# - save the invalid indices in another csv before removing them
+# - change the name invalid indices to 'too_short_session' (the name of the column in df_indices)
 # - explain how we trompe in sandwich, there are parts on s peut tromper
 # - explain why there are less traces after invalid names check, because we remove the traces which were too shprt
 # - epxlain when there are student 'No trqces zith this student' after validate_process and invalid remove, these students they didn't work at all or they used the correct name of filenames or she didn't use the Run.Command at all!
 # - put the prepration.ipynb to different preparation_actor, preparation_filename
-# - work on TP_Game
+# # TODO
+#
+# - First look at the functions name from the variable_constatnt.py and check if they exist in the P_codeState or commandRan
+#
 # - Second add column TP next to the column semaine (TP1, TP2, TP3 ...) Change
 # - Third add column next to TP column 'Type_TP' with two values : 1-TP_programmation 2-TP_manipulation (activite_range.py is manipulation)
 # - Forth add column filename_infere next to the filename DONE!
-#
+# - change function names : extract_filename to extract_short_filename DONE!
 # <br>
+#
+# - Add the number total of matching marie is equal to the total occurance of two jokers: Done!
 # - add column TP after add column filename_infere, to find which student worked on what TP
 # - add interepareation for Run.program that there are Editor content and add the test for P_codeState: Done!
 # - change the name of TP to notion , there is possiblity that in the semaine_3 there student that worked on notion or TP 2 should check by the name of the filename_infere
@@ -862,6 +998,7 @@ df_clean.columns
 # - Leave the part after the print on Etude_sur_les_testes.py
 # - See cleaning.keep_research_data_only in notebooks/Init_data.py
 #
+# - For Docstring.Generate what should I do? take values from function column?
 # ## others:
 # - Analyze.ipynb
 # - add why there are empty filename after commandRan for Run.Program
@@ -877,5 +1014,9 @@ df_clean.columns
 # ## Analyze.ipynb
 # - analyze by TP, and by students
 #
+# ## Three main thing for stage
+# - How to check if the student did the Test and continue the Test
+# - When the Test is red what did they do, did they continue or they did nothing
+# - Seperate the student that are very debutan and the student that already did some courses in programmation
 
 #

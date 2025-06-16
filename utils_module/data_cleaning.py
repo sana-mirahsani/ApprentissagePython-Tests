@@ -402,7 +402,7 @@ def find_filename_by_function_name(TP_files,codestate):
     return '' # no match found!
 
 # Find the correct filename by checking the similarity
-def find_similarity(TP_Files_name,filename_infere):
+def find_similarity(TP_Files_name,filename_infere): # The explaination of how does SequenceMatcher work, is in the Readme part '## Explainations'
 
     for correct_name in TP_Files_name:
 
@@ -560,25 +560,25 @@ def sandwich(subset,df):
 def creat_df_indices(list_students,df,week):
 
     # creat df_indices 
-    df_indices = pd.DataFrame(columns=['name_students', 'indices'])
+    df_indices = pd.DataFrame(columns=['name_students', 'indices', 'too_short_indices'])
 
     # Fill df_indices for each student in a week
     for student in list_students: # it takes 15 second maximum, it's normal
-        indices, invalid_indices = cut_df(df,week,student)
+        indices, too_short_indices = cut_df(df,week,student)
 
         df_indices = pd.concat([
             df_indices,
-            pd.DataFrame({'name_students': [student], 'indices': [indices], 'invalid_indices': [invalid_indices]})
+            pd.DataFrame({'name_students': [student], 'indices': [indices], 'too_short_indices': [too_short_indices]})
         ], ignore_index=True)
 
     return df_indices
 
 # Remove indices which has only one or two traces
-def remove_invalid_traces(df,df_indices):
+def remove_too_short_traces(df,df_indices):
     
     for index, row in df_indices.iterrows():
 
-            for activity in row['invalid_indices']:
+            for activity in row['too_short_indices']:
 
                 start = activity[0]
                 end   = activity[1]
@@ -590,37 +590,28 @@ def remove_invalid_traces(df,df_indices):
                     return None
                 
             try:
-                row['invalid_indices'].clear()
+                row['too_short_indices'].clear()
             except:
                 print("Removing failed!")
                 
     return df
 
 # Clean traces with one or two verbs
-def check_invalid_names(df,week,pattern,df_indices): 
+def check_invalid_names(df,df_indices): 
 
-    if (df_indices['invalid_indices'].apply(lambda x: len(x) == 0)).all():
-        print("There is no useless trace, if there are still invalid names, check them one by one!")
+    # if in the test there are still incorrect filename_infere and there not deleted
+    if (df_indices['too_short_indices'].apply(lambda x: len(x) == 0)).all():
+        print("There is no too short trace, if there are still invalid names, check them one by one!")
         return df
 
     else:
         print('There are invalid traces, start to remove them...')
 
-    df = remove_invalid_traces(df,df_indices)
+    df = remove_too_short_traces(df,df_indices)
 
     if df is not None:
-        print('Invalid traces are removed successfuly!')
-
-        # check if there is still any invalid names 
-        subset = df[(df['seance'] == week) & (df['filename_infere'] != '')]
-        total_invalid_names = (~ subset['filename_infere'].str.contains(pattern, na = False)).sum()
-        
-        if total_invalid_names == 0:
-            print('There is no more invalid names, YAY!')
-            return df
-
-        else:
-            print("There are still invalid names, something is wrong...")
+        print('Too short indices are removed successfuly!')
+        return df
     
     else:
         print("Dataframe is None!")

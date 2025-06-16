@@ -41,18 +41,20 @@ def reading_dataframe(dir : str, file_name : str) -> pd.DataFrame:
 
     
 # Write the new dataframe into CSV file
-def write_csv(df : pd.DataFrame, dir: str) -> None:
+def write_csv(df : pd.DataFrame, dir: str, file_name: None) -> None:
     """
     Write the dataframe into csv file.
     
     Args:
-        df: Any dataframe.
+        df  : Any dataframe.
         dir : Directory to save the csv file
-    
+        file_name : if there is already a filename to save the file 
     Returns:
         CSV file.
     """
-    file_name = str(input("Enter the name of csv : \n"))
+    # If I hadn't give any name 
+    if file_name is None:
+        file_name = str(input("Enter the name of csv (WITHOUT .csv) : \n"))
 
     # Check if the file exists in the directory
     if os.path.isdir(dir):
@@ -60,7 +62,7 @@ def write_csv(df : pd.DataFrame, dir: str) -> None:
 
         # convert to csv
         try:
-            df.to_csv(dir+file_name+".csv")
+            df.to_csv(dir + file_name + ".csv", index=False)
             print("File saved.")
             
         except Exception as error:
@@ -71,3 +73,27 @@ def write_csv(df : pd.DataFrame, dir: str) -> None:
 
     return None
     
+def write_too_short_indices_to_csv(df : pd.DataFrame, dir: str, week : str, filename:str) -> None:
+    """
+    Write the dataframe into csv file.
+    
+    Args:
+        df: Any dataframe BUT with specific columns.
+        dir : Directory to save the csv file.
+        columns_to_keep : List of columns to keep them.
+
+    Returns:
+        CSV file.
+    """
+
+    # add column semaine
+    df['seance'] = week
+
+    # remove the rows without any too_short_sessions
+    filtered_df = df[df['too_short_indices'].apply(lambda x: x != [])]
+
+    # save them into a csv file
+    try:
+        write_csv(filtered_df[['name_students','too_short_indices']],dir,filename)
+    except:
+        print('There is an error in saving too_short_sessions in csv!')

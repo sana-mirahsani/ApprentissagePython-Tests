@@ -52,3 +52,19 @@ def get_number_of_empty_filename_for_week(week,df):
     for verb in verbs:
         total = ((df['verb'] == verb) & (df['filename_infere'] == '')  & (df['seance'] == week)).sum()
         print(f"Total number of emptystring for {verb} : {total}")
+
+# Test if there are still incorrect filename_infere after removing the too short traces
+def test_incorrect_names(df, week, pattern):
+
+    # check if there is still any invalid names 
+    subset = df[(df['seance'] == week) & (df['filename_infere'] != '')]
+    total_invalid_names = (~ subset['filename_infere'].str.contains(pattern, na = False)).sum()
+    
+    if total_invalid_names == 0:
+        print('There is no more invalid names, YAY!')
+        return df
+
+    else:
+        print("There are still invalid names, something is wrong...")
+    
+    

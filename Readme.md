@@ -1,45 +1,74 @@
-# What is New src folder 
-To optimize the code of Thomas, it should replace the for loop by the pandas operations which makes it much faster. I copied all the file one by one and make them more efficient, the whole concept and logic are the same.
+## 📁 Project Structure
 
-# What is this project about
-Analyze L1 (first-year) students learning Python using the Thonny editor (with a custom plugin tracking their actions).
+```
+project-root/
+├── data/ 
+│   ├── interim/ 
+│      ├── traces250102_clean.csv       
+│      ├── acteurs_corriges_2425.csv    # cleaned column 'actor' and 'binome' of traces250102_clean.csv
+│      ├── phase1_nettoyage_fichiere.csv # cleaned column 'filename_infere' phase 1
+│      ├── phase2_nettoyage_fichiere.csv # cleaned column 'filename_infere' phase 2
+│
+├── notebooks/             # Jupyter notebooks
+│   ├── 1.Preparation.py   # Cleaning data
+│   ├── 2.Analyze.ipynb    # Analyzing data          
+│   
+├── src/                     # Thomas's code (they can get removed, except constants.py and variable_constant.py)
+│   ├── data/                # Data loading/cleaning functions
+│   │    ├── anonymizing.py
+│   │    ├── cleaning.py
+│   │    ├── constants.py
+│   │    ├── variable_constant.py
+│   │    
+│   ├── features/            # Feature engineering
+│       ├── utils.py   
+│      
+│
+├── utils_module/              # Python modules
+│   ├── data_anonymization.py  # Functions to anonymize
+│   ├── data_cleaning.py       # Functions to cleaning actors or filename_infere
+│   ├── data_testing.py        # Functions to test the result
+│   ├── io_utils.py            # Functions to read and write csv files 
+│
+│        
+└── README.md                # Project documentation
+```
 
-- Data: Traces (xAPI format) capture programming behaviors (e.g., running tests, editing code, console interactions) and metadata (timestamps, student pairs, session IDs).
-
-- Verbe : The name of each trace (we put a label for each action of trace, so it is easier to classify them)
-
-## Focus:
-
-- Understand how students use tools like L1test (unit testing plugin).
-
-- Compare beginners vs. students with prior Python experience (e.g., from high school NSI courses).
-
-- Correlate testing practices with code quality/academic results.
-
-- Define behavioral profiles (e.g., "novice" vs. "experienced") and track their evolution.
-
-- Methods: Use pandas for analysis, create visualizations (e.g., timelines of actions), and derive metrics to improve teaching.
-
-# How does it work
-# What are the mistakes
-# what are the parts that need to imrpove
-
-# my questions
-- Should I write my code in script with the format .py or .ipynb
-- Why can't we write the codes in .ipynb ? if you know
-- the main data that we work, is in the file named tp? we want to analyze the data of each TP, am I right?
-- should I start from the part "Piste d'amélioration" ? to better understand what should I do as the first step? remove the for loop? because I understood the general code somehow with the document in the Read.me file that Thomas wrote it, and I saw this part : Piste d'amélioration which has the For llop too
-
-
-# To Do
-- Start from the anynomizing the data, seperate the data that students didn't want to share their data from the students they who want to share their data.
-
-- When the data is seperated; start with the nettoyage_fichier_2425 which Thomas worked on it but it uses For, so it takes lot's of time; replace the for by dataframe and pandas (make the code better). 
-
-- One the two files above are done, try the visualisation part for the clean data, from the previous proccess.
-
-**The whole idea until now is working on the same code of Thomas just make it better (remove the for) and more understandable**
-
-
+## The command for syncronation
 jupytext --sync *.ipynb
+jupytext --to notebook 1.Preparation.py
+
+
+## Three main thing for stage
+- How to check if the student did the Test and continue the Test
+- When the Test is red what did they do, did they continue or they did nothing
+- Seperate the student that are very debutan and the student that already did some courses in programmation
+
+## Explainations:
+
+- How does the similarity work in utils_module/data_cleaning.py : find_similarity()
+    
+    1. Find Longest Match:
+
+        Identify the longest contiguous matching subsequence between the two input strings.
+        This match must be in the same order in both strings, but not necessarily at the same position.
+
+    2. Split and Recurse:
+
+        After finding a match, split both strings into three parts:The part before the match, The match itself, The part after the match
+        Repeat the process recursively on the "before" and "after" parts to find more matching subsequences.
+
+    3. Collect Matches:
+
+        All matching blocks are collected in a list of Match(a, b, size) tuples, indicating matching substrings starting at index a in the first string and b in the second string, with a given length size. These blocks are non-overlapping and ordered.
+
+    4. Compute Similarity Ratio:
+
+        The final similarity score is calculated with the formula:
+        similarity ratio = 2 * (total matching characters) / length of string A + length of string B
+
+​
+ 
+
+
 
