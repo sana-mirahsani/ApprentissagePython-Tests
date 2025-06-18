@@ -190,6 +190,9 @@ df_analyze_students_semaine2 = data_cleaning.fill_values_of_binome_with_zero_tra
 # - change seance by TP
 # - change the nale x variable                                   
 #
+# - semaine_5: there are two sessions, but only one sessions they weere working, because the second session was contrl TP and the internet was cut
+# - add the part to see how many filename_infere are empty in each semaine
+# - Ignore the part of **utilisation print**
 
 # %% [markdown]
 # +

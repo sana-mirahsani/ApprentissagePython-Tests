@@ -35,7 +35,7 @@ import numpy as np
 from utils_module import io_utils, data_cleaning, data_anonymization, data_testing
 #from tests import test_preprocessing, test_anonymization
 from src.data.constants import INTERIM_DATA_DIR
-from src.data.variable_constant import SORTED_SEANCE, TP_NAME, FILES_BY_TP, FUNCTIONS_TP2 , all_TP_functions_name 
+from src.data.variable_constant_2425 import SORTED_SEANCE, TP_NAME, FILES_BY_TP, FUNCTIONS_TP2 , all_TP_functions_name 
 
 
 # ## Load DataFrame
@@ -236,7 +236,7 @@ print("Cleaning actor successful!") if len(incorrect_actor) == 0 and len(incorre
 
 type(df_clean)
 
-io_utils.write_csv(df_clean,INTERIM_DATA_DIR)
+io_utils.write_csv(df_clean,INTERIM_DATA_DIR,None)
 
 # ### Read clean dataframe
 
@@ -469,6 +469,9 @@ print(f"Total rows of commandRan starts with %NiceDebug in Run.Command : {total_
 print(f"Total rows of commandRan starts with %FastDebug in Run.Command : {total_commandRan_start_FastDebug}")
 # -
 
+# # TODO 2 
+# add checking content of commandRan like validate process to find the name of TP correcponding (only for Run.command)
+
 # **Interpretation** Only 70 values starts wtih %FastDebug, so we can fill only 70 values of filename_infere
 
 # +
@@ -546,7 +549,7 @@ df_clean[df_clean['verb'] == 'Docstring.Generate']['function']
 
 # ### Save new clean dataframe
 
-io_utils.write_csv(df_clean,INTERIM_DATA_DIR)
+io_utils.write_csv(df_clean,INTERIM_DATA_DIR,None)
 
 # #### 2. Phase two : Validate 'filename_infere' values for each week
 
@@ -619,6 +622,7 @@ def find_filename_by_sandwich(df_index,df):
 
 # -
 
+# main process
 def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
 
     print(f"------------------ Start process in : {week} ------------------")
@@ -638,7 +642,7 @@ def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
     # create the dataframe of all sessions for each students in the current week
     try:
         print('creating df_indices...')
-        df_indices = data_cleaning.creat_df_indices(list_students_semaine,df,week)
+        df_indices = data_cleaning.create_df_indices(list_students_semaine,df,week)
         print('process ok!')
     except Exception as error:
         print(f"Error!! {error}")
@@ -647,7 +651,6 @@ def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
     try:
         print('saving too_short_sessions...')
         io_utils.write_too_short_indices_to_csv(df_indices,INTERIM_DATA_DIR, week, filename='too_short_sessions')
-        print('process ok!')
     except Exception as error:
         print(f"Error!! {error}")
 
@@ -698,7 +701,7 @@ def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
     # create the dataframe of all sessions for each students in the current week
     try:
         print('creating df_indices_new...')
-        df_indices_new = data_cleaning.creat_df_indices(list_students_semaine,subset_empty_strings,week)
+        df_indices_new = data_cleaning.create_df_indices(list_students_semaine,subset_empty_strings,week)
         print('process ok!')
     except Exception as error:
         print(f"Error!! {error}")
@@ -715,6 +718,8 @@ def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
     print('---------------Finish!------------------')
 
     # Find the empty string that have no solution 
+    print('Excluding : Sessions.Start, Sessions.End , Docstring.Generate ...')
+    
     excluded_verbs = ['Session.Start', 'Session.End', 'Docstring.Generate']
 
     # Filter conditions
@@ -726,16 +731,15 @@ def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
     
     # Apply filter and select columns
     df_empty_string = df[mask] 
-
+    
     print(f'The total number of empty string with no solution : {len(df_empty_string)}')
 
     return df, df_empty_string
 
 
-
 # #### Test all traces before
 
-data_testing.test_filename_infere_total(df_clean,pattern)
+data_testing.test_filename_infere_total(df_clean,pattern) 
 
 # + [markdown] jp-MarkdownHeadingCollapsed=true
 # #### 2.2 **DF[seance] == semaine_2**
@@ -775,7 +779,90 @@ df_clean, df_empty_string_semaine_9 = main_process('semaine_9',df_clean,pattern)
 
 df_clean, df_empty_string_semaine_10 = main_process('semaine_10',df_clean,pattern)
 
+# #### 2.11 **DF[seance] == DSi**
+
+df_clean, df_empty_string_semaine_DSi = main_process('DSi',df_clean,pattern)
+
 # #### 2.11 **DF[seance] == semaine_GAME**
+
+# seance = 'CTP'
+df_clean, df_empty_string_semaine_DSi = main_process('CTP',df_clean,pattern)
+
+# seance = 'semaine_11'
+df_clean, df_empty_string_semaine_11 = main_process('semaine_11',df_clean,pattern)
+
+# seance = 'semaine_12'
+df_clean, df_empty_string_semaine_12 = main_process('semaine_12',df_clean,pattern)
+
+# #### Final test
+
+data_testing.test_filename_infere_total(df_clean,pattern)
+
+df_clean['commandRan']
+
+df_clean.loc[6]
+
+# +
+subset = df_clean[df_clean['filename_infere'] != '']
+
+subset[~ subset['filename_infere'].str.contains(pattern, na = False)]['seance'].unique()
+# -
+
+# **Interpretation**
+#
+# Before starting Phase 1, I added a column called 'filename_infere', which was initially completely empty. In Phase 1, using the values from the 'filename', 'commandRan', and 'P_codeState' columns, I was able to fill in 213,995 entries in 'filename_infere'. Out of these, 158,437 were correct names and 55,558 were incorrect.
+# After this phase, 92,919 entries in 'filename_infere' remained empty. Among these, 53,239 were neither from semaine_1 nor contained the verbs Sessions.Start, Sessions.End, or Docstring.Generate—and we are not concerned with semaine_1 or these verbs.
+# <br>
+#
+# In Phase 2, I performed checks and filled 'filename_infere' values for each semaine. As a result, a total of 261,808 entries were filled, of which 258,822 were correct and 2,986 were incorrect. However, all incorrect names were from semaine_1, which is expected. The function validate_process replaces incorrect names with empty strings, so it is normal that the only remaining incorrect names are from semaine_1, since I did not validate them. 
+# <br>
+#
+# After both phases, 43,043 'filename_infere' entries are still empty. Among these, 19,867 correspond to traces that either do not include the specified verbs (Sessions.Start, Sessions.End, Docstring.Generate) or belong to semaine_1.
+# <br>
+#
+# Overall, having only 19,867 unresolved entries out of 304,851 total, and successfully inferring 258,822 correct filenames, is a strong result.
+
+# **Explanation**
+#
+# - **Why do I see 'No trace with this name in semaine: anaba.hilary-williams.etu'?**
+#
+#     It depends on where you're seeing this message. This line is printed by the function cut_df, which is defined in data_cleaning.py and is called within the function create_df_indices. The create_df_indices function itself is called twice in the main_process() function.
+#     This message indicates that, in the current week’s dataframe, there is no trace for the student with the given name. The first time create_df_indices is called, it searches in the original dataframe. The second time, it searches in a filtered subset of the original dataframe that only contains rows with empty filename_infere.
+#     <br>
+#
+#     So, if you see this message during the first call, it's unusual — it means there is no trace at all for the student in the original dataframe, which might be a problem. But if you see it during the second call, it’s expected. It means that the student either:
+#
+#         1. Didn’t work at all that week,
+#         2. Used the correct filename (so their traces were already matched),
+#         3. Or didn’t use the Run.Command at all.
+#
+# - **How we can be wrong in sandwich function?**
+#
+#     This function fills empty filename_infere values in two cases:
+#
+#         1. When there is no filename_infere at all in a session, it labels all traces in that session as "Irrelevant".
+#         2. When some filename_infere values exist, it applies a "sandwich mechanism" — meaning that any empty values found between two identical filename_infere entries are filled with that same value.
+#     
+#     Of course, this method isn’t perfect. Some traces may be filled inaccurately. For example, even if two identical filename_infere values surround a set of empty entries, the student might have worked on something else during that time. But since we can't detect that with certainty, we assume they were working on the same file.
+#
+# - **How we can be wrong in FUNCTIONS_TP6 and FUNCTIONS_TP7?**
+#
+#     The function **miroir()** is in both TP prog semaine_6 and semaine_7, so in the validating process, if this function is written in codestate , we can't know is it for semaine_6 or semaine_7; therefore we might be wrong in naming this function.
+#
+# - **Why there are less traces after check_invalid function?**
+#
+#     This function checks if there is any too_short_traces or not, if so it removes them. too_short_traces means the traces that has zero or one verb between a Session.Start and Session.End, like 
+#     ```
+#     Session.Start 
+#     Run.Test
+#     Session.End
+#     ```
+#     
+#     These traces provide no useful information and can be safely removed from the dataframe. However, before removing them, I saved them into a CSV file named **too_short_sessions.csv** for reference. Once removed, it's expected that the total number of traces in the dataframe will decrease.
+#
+#     It's also important to note that even after running the validate_process function, some incorrect filename_infere values may still appear. This seems problematic at first because validate_process is supposed to remove all invalid names. However, if you check manually, you'll see that these invalid names belong to the too-short traces. Since validate_process doesn't handle or check those, it doesn’t correct them.
+#
+#     Therefore, once we remove the too_short_traces, the remaining dataset contains no invalid names — because all the incorrect ones were part of the traces that were excluded.
 
 # #### 3. Add column TP
 
@@ -834,14 +921,16 @@ df_clean.columns
 # - save the invalid indices in another csv before removing them : Done
 # - change the name invalid indices to 'too_short_session' (the name of the column in df_indices) : Done
 # - Put all codes in one function , and delete the global variables : DONE!
-# - explain how we trompe in sandwich, there are parts on s peut tromper
-# - explain why there are less traces after invalid names check, because we remove the traces which were too shprt
-# - epxlain when there are student 'No trqces zith this student' after validate_process and invalid remove, these students they didn't work at all or they used the correct name of filenames or she didn't use the Run.Command at all!
+# - explain how we trompe in sandwich, there are parts on s peut tromper : DONE!
+# - explain why there are less traces after invalid names check, because we remove the traces which were too short DONE!
+# - explain when there are student 'No trqces zith this student' after validate_process and invalid remove, these students they didn't work at all or they used the correct name of filenames or she didn't use the Run.Command at all! DONE!
 # - put the prepration.ipynb to different preparation_actor, preparation_filename
-# - work on TP_Game
+# - work on TP_Game : DONE!
 # - Second add column TP next to the column semaine (TP1, TP2, TP3 ...) Change
 # - Third add column next to TP column 'Type_TP' with two values : 1-TP_programmation 2-TP_manipulation (activite_range.py is manipulation)
 # - Forth add column filename_infere next to the filename DONE!
+# - see how created df of column 'test' (in Amadouho version)
+# - How write boolean for test green or red for Run.Test
 #
 # <br>
 # - add column TP after add column filename_infere, to find which student worked on what TP

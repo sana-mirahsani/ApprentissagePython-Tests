@@ -1,9 +1,12 @@
 # Get all total values for the dataframe
 def test_filename_infere_total(df,pattern):
 
-    total_trace         = len(df)
-    total_empty_string  = (df['filename_infere'] == '').sum()
-    total_nan           = df['filename_infere'].isna().sum()
+    excluded_verbs = ['Session.Start', 'Session.End', 'Docstring.Generate']
+
+    total_trace          = len(df)
+    total_empty_string   = (df['filename_infere'] == '').sum()
+    total_empty_string_2 = ((df['filename_infere'] == '') & (df['seance'] != 'semaine_1') & (~df['verb'].isin(excluded_verbs))).sum()
+    total_nan            = df['filename_infere'].isna().sum()
 
     subset = df[df['filename_infere'] != '']
 
@@ -18,6 +21,7 @@ def test_filename_infere_total(df,pattern):
 
     print(f"Total number of rows : {total_trace}")
     print(f"Total number of empty string : {total_empty_string}")
+    print(f"Total empty strings excluding semaine_1 and verbs : Sessions.Start/End/Docstring.Generate: {total_empty_string_2}")
     print(f"Total number of Nan : {total_nan}")
     print(f"Total number of correct name : {total_correct_name}")
     print(f"Total number of NOT correct name : {total_NOT_correct_name}")

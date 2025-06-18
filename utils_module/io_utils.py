@@ -21,6 +21,7 @@ def reading_dataframe(dir : str, file_name : str) -> pd.DataFrame:
     Returns:
         A dataframe.
     """
+
     # Check if the file exists in the directory
     file_path = os.path.join(dir, file_name)
 
@@ -52,6 +53,8 @@ def write_csv(df : pd.DataFrame, dir: str, file_name: None) -> None:
     Returns:
         CSV file.
     """
+    mode_input = 'w'
+
     # If I hadn't give any name 
     if file_name is None:
         file_name = str(input("Enter the name of csv (WITHOUT .csv) : \n"))
@@ -62,7 +65,7 @@ def write_csv(df : pd.DataFrame, dir: str, file_name: None) -> None:
 
         # convert to csv
         try:
-            df.to_csv(dir + file_name + ".csv", index=False)
+            df.to_csv(dir + file_name + ".csv", mode = mode_input, index=False)
             print("File saved.")
             
         except Exception as error:
@@ -75,7 +78,7 @@ def write_csv(df : pd.DataFrame, dir: str, file_name: None) -> None:
     
 def write_too_short_indices_to_csv(df : pd.DataFrame, dir: str, week : str, filename:str) -> None:
     """
-    Write the dataframe into csv file.
+    This function writes too_short_sessions into a csv file before removing them from the original dataframe.
     
     Args:
         df: Any dataframe BUT with specific columns.
@@ -88,12 +91,26 @@ def write_too_short_indices_to_csv(df : pd.DataFrame, dir: str, week : str, file
 
     # add column semaine
     df['seance'] = week
-
+    
     # remove the rows without any too_short_sessions
     filtered_df = df[df['too_short_indices'].apply(lambda x: x != [])]
+    new_df      = filtered_df[['name_students','too_short_indices']]
+
+    file = os.path.join(dir, 'too_short_sessions.csv')
+
+    # check if there is already too_short_sessions.csv, append the data
+    if os.path.isfile(file) and week != 'semaine_2': # extract the df to append the new df to it
+        
+        old_df = pd.read_csv(file, keep_default_na=False)
+        df_combined = pd.concat([old_df, new_df], ignore_index=True) # append the new df to the old df
+
+    # if there is no csv file, or rewrite the data
+    else:
+        df_combined = new_df
 
     # save them into a csv file
     try:
-        write_csv(filtered_df[['name_students','too_short_indices']],dir,filename)
+        write_csv(df_combined,dir,filename)
+
     except:
         print('There is an error in saving too_short_sessions in csv!')

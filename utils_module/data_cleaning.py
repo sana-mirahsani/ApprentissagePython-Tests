@@ -11,8 +11,8 @@ from pandas import to_datetime, to_timedelta
 import re
 import numpy 
 import difflib
-from src.data.variable_constant import SORTED_SEANCE
-from src.data.variable_constant import SORTED_SEANCE, TP_NAME, FILES_BY_TP, FUNCTIONS_TP2 , all_TP_functions_name 
+from src.data.variable_constant_2425 import SORTED_SEANCE
+from src.data.variable_constant_2425 import SORTED_SEANCE, TP_NAME, FILES_BY_TP, FUNCTIONS_TP2 , all_TP_functions_name 
 #------------------------------------------------
 #                  Functions
 #------------------------------------------------
@@ -557,7 +557,7 @@ def sandwich(subset,df):
         #df.loc[empty_filename_indices, 'filename_infere'] = last_filename_infere
 
 # Creat indices of each Session.Start and Session.End
-def creat_df_indices(list_students,df,week):
+def create_df_indices(list_students,df,week):
 
     # creat df_indices 
     df_indices = pd.DataFrame(columns=['name_students', 'indices', 'too_short_indices'])
