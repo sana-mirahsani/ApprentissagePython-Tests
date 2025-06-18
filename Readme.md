@@ -38,6 +38,7 @@ project-root/
 jupytext --sync *.ipynb
 jupytext --to notebook 1.Preparation.py
 
+jupytext --to py my_notebook.ipynb (first time)
 
 ## Three main thing for stage
 - How to check if the student did the Test and continue the Test
