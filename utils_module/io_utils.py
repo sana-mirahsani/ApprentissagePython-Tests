@@ -3,8 +3,6 @@
 #------------------------------------------------
 import pandas as pd 
 import os
-
-
 #------------------------------------------------
 #                  Functions
 #------------------------------------------------
@@ -40,7 +38,6 @@ def reading_dataframe(dir : str, file_name : str) -> pd.DataFrame:
 
     return None
 
-    
 # Write the new dataframe into CSV file
 def write_csv(df : pd.DataFrame, dir: str, file_name: None) -> None:
     """

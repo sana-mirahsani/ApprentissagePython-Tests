@@ -4,6 +4,9 @@
 # ajout Mirabelle
 # peut-être mieux ailleurs
 
+#------------------------------------------------
+#Added by SANA : Only function is used give_list_actors
+#------------------------------------------------
 from itertools import chain
 
 def extract_filename_from_commandRan_Run_Program(command: str) -> str:
@@ -16,7 +19,7 @@ def extract_filename_from_commandRan_Run_Program(command: str) -> str:
     return filename
     
 import pandas as pd
-from ..data.variable_constant import FUNCTIONS_BY_TP, FILES_BY_TP
+from ..data.variable_constant_2425 import FUNCTIONS_BY_TP, FILES_BY_TP
 
 def give_actors(actor : str) -> list[str] :
     """Returns the list composed of the 2 identifiants or the only

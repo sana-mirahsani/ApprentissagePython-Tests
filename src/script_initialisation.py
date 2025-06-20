@@ -1,3 +1,6 @@
+#------------------------------------------------
+#Added by SANA : This is Thomas's code, I didn't change it, and niether used it in of my notebooks
+#------------------------------------------------
 from data import cleaning
 from data.constants import MANIPULATION_FILES, INTERIM_DATA_DIR, PROCESSED_DATA_DIR
 #from features import tests_utils

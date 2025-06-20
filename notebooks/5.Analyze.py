@@ -30,9 +30,9 @@
 import sys
 sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
 import pandas as pd
-import io_utils
+from utils_module import io_utils
 from src.data.constants import INTERIM_DATA_DIR
-from src.data.variable_constant import SORTED_SEANCE
+from src.data.variable_constant_2425 import SORTED_SEANCE
 import matplotlib.pyplot as plt
 
 {
@@ -46,6 +46,12 @@ import matplotlib.pyplot as plt
 # ## Load DataFrame
 # - Use functions in file **io_utils.py.py**
 # - The csv file is the output of Preparation.ipynb
+
+# %%
+df_clean = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='phase2_nettoyage_fichiere.csv')
+
+# %%
+df_test = df_clean[df_clean]
 
 # %%
 df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='acteur_nettoyage_2425.csv')

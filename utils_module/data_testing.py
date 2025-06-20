@@ -1,5 +1,28 @@
+# All function for testing data 
+
+#------------------------------------------------
+#                  Library
+#------------------------------------------------
+import pandas as pd 
+import sys
+sys.path.append('../')
+#------------------------------------------------
+#                  Functions
+#------------------------------------------------
+
 # Get all total values for the dataframe
-def test_filename_infere_total(df,pattern):
+def test_filename_infere_total(df:pd.DataFrame,pattern: str) -> None:
+
+    """
+    It test the totals of filename_infere of the entire dataframe.
+
+    Args:
+        df : The original dataframe.
+        pattern : A string of filenames.
+
+    Returns:
+        None 
+    """
 
     excluded_verbs = ['Session.Start', 'Session.End', 'Docstring.Generate']
 
@@ -27,7 +50,19 @@ def test_filename_infere_total(df,pattern):
     print(f"Total number of NOT correct name : {total_NOT_correct_name}")
 
 # Get all total values for a week
-def test_filename_infere_each_week(week,df,pattern):
+def test_filename_infere_each_week(week: str,df: pd.DataFrame,pattern: str) -> None:
+
+    """
+    It test the totals of filename_infere of a specific week.
+
+    Args:
+        week : A value of the seance column.
+        df : The original dataframe.
+        pattern : A string of filenames.
+
+    Returns:
+        None 
+    """
 
     total_semaine               = (df['seance'] == week).sum()
     total_empty_string_semaine  = (df[df['seance'] == week]['filename_infere'] == '').sum()
@@ -50,7 +85,19 @@ def test_filename_infere_each_week(week,df,pattern):
     print(f"Total number of NOT correct name : {total_NOT_correct_name_semaine}")
 
 # Get total empty strings for each verb
-def get_number_of_empty_filename_for_week(week,df):
+def get_number_of_empty_filename_for_week(week: str,df : pd.DataFrame) -> None:
+    
+    """
+    Calculates the number of empty strings in filename_infere in a week.
+
+    Args:
+        week : A value of the seance column.
+        df : The original dataframe.
+
+    Returns:
+        None 
+    """
+     
     verbs = ['File.Open', 'File.Save', 'Run.Test', 'Run.Debugger', 'Run.Program','Run.Command']
 
     for verb in verbs:
@@ -58,7 +105,19 @@ def get_number_of_empty_filename_for_week(week,df):
         print(f"Total number of emptystring for {verb} : {total}")
 
 # Test if there are still incorrect filename_infere after removing the too short traces
-def test_incorrect_names(df, week, pattern):
+def test_incorrect_names(week: str, df : pd.DataFrame, pattern: str)-> None:
+
+    """
+    Test if there is any incorrect filename_infere or not after removing the too_short_session.
+
+    Args:
+        week : A value of the seance column.
+        df : The original dataframe.
+        pattern : A string of filenames.
+
+    Returns:
+        None 
+    """
 
     # check if there is still any invalid names 
     subset = df[(df['seance'] == week) & (df['filename_infere'] != '')]

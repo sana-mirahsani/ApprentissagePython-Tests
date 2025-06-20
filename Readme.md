@@ -69,7 +69,16 @@ jupytext --to py my_notebook.ipynb (first time)
         similarity ratio = 2 * (total matching characters) / length of string A + length of string B
 
 ​
- 
+
+# TODO
+
+## Old
+- see how created df of column 'test' (in Amadouho version)
+- How write boolean for test green or red for Run.Test
+- we want just Nom_TP_PPROGRAMMATION without the first week
+- Leave the part after the print on Etude_sur_les_testes.py
+- See cleaning.keep_research_data_only in notebooks/Init_data.py
+- correct the structure of project in readme
 
 
 

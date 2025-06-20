@@ -12,7 +12,7 @@ import re
 import numpy 
 import difflib
 from src.data.variable_constant_2425 import SORTED_SEANCE
-from src.data.variable_constant_2425 import SORTED_SEANCE, TP_NAME, FILES_BY_TP, FUNCTIONS_TP2 , all_TP_functions_name 
+from src.data.variable_constant_2425 import SORTED_SEANCE, all_TP_functions_name 
 #------------------------------------------------
 #                  Functions
 #------------------------------------------------
@@ -47,7 +47,6 @@ def clean_time(df: pd.DataFrame) -> pd.DataFrame:
     # 3. Reset the index
     df.reset_index(drop=True, inplace=True)
     return df
-
 
 # ---------------- Actor cleaning -------------
 # Find not matching values
@@ -101,7 +100,16 @@ def delete_end_email(df: pd.DataFrame) -> pd.DataFrame:
 
 # Remove all lines of an actor
 def delete_actor_lines(df: pd.DataFrame,name: str) -> pd.DataFrame:
-    
+    """
+    Remove all traces of the name of actor which we don't need to keep like nebut.
+
+    Args:
+        df : The dataframe.
+        name : The given name to delete its traces
+    Returns:
+        df: Same dataframe with deleted traces.
+    """
+
     df_cleaned = df[df['actor'] != name]
     return df_cleaned
 
@@ -187,31 +195,6 @@ def cleaning_manual_actors_2425(df: pd.DataFrame, name: str) -> pd.DataFrame:
     df_cleaned = df[df['actor'] != name]
     
     return df_cleaned
-
-# Extract name of students
-def extract_students_each_week(df: pd.DataFrame)-> pd.DataFrame:
-    
-    presence_actor  = df.groupby('seance')['actor'].unique() 
-    presence_actor  = presence_actor.loc[SORTED_SEANCE] # Sort in the order of semester
-
-    presence_binome  = df.groupby('seance')['binome'].unique() 
-    presence_binome  = presence_binome.loc[SORTED_SEANCE] # Sort in the order of semester
-
-
-    df_all_students = pd.DataFrame(columns=['week', 'num_students', 'name_students'])
-
-
-    for seance in SORTED_SEANCE:
-
-        # Append row
-        all_students = set(presence_actor[seance]).union(set(presence_binome[seance]))
-
-        df_all_students = pd.concat([
-            df_all_students,
-            pd.DataFrame({'week': [seance], 'num_students': [len(all_students)], 'name_students': [all_students]})
-        ], ignore_index=True)
-
-    return df_all_students
 
 #------------------------------------------------
 #                  filename cleaning
@@ -359,7 +342,7 @@ def extract_short_filename_from_commandRan_Run_Debugger(commandRan_Run_Debugger:
 # Fill empty values of filename with clean commandRan column
 def extract_short_filename_from_commandRan_Run_Command(commandRan_Run_Command: pd.Series) -> pd.Series:
 
-    '''
+    """
     Get a Dataframe and fill filename column of Run.Command by
     cleaned commandRan column.
 
@@ -368,7 +351,7 @@ def extract_short_filename_from_commandRan_Run_Command(commandRan_Run_Command: p
 
     Returns:
         clean: The same column but clean.
-    '''
+    """
     # Create a mask
     mask = commandRan_Run_Command.str.startswith('%FastDebug ', na=False)
     
@@ -382,7 +365,19 @@ def extract_short_filename_from_commandRan_Run_Command(commandRan_Run_Command: p
     return cleaned
 
 # Find filename_infere by checking the name of functions in codestate
-def find_filename_by_function_name(TP_files,codestate):
+def find_filename_by_function_name(TP_files:dict,codestate:str) -> str:
+
+    """
+    Get the codestate of a row, and see if it can find any name of functions of all TPs
+    in it, if it finds, it extracts the corresponding filename of the function, and return it.
+
+    Args:
+        TP_files : A Dict of all files with their functions.
+        codestate : P_codestate or F_codestate of a row.
+
+    Returns:
+        filename_infere: The correct name of the file or an empty string.
+    """
 
     for item in TP_files.items():
     
@@ -402,8 +397,24 @@ def find_filename_by_function_name(TP_files,codestate):
     return '' # no match found!
 
 # Find the correct filename by checking the similarity
-def find_similarity(TP_Files_name,filename_infere): # The explaination of how does SequenceMatcher work, is in the Readme part '## Explainations'
+def find_similarity(TP_Files_name: list,filename_infere:str) -> str: 
 
+    """
+    Get the filename_infere of a row, and checks if it is similar with
+    any name of the files, if the similarity is more than 60%, then return
+    the correct filename, if not checks for the other.
+
+    Note :The explaination of how does SequenceMatcher work, 
+    is in the Readme part '## Explainations'
+    
+    Args:
+        TP_Files_name : A list of files' name of TPs.
+        filename_infere : filename_infere of a row.
+
+    Returns:
+        filename_infere: The correct name of the file or an empty string.
+    """
+     
     for correct_name in TP_Files_name:
 
         similarity = difflib.SequenceMatcher(None, correct_name, filename_infere).ratio()
@@ -414,7 +425,20 @@ def find_similarity(TP_Files_name,filename_infere): # The explaination of how do
     return '' # Wasn't similar!
 
 # find filename by checking the name of the file in codestate
-def find_filename_by_codestate(pattern, codestate):
+def find_filename_by_codestate(pattern: str, codestate: str) -> str:
+
+    """
+    It gets a pattern : all filenames, and the codestate, it checks if it can find
+    the name of the file in the codestate like the name between <trace></trace>
+    if not if check the name of the function in codestate by calling find_filename_by_function_name.
+
+    Args:
+        pattern : All filesname.
+        codestate : P_codeState or F_codeState of a row.
+
+    Returns:
+        filename_infere: The correct name of the file or an empty string.
+    """
 
     match_state = re.search(pattern, codestate)
 
@@ -430,9 +454,30 @@ def find_filename_by_codestate(pattern, codestate):
             #print("Filename not found!")
         return filename_infere
     
-
 # check and correct the filename_infere between each session.Start and session.End
-def correct_filename_infere_in_subset(subset,df,pattern):
+def correct_filename_infere_in_subset(subset: pd.DataFrame,df: pd.DataFrame,pattern:str) -> None:
+
+    """
+    It checks the filename_infere of each row of a subset of the the original dataframe.
+    If it is empty, it tries to fill it by looking the P_codestate, it there is already a name,
+    it checks the name and if it is not correct it tries to find the correct name if it can't,
+    puts an empty string (like removing the name).
+
+    Note 1: There are some parts which is written Remove to test: ; these are the parts to test for 
+    the case where function can't find any correct name for the filename_infere, this can help to see their indices
+    of the original dataframe.
+
+    Note 2: This function used a loop on a subset of the original dataframe, the subset which includes the session.start
+    and session.end of each student in a specific semaine.
+
+    Args:
+        subset : A subset of an acitivity.
+        df : The original dataframe.
+        pattern : A string of files name.
+
+    Returns:
+        None : it changes the filename_infere inside the for loop.
+    """
 
     pattern_list = pattern.split('|')
     # Remove to test:
@@ -440,7 +485,7 @@ def correct_filename_infere_in_subset(subset,df,pattern):
 
     for index in subset.index:
         row = df.loc[index]
-
+            
         filename_infere = row['filename_infere']
         
         # check the emptyness (only for Run.Command and Run.Program, Ignore Docstring,session.start,session.end)
@@ -471,18 +516,21 @@ def correct_filename_infere_in_subset(subset,df,pattern):
         else:
             match = re.search(pattern, filename_infere) 
             
-            if not match: # filename is not correct
-                
+            if match: # if it's match, extract the correct name
+                filename_infere = match.group()
+
+            else: # filename is not correct
+                #print('here2')
                 # Try to find the similar correct name
                 filename_infere = find_similarity(pattern_list,filename_infere)
-
+                #print(filename_infere)
                 if filename_infere == '': # If the name is not similar
-
+                    #print('here3')
                     if row['verb'] in ['File.Open', 'File.Save']:
-
+                        #print('here4')
                         if row['F_codeState'] != '': # F_codeState has a content
                             filename_infere = find_filename_by_codestate(pattern,row['F_codeState'])
-                            
+                            #print('here5')
                             if filename_infere == '':
                                 pass
                                 # Remove to test:
@@ -519,7 +567,19 @@ def correct_filename_infere_in_subset(subset,df,pattern):
     #    print(not_found_filename_index)
 
 # Fill empty string by using sandwich method
-def sandwich(subset,df):
+def sandwich(subset:pd.DataFrame,df: pd.DataFrame) -> None:
+
+    """
+    It is used for the activity which there are some empty filename_inferes between a session.start and session.end.
+    It fills them by the sandwich mecanism.
+
+    Args:
+        subset : A subset of an acitivity.
+        df : The original dataframe.
+
+    Returns:
+        None : it changes the filename_infere inside the for loop.
+    """
 
     # check values before last_filename_infere
     last_filename_infere = subset.loc[subset['filename_infere'] != '', 'filename_infere'].iloc[0]
@@ -557,8 +617,21 @@ def sandwich(subset,df):
         #df.loc[empty_filename_indices, 'filename_infere'] = last_filename_infere
 
 # Creat indices of each Session.Start and Session.End
-def create_df_indices(list_students,df,week):
+def create_df_indices(list_students: list, df: pd.DataFrame,week: str) -> pd.DataFrame:
 
+    """
+    It creates a dataframe of session.start and sessions.end of all students during 
+    a specific semaine. It does not consider the traces with less than 2 length.
+
+    Args:
+        list_students : A list of students of the current semaine.
+        df : The original dataframe.
+        week : Any values of column : seance.
+
+    Returns:
+        df_indices : A dataframe of all activities for each student.
+    """
+     
     # creat df_indices 
     df_indices = pd.DataFrame(columns=['name_students', 'indices', 'too_short_indices'])
 
@@ -574,8 +647,19 @@ def create_df_indices(list_students,df,week):
     return df_indices
 
 # Remove indices which has only one or two traces
-def remove_too_short_traces(df,df_indices):
+def remove_too_short_traces(df: pd.DataFrame,df_indices: pd.DataFrame) -> pd.DataFrame:
     
+    """
+    It removes all too short sessions for each student.
+
+    Args:
+        df : The original dataframe.
+        df_indices : A dataframe of all activities for each student.
+
+    Returns:
+        df : The same dataframe but without any short session.
+    """
+
     for index, row in df_indices.iterrows():
 
             for activity in row['too_short_indices']:
@@ -597,7 +681,18 @@ def remove_too_short_traces(df,df_indices):
     return df
 
 # Clean traces with one or two verbs
-def check_invalid_names(df,df_indices): 
+def check_invalid_names(df:pd.DataFrame,df_indices:pd.DataFrame): 
+
+    """
+    It checks if there is any too short session, if so it removes them by calling function remove_too_short_traces.
+
+    Args:
+        df : The original dataframe.
+        df_indices : A dataframe of all activities for each student.
+
+    Returns:
+        df : The same dataframe but without any short session.
+    """
 
     # if in the test there are still incorrect filename_infere and there not deleted
     if (df_indices['too_short_indices'].apply(lambda x: len(x) == 0)).all():

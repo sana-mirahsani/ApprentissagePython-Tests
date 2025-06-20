@@ -6,6 +6,10 @@ import sys
 # Allegraud qui utilisait une vieille version de Thonny-l1test.
 # Ce traitement ne devrait plus être utile. je l'ai réintégré dans cleaning
 
+#------------------------------------------------
+#Added by SANA : This is Thomas's code, I didn't change it, and niether used it in of my notebooks
+#------------------------------------------------
+
 def main(input_file_name, output_file_name):
     with open('../data/raw/' + input_file_name + '.json', encoding='utf-8') as fd :
         d = json.load(fd)
