@@ -1,6 +1,7 @@
 # ---
 # jupyter:
 #   jupytext:
+#     formats: ipynb,py:percent
 #     text_representation:
 #       extension: .py
 #       format_name: percent
@@ -61,7 +62,7 @@ sys.path.append('../') # these two lines allow the notebook to find the path to 
 import pandas as pd
 import re
 import numpy as np
-from utils_module import io_utils, data_cleaning, data_testing
+from src.features import io_utils, data_cleaning, data_testing
 from src.data.constants import INTERIM_DATA_DIR
 from src.data.variable_constant_2425 import FILES_BY_TP
 

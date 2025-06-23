@@ -1,6 +1,7 @@
 # ---
 # jupyter:
 #   jupytext:
+#     formats: ipynb,py:percent
 #     text_representation:
 #       extension: .py
 #       format_name: percent
@@ -38,7 +39,8 @@ sys.path.append('../') # these two lines allow the notebook to find the path to 
 import pandas as pd
 import re
 import numpy as np
-from utils_module import io_utils, data_cleaning
+from src.features import io_utils, data_cleaning
+
 from src.data.constants import INTERIM_DATA_DIR
 
 # %% [markdown]
@@ -57,6 +59,9 @@ df.head()
 
 # %% [markdown]
 # ### Create a copy of dataframe to compare later
+
+# %%
+df['actor']
 
 # %%
 df_clean = df.copy()
@@ -123,6 +128,9 @@ print(f"Total number of rows include / in actor: {total_slash_actor}")
 print(f"Total number of rows include / in binome: {total_slash_binome}")
 
 print("Successful!") if total_slash_actor == 0 and total_slash_binome == 0 else print("Error!") 
+
+# %%
+df_clean['actor']
 
 # %% [markdown]
 # #### 2. Delete the email at the end
@@ -262,4 +270,4 @@ print("Cleaning actor successful!") if len(incorrect_actor) == 0 and len(incorre
 # #### Save new dataframe
 
 # %%
-io_utils.write_csv(df_clean,INTERIM_DATA_DIR,None)
+io_utils.write_csv(df_clean,INTERIM_DATA_DIR,None) 

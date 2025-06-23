@@ -1,6 +1,7 @@
 # ---
 # jupyter:
 #   jupytext:
+#     formats: ipynb,py:percent
 #     text_representation:
 #       extension: .py
 #       format_name: percent
@@ -32,7 +33,7 @@ import sys
 sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
 import pandas as pd
 import numpy as np
-from utils_module import io_utils, data_anonymizing 
+from src.features import io_utils, data_anonymizing 
 from src.data.constants import INTERIM_DATA_DIR
 
 # %% [markdown]

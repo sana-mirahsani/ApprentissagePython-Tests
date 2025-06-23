@@ -1,6 +1,7 @@
 # ---
 # jupyter:
 #   jupytext:
+#     formats: ipynb,py:percent
 #     text_representation:
 #       extension: .py
 #       format_name: percent
@@ -18,7 +19,10 @@
 # 2. Load DataFrame : phase1_nettoyage_fichiere.csv
 # 3. Validate 'filename_infere' values for each week
 #     <br>
-#     3.1 Initialize pahse two 
+#     3.0 Initialize pahse two 
+#     <br>
+#
+#     3.1 DF[seance] == semaine_1 
 #     <br>
 #
 #     3.2 DF[seance] == semaine_2
@@ -68,7 +72,7 @@
 # _________________________________________________________
 # **Explanation** 
 #
-# The goal is validate the filename_infere and find a correct name for those which were impossible to find in phase one.
+# The goal is validate the filename_infere and find a correct name for those which were impossible to find in phase one. At the end, the columns : **TP** and **Type_TP** are added to the dataframe to shows the numbr of TP and the type : programmation or manipulation by looking at the name of the filename_infere. 
 
 # %% [markdown]
 # ## Import Libraries
@@ -79,9 +83,9 @@ sys.path.append('../') # these two lines allow the notebook to find the path to 
 import pandas as pd
 import re
 import numpy as np
-from utils_module import io_utils, data_cleaning, data_testing
+from src.features import io_utils, data_cleaning, data_testing
 from src.data.constants import INTERIM_DATA_DIR
-from src.data.variable_constant_2425 import FILES_BY_TP, TP_name
+from src.data.variable_constant_2425 import FILES_BY_TP, TP_name, Type_TP
 
 # Global variable pattern
 pattern = ''
@@ -103,7 +107,7 @@ df_clean = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='phase1_n
 # ## 3. Validate 'filename_infere' values for each week
 
 # %% [markdown]
-# ### 3.1 Initialize pahse two
+# ### 3.0 Initialize pahse two
 
 # %%
 # Validate all filenames for each activiy
@@ -278,6 +282,12 @@ def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
 data_testing.test_filename_infere_total(df_clean,pattern) 
 
 # %% [markdown]
+# ### 3.1 **DF[seance] == semaine_1**
+
+# %%
+df_clean, df_empty_string_semaine_1 = main_process('semaine_1',df_clean,pattern)
+
+# %% [markdown]
 # ### 3.2 **DF[seance] == semaine_2**
 
 # %%
@@ -332,22 +342,44 @@ df_clean, df_empty_string_semaine_9 = main_process('semaine_9',df_clean,pattern)
 df_clean, df_empty_string_semaine_10 = main_process('semaine_10',df_clean,pattern)
 
 # %% [markdown]
-# ### 3.11 DF[seance] == CTP
+# ### **3.11 DF[seance] == DSi**
 
 # %%
-df_clean, df_empty_string_semaine_CTP = main_process('CTP',df_clean,pattern)
+df_clean, df_empty_string_semaine_DSi = main_process('DSi',df_clean,pattern)
 
 # %% [markdown]
-# ### 3.12 DF[seance] == semaine_11
+# ### **3.12 DF[seance] == semaine_11**
 
 # %%
 df_clean, df_empty_string_semaine_11 = main_process('semaine_11',df_clean,pattern)
 
 # %% [markdown]
-# ### 3.13 DF[seance] == semaine_12
+# ### **3.13 DF[seance] == semaine_12**
 
 # %%
 df_clean, df_empty_string_semaine_12 = main_process('semaine_12',df_clean,pattern)
+
+# %% [markdown]
+# ### **3.14 DF[seance] == CTP**
+
+# %%
+df_clean, df_empty_string_CTP= main_process('CTP',df_clean,pattern)
+
+# %% [markdown]
+# ### **3.15 DF[seance] == ''**
+
+# %%
+# save the traces of seance = ''
+io_utils.write_csv(df_clean[df_clean['seance'] == ''],INTERIM_DATA_DIR,None)
+
+# extract the indices of seance == ''
+index_seance_empty = df_clean[df_clean['seance'] == ''].index.to_list()
+
+# drop these indices
+df_clean.drop(index_seance_empty, inplace=True)  
+
+# test
+df_clean[df_clean['seance'] == '']
 
 # %% [markdown]
 # ## Final test
@@ -367,13 +399,13 @@ subset[~ subset['filename_infere'].str.contains(pattern, na = False)]['seance'].
 # After this phase, 92,919 entries in 'filename_infere' remained empty. Among these, 53,239 were neither from semaine_1 nor contained the verbs Sessions.Start, Sessions.End, or Docstring.Generate—and we are not concerned with semaine_1 or these verbs.
 # <br>
 #
-# In Phase 2, I performed checks and filled 'filename_infere' values for each semaine. As a result, a total of 261,808 entries were filled, of which 258,822 were correct and 2,986 were incorrect. However, all incorrect names were from semaine_1, which is expected. The function validate_process replaces incorrect names with empty strings, so it is normal that the only remaining incorrect names are from semaine_1, since I did not validate them. 
+# In Phase 2, I performed checks and filled 'filename_infere' values for each semaine. As a result, a total of 266,925 entries were filled, which all of them are correct ! The function validate_process replaces incorrect names with empty strings. 
 # <br>
 #
-# After both phases, 43,043 'filename_infere' entries are still empty. Among these, 19,867 correspond to traces that either do not include the specified verbs (Sessions.Start, Sessions.End, Docstring.Generate) or belong to semaine_1.
+# After both phases, 37,273 'filename_infere' entries are still empty. Among these, 18,261 correspond to traces that either do not include the specified verbs (Sessions.Start, Sessions.End, Docstring.Generate) .
 # <br>
 #
-# Overall, having only 19,867 unresolved entries out of 304,851 total, and successfully inferring 258,822 correct filenames, is a strong result.
+# Overall, having only 18,261 unresolved entries out of 304,851 total, and successfully inferring 266,887 correct filenames, is a strong result.
 
 # %% [markdown]
 # **Explanation**
@@ -417,6 +449,10 @@ subset[~ subset['filename_infere'].str.contains(pattern, na = False)]['seance'].
 #     It's also important to note that even after running the validate_process function, some incorrect filename_infere values may still appear. This seems problematic at first because validate_process is supposed to remove all invalid names. However, if you check manually, you'll see that these invalid names belong to the too-short traces. Since validate_process doesn't handle or check those, it doesn’t correct them.
 #
 #     Therefore, once we remove the too_short_traces, the remaining dataset contains no invalid names — because all the incorrect ones were part of the traces that were excluded.
+#
+# - **Remove seance == ''**
+#
+#     There is an empty seance in df, including only 13 traces of one student on 16/12/2024, it was useless, so I removed them BUT I saved them before removing in a csv file.
 
 # %% [markdown]
 # ## 4. Add column TP
@@ -425,41 +461,67 @@ subset[~ subset['filename_infere'].str.contains(pattern, na = False)]['seance'].
 # Add column TP
 # create new column next to the filename
 col_index = df_clean.columns.get_loc('seance')
-df_clean.insert(col_index + 1, 'TP', '') 
-df_clean.columns
 
-# %%
-# Before
-df_clean[df_clean['seance'] == 'semaine_2'][['filename_infere', 'TP']]
+try:
+    df_clean.insert(col_index + 1, 'TP', '') 
+except Exception as error:
+    print(error)
 
-# %%
+# create dictionary with keys of filenames and values of TP name
 file_to_tp = {}
 for tp, files in TP_name.items():
     for f in files:
         file_to_tp[f] = tp
 
-file_to_tp
-
-# %%
-# Apply
+# Apply : fill all values of TP
 df_clean["TP"] = df_clean["filename_infere"].map(file_to_tp)
 
-# %%
-# After
-df_clean[df_clean['seance'] == 'semaine_2'][['filename_infere', 'TP']]
+# replace all Nan by empty string
+df_clean['TP'] = df_clean['TP'].fillna('') 
+
+# Test
+tota_empty = (df_clean['TP'] == '').sum()
+totan_empty_filename =  (df_clean['filename_infere'] == '').sum()
+totan_Irr_filename   =  (df_clean['filename_infere'] == 'Irrelevant').sum()
+
+print("Normally, The empty values in column TP are for rows where filename_infere is empty or Irrelevant")
+print("Testing...")
+if tota_empty == totan_empty_filename + totan_Irr_filename :
+    print("Yes, all Nan values in TP are wether empty or Irrelevant filename_infere")
+    print(df_clean[['filename_infere', 'TP']].head(10))
+
 
 # %% [markdown]
-# ### 5. Add column TP_Type
+# ## 5. Add column TP_Type
 
 # %%
 # Add column TP
 # create new column next to the filename
 col_index = df_clean.columns.get_loc('TP')
-df_clean.insert(col_index + 1, 'Type_TP', '') 
-df_clean.columns
+
+try:
+    df_clean.insert(col_index + 1, 'Type_TP', '') 
+except Exception as error:
+    print(error)
+    
+# create dictionary with keys of filenames and values of TP name
+file_to_type_tp = {}
+for tp, files in Type_TP.items():
+    for f in files:
+        file_to_type_tp[f] = tp
+
+# Apply : fill all values of Type_TP
+df_clean["Type_TP"] = df_clean["filename_infere"].map(file_to_type_tp)
+
+# replace all Nan by empty string
+df_clean['Type_TP'] = df_clean['Type_TP'].fillna('') 
+
+tota_empty = (df_clean['Type_TP'] == '').sum()
+print(f"Total empty : {tota_empty}")
+df_clean['Type_TP']
 
 # %% [markdown]
 # ## Save the final dataframe
 
 # %%
-io_utils.write_csv(df_clean,INTERIM_DATA_DIR,None)
+io_utils.write_csv(df_clean,INTERIM_DATA_DIR,'phase2_nettoyage_fichiere.csv')

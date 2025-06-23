@@ -19,9 +19,10 @@
 # %% [markdown]
 # # Analyze Workflow Overview:
 # 1. Import Libraries
-# 2. Load DataFrame
+# 2. Load DataFrame : Final_nettoyage_2425.csv
 # 3. Analyze
 #     3.1 Total number of students
+#
 
 # %% [markdown]
 # ## Import Libraries
@@ -30,16 +31,10 @@
 import sys
 sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
 import pandas as pd
-from utils_module import io_utils
+from src.features import io_utils
 from src.data.constants import INTERIM_DATA_DIR
 from src.data.variable_constant_2425 import SORTED_SEANCE
 import matplotlib.pyplot as plt
-
-{
-  "jupytext": {
-    "formats": "ipynb,py:percent"
-  }
-}
 
 
 # %% [markdown]
@@ -48,13 +43,7 @@ import matplotlib.pyplot as plt
 # - The csv file is the output of Preparation.ipynb
 
 # %%
-df_clean = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='phase2_nettoyage_fichiere.csv')
-
-# %%
-df_test = df_clean[df_clean]
-
-# %%
-df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='acteur_nettoyage_2425.csv')
+df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='Final_nettoyage_2425.csv')
 
 # %% [markdown]
 # ## Analyze
@@ -69,37 +58,31 @@ number_binome = set(df['binome'])
 
 total_students = number_actor.union(number_binome)
 
-common_values = set(df['actor']).intersection(set(df['binome']))
-
 print(f"Total number of students during the semester : {len(total_students)}")
-print(f"Total number of students in common : {len(common_values)}")
 
-
-# %%
-# Test
-Total_number_with_duplicates = len(number_actor) + len(number_binome)
-
-print("Analyze Correct!") if Total_number_with_duplicates -  len(common_values) == len(total_students) else print("Error!") 
 
 # %% [markdown]
 # ### Total number of students during each week
 
 # %%
-df_common_name = pd.DataFrame(columns=['week', 'num_common_names', 'common_names'])
+df_common_name = pd.DataFrame(columns=['week', 'number of students'])
 
 for seance in SORTED_SEANCE:
     actor_column = df[df['seance'] == seance]['actor']
     actor_binome = df[df['seance'] == seance]['binome']
-    common_values = set(actor_column).intersection(set(actor_binome))
+    all_students = set(actor_column).union(set(actor_binome))
 
     # Append row
     df_common_name = pd.concat([
         df_common_name,
-        pd.DataFrame({'week': [seance], 'num_common_names': [len(common_values)], 'common_names': [common_values]})
+        pd.DataFrame({'week': [seance], 'number of students': len(all_students)})
     ], ignore_index=True)
 
 
 df_common_name
+
+# %%
+SORTED_SEANCE
 
 # %% [markdown]
 # Normally there should NOT be any common name for each week between actor and binome column. It means there are students during the same TP, they were working alone and also as a groupe.
