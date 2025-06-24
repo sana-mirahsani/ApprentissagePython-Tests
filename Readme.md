@@ -4,31 +4,37 @@
 project-root/
 ├── data/ 
 │   ├── interim/ 
-│      ├── traces250102_clean.csv       
-│      ├── acteurs_corriges_2425.csv    # cleaned column 'actor' and 'binome' of traces250102_clean.csv
-│      ├── phase1_nettoyage_fichiere.csv # cleaned column 'filename_infere' phase 1
-│      ├── phase2_nettoyage_fichiere.csv # cleaned column 'filename_infere' phase 2
+│      ├── traces250102_clean.csv        # Uncleaned data
+│      ├── acteur_nettoyage_2425.csv     # Cleaned column 'actor' and 'binome' of traces250102_clean
+│      ├── phase1_nettoyage_fichiere.csv # Cleaned column 'filename_infere' phase 1
+│      ├── phase2_nettoyage_fichiere.csv # Cleaned column 'filename_infere' phase 2
+│      ├── Final_nettoyage_2425.csv      # Final cleaning, adding columns TP, Type_TP
+│      ├── anonymized_data.csv           # Anonymized data
+│      ├── seance_vide.csv               # Traces of the seance = '' (Removed from original df)
+│      ├── too_short_sessions.csv        # Traces with too short lengths (Removed from original df)
 │
-├── notebooks/             # Jupyter notebooks
-│   ├── 1.Preparation.py   # Cleaning data
-│   ├── 2.Analyze.ipynb    # Analyzing data          
+│   ├── processed/
+│      ├── anonymized_actor.csv          # Name of actors with their hash id
+│
+├── notebooks/             
+│   ├── 1.Cleaning_actors.py           # Cleaning actor column
+│   ├── 2.Cleaning_filename_phase1.py  # Cleaning filename_infere by verb
+│   ├── 3.Cleaning_filename_phase2.py  # Cleaning filename_infere by sessions 
+│   ├── 4.Anonymizing.py               # Anonymizing   
+│   ├── 5.Analyze.py                   # Analyzing data             
 │   
-├── src/                     # Thomas's code (they can get removed, except constants.py and variable_constant.py)
-│   ├── data/                # Data loading/cleaning functions
-│   │    ├── anonymizing.py
-│   │    ├── cleaning.py
-│   │    ├── constants.py
+├── src/                     
+│   ├── data/                # Gloabl data
+│   │    ├── cleaning.py     # Thomas code , can be deleted later
+│   │    ├── constants.py    
 │   │    ├── variable_constant.py
 │   │    
 │   ├── features/            # Feature engineering
-│       ├── utils.py   
-│      
-│
-├── utils_module/              # Python modules
-│   ├── data_anonymization.py  # Functions to anonymize
-│   ├── data_cleaning.py       # Functions to cleaning actors or filename_infere
-│   ├── data_testing.py        # Functions to test the result
-│   ├── io_utils.py            # Functions to read and write csv files 
+│       ├── utils.py               # Thomas code , can be deleted later
+│       ├── data_anonymization.py  # Functions to anonymize
+│       ├── data_cleaning.py       # Functions to cleaning actors or filename_infere
+│       ├── data_testing.py        # Functions to test the result
+│       ├── io_utils.py            # Functions to read and write csv files 
 │
 │        
 └── README.md                # Project documentation
@@ -39,6 +45,7 @@ jupytext --sync *.ipynb
 jupytext --to notebook 1.Preparation.py
 
 jupytext --to py my_notebook.ipynb (first time)
+jupytext --set-formats ipynb,py:percent 2.Cleaning_filename_phase1.ipynb
 
 ## Three main thing for stage
 - How to check if the student did the Test and continue the Test

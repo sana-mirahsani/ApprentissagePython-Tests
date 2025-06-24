@@ -33,14 +33,12 @@ sys.path.append('../') # these two lines allow the notebook to find the path to 
 import pandas as pd
 from src.features import io_utils
 from src.data.constants import INTERIM_DATA_DIR
-from src.data.variable_constant_2425 import SORTED_SEANCE
+from src.data.variable_constant_2425 import SORTED_SEANCE, TP_NAME
 import matplotlib.pyplot as plt
 
 
 # %% [markdown]
 # ## Load DataFrame
-# - Use functions in file **io_utils.py.py**
-# - The csv file is the output of Preparation.ipynb
 
 # %%
 df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='Final_nettoyage_2425.csv')
@@ -52,7 +50,6 @@ df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='Final_nettoyag
 # ### Total number of students during semester
 
 # %%
-# Analyze
 number_actor  = set(df['actor'])
 number_binome = set(df['binome'])
 
@@ -65,31 +62,308 @@ print(f"Total number of students during the semester : {len(total_students)}")
 # ### Total number of students during each week
 
 # %%
-df_common_name = pd.DataFrame(columns=['week', 'number of students'])
+df_students_per_week = pd.DataFrame(columns=['week', 'number of students'])
 
 for seance in SORTED_SEANCE:
     actor_column = df[df['seance'] == seance]['actor']
-    actor_binome = df[df['seance'] == seance]['binome']
-    all_students = set(actor_column).union(set(actor_binome))
+    column_binome = df[df['seance'] == seance]['binome']
+    all_students = set(actor_column).union(set(column_binome))
 
     # Append row
-    df_common_name = pd.concat([
-        df_common_name,
+    df_students_per_week = pd.concat([
+        df_students_per_week,
         pd.DataFrame({'week': [seance], 'number of students': len(all_students)})
     ], ignore_index=True)
 
 
-df_common_name
+df_students_per_week
 
 # %%
-SORTED_SEANCE
+labels = SORTED_SEANCE
+values = df_students_per_week['number of students']
+
+plt.subplots(figsize=(17, 6))
+plt.bar(labels, values)
+plt.title("Nombre d'eleves present par seance")
+plt.xlabel("Seance")
+plt.ylabel("Nombre d'eleves")
+plt.show()
 
 # %% [markdown]
-# Normally there should NOT be any common name for each week between actor and binome column. It means there are students during the same TP, they were working alone and also as a groupe.
-# So to calculate the total number of students for each TP, we should consider this problem to prevent counting a student twice.
-# <br>
-#
-# Example below shows a student work alone at first and then conitues with another student but the binome changes again all in the same TP.
+# **Interpretation**
+
+# %% [markdown]
+# ### Total number of students during each TP
+
+# %%
+# replace the empty strings in TP and Type_TP columns by not_found
+df['TP'] = df['TP'].replace('','not_found')
+df['Type_TP'] = df['Type_TP'].replace('','not_found')
+
+# create a list of order of TP
+TP_ORDER = TP_NAME
+TP_ORDER.append('not_found')
+
+# %%
+df_students_per_TP = pd.DataFrame(columns=['TP', 'number of students'])
+
+for tp in TP_ORDER:
+    actor_column  = df[df['TP'] == tp]['actor']
+    column_binome = df[df['TP'] == tp]['binome']
+    all_students  = set(actor_column).union(set(column_binome))
+
+    # Append row
+    df_students_per_TP = pd.concat([
+        df_students_per_TP,
+        pd.DataFrame({'TP': [tp], 'number of students': len(all_students)})
+    ], ignore_index=True)
+
+
+df_students_per_TP
+
+# %%
+# remove the last value : filename_not_found
+df_students_per_TP_filtered = df_students_per_TP.iloc[:11]
+
+labels = df_students_per_TP_filtered['TP']
+values = df_students_per_TP_filtered['number of students']
+
+plt.subplots(figsize=(17, 6))
+plt.bar(labels, values)
+plt.title("Nombre d'eleves par TP")
+plt.xlabel("TP")
+plt.ylabel("Nombre d'eleves")
+plt.show()
+
+# %% [markdown]
+# **Interpretation**
+
+# %% [markdown]
+# ### Type of TP
+
+# %%
+df_students_per_Type_Tp = pd.DataFrame(columns=['TP','TP_mani', 'TP_prog']) # create the df
+Type_TPs = ['TP_mani', 'TP_prog'] # create a list of different types of tp
+
+for tp in TP_NAME:
+
+    all_types_tp = []   # saving all numbers of types of TP
+
+    for type_tp in Type_TPs:
+
+        actor_column  = df[(df['TP'] == tp) & (df['Type_TP'] == type_tp)]['actor']
+        column_binome = df[(df['TP'] == tp) & (df['Type_TP'] == type_tp)]['binome']
+
+        all_students  = set(actor_column).union(set(column_binome))
+        all_types_tp.append(len(all_students))
+
+    # Append row to df
+    df_students_per_Type_Tp = pd.concat([
+        df_students_per_Type_Tp,
+        pd.DataFrame({'TP': [tp], 'TP_mani': all_types_tp[0], 'TP_prog': all_types_tp[1]})
+    ], ignore_index=True)
+
+
+df_students_per_Type_Tp
+
+# %%
+df_students_per_Type_Tp.set_index('TP')[['TP_mani', 'TP_prog']].plot(kind='bar', figsize=(12, 6))
+
+plt.title("Number of Students in Each Type of TP")
+plt.ylabel("Number of Students")
+plt.xlabel("TP")
+plt.xticks(rotation=45)
+plt.legend(title="Type")
+plt.tight_layout()
+plt.show()
+
+# %%
+# create a crossttable of two columns of df
+count_table = pd.crosstab(df['TP'], df['Type_TP'])
+count_table = count_table.reindex(TP_ORDER)
+count_table
+
+# %%
+count_table.plot(kind='bar', figsize=(14, 6))
+
+plt.title("Number of Files per TP and Type_TP")
+plt.ylabel("Number of Files")
+plt.xlabel("TP")
+plt.xticks(rotation=45)
+plt.legend(title="Type_TP")
+plt.tight_layout()
+plt.show()
+
+# %% [markdown]
+# ### Number of student using each verb in each TP
+
+# %%
+verbs = ['Run.Command','Run.Program','Run.Test','Run.Debugger']
+
+df_students_per_verb = pd.DataFrame(columns=['TP','Run.Command', 'Run.Program','Run.Test','Run.Debugger']) # create the df
+
+for tp in TP_NAME:
+
+    df_filtered = df[df['TP'] == tp] # filter on TP
+    number_of_students = []
+
+    for verb in verbs:
+
+        actor_column  = df_filtered[df_filtered['verb'] == verb]['actor']
+
+        binome_column = df_filtered[df_filtered['verb'] == verb]['binome']
+
+        all_students  = set(actor_column).union(set(binome_column))
+        number_of_students.append(len(all_students))
+
+    # Append row to df
+    df_students_per_verb = pd.concat([
+        df_students_per_verb,
+        pd.DataFrame({'TP': [tp], 'Run.Command': number_of_students[0], 'Run.Program': number_of_students[1], 'Run.Test': number_of_students[2], 'Run.Debugger': number_of_students[3]})
+    ], ignore_index=True)
+
+df_students_per_verb
+
+# %%
+df_students_per_verb[:11].set_index('TP')[['Run.Command', 'Run.Program','Run.Test','Run.Debugger']].plot(kind='bar', figsize=(12, 6))
+
+plt.title("Number of students per verb in each TP")
+plt.ylabel("Number of students")
+plt.xlabel("TP")
+plt.xticks(rotation=45)
+plt.legend(title="Verbs")
+plt.tight_layout()
+plt.show()
+
+# %% [markdown]
+# ### Number of using of each verb in each TP
+
+# %%
+df_usage_per_verb = pd.DataFrame(columns=['TP','Run.Command', 'Run.Program','Run.Test','Run.Debugger']) # create the df
+
+for tp in TP_NAME:
+
+    df_filtered = df[df['TP'] == tp] # filter on TP
+    number_of_usage = []
+
+    for verb in verbs:
+
+        total_number = (df_filtered['verb'] == verb).sum()
+
+        number_of_usage.append(total_number)
+
+    # Append row to df
+    df_usage_per_verb = pd.concat([
+        df_usage_per_verb,
+        pd.DataFrame({'TP': [tp], 'Run.Command': number_of_usage[0], 'Run.Program': number_of_usage[1], 'Run.Test': number_of_usage[2], 'Run.Debugger': number_of_usage[3]})
+    ], ignore_index=True)
+
+df_usage_per_verb
+
+# %%
+df_usage_per_verb[:11].set_index('TP')[['Run.Command', 'Run.Program','Run.Test','Run.Debugger']].plot(kind='bar', figsize=(12, 6))
+
+plt.title("Number of usage per verb in each TP")
+plt.ylabel("Number of usage")
+plt.xlabel("TP")
+plt.xticks(rotation=45)
+plt.legend(title="Verbs")
+plt.tight_layout()
+plt.show()
+
+# %% [markdown]
+# ### Number of using of each verb in each TP_prog
+
+# %%
+df_usage_per_verb_TP_prog = pd.DataFrame(columns=['TP','Run.Command', 'Run.Program','Run.Test','Run.Debugger']) # create the df
+
+for tp in TP_NAME:
+
+    df_filtered = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')] # filter on TP
+    number_of_usage = []
+
+    for verb in verbs:
+
+        total_number  = (df_filtered['verb'] == verb).sum()
+
+        number_of_usage.append(total_number)
+
+    # Append row to df
+    df_usage_per_verb_TP_prog = pd.concat([
+        df_usage_per_verb_TP_prog,
+        pd.DataFrame({'TP': [tp], 'Run.Command': number_of_usage[0], 'Run.Program': number_of_usage[1], 'Run.Test': number_of_usage[2], 'Run.Debugger': number_of_usage[3]})
+    ], ignore_index=True)
+
+df_usage_per_verb_TP_prog
+
+# %%
+df_usage_per_verb_TP_prog[:11].set_index('TP')[['Run.Command', 'Run.Program','Run.Test','Run.Debugger']].plot(kind='bar', figsize=(12, 6))
+
+plt.title("Number of usage per verb in each TP_prog")
+plt.ylabel("Number of usage")
+plt.xlabel("TP")
+plt.xticks(rotation=45)
+plt.legend(title="Verbs")
+plt.tight_layout()
+plt.show()
+
+# %% [markdown]
+# ### Number of using of each verb in each seance only for TP_prog
+
+# %%
+df_usage_per_verb_TP_prog_semaine = pd.DataFrame(columns=['seance','Run.Command', 'Run.Program','Run.Test','Run.Debugger']) # create the df
+
+for seance in SORTED_SEANCE:
+
+    df_filtered = df[(df['seance'] == seance) & (df['Type_TP'] == 'TP_prog')] # filter on seance and TP_prog
+    number_of_students = []
+
+    for verb in verbs:
+
+        actor_column  = df_filtered[df_filtered['verb'] == verb]['actor']
+
+        binome_column = df_filtered[df_filtered['verb'] == verb]['binome']
+
+        all_students  = set(actor_column).union(set(binome_column))
+        number_of_students.append(len(all_students))
+
+    # Append row to df
+    df_usage_per_verb_TP_prog_semaine = pd.concat([
+        df_usage_per_verb_TP_prog_semaine,
+        pd.DataFrame({'seance': [seance], 'Run.Command': number_of_students[0], 'Run.Program': number_of_students[1], 'Run.Test': number_of_students[2], 'Run.Debugger': number_of_students[3]})
+    ], ignore_index=True)
+
+df_usage_per_verb_TP_prog_semaine
+
+# %%
+df_usage_per_verb_TP_prog_semaine.set_index('seance')[['Run.Command', 'Run.Program','Run.Test','Run.Debugger']].plot(kind='bar', figsize=(12, 6))
+
+plt.title("Number of students per verb in each TP_prog of each seance")
+plt.ylabel("Number of usage")
+plt.xlabel("seance")
+plt.xticks(rotation=45)
+plt.legend(title="Verbs")
+plt.tight_layout()
+plt.show()
+
+# %% [markdown]
+# ### Get number of students who used 'Print' statement
+
+# %%
+seance_before_print = ['semaine_1', 'semaine_2', 'semaine_3', 'semaine_4']
+df_seance : pd.DataFrame = df[df['seance'].isin(seance_before_print)]
+
+run_verb = ['Run.Command', 'Run.Program', 'Run.Test', 'Run.Debugger']
+df_run : pd.DataFrame = df[df['verb'].isin(run_verb)]
+
+df_run[(df_run['P_codeState'].str.contains('print', case=False, regex=True)) |
+                  (df_run['F_codeState'].str.contains('print', case=False, regex=True)) |
+                  (df_run['commandRan'].str.contains('print', case=False, regex=True))
+                ]
+df_run
+
+# %% [markdown]
+# # OLD
 
 # %%
 # Example of the error above
