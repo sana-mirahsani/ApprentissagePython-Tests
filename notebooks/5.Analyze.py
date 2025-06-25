@@ -31,6 +31,7 @@
 import sys
 sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
 import pandas as pd
+import ast
 from src.features import io_utils
 from src.data.constants import INTERIM_DATA_DIR
 from src.data.variable_constant_2425 import SORTED_SEANCE, TP_NAME
@@ -239,7 +240,7 @@ plt.show()
 from src.data.variable_constant_2425 import SORTED_SEANCE, all_TP_functions_name 
 import re
 from src.data.variable_constant_2425 import FILES_BY_TP
-from src.features import io_utils, data_cleaning
+from src.features import data_cleaning
 
 # Global variable pattern
 pattern = ''
@@ -281,7 +282,19 @@ def find_strange_filename_infere(pattern,TP,verb):
 
 
 # %%
-empty_filename, filename_case1, filename_case2 = find_strange_filename_infere(pattern,'Tp1','Run.Test')
+df_strange_filenames_Run_Test = pd.DataFrame(columns=['TP','empty_filename', 'filename_case1','filename_case2']) # create the df
+
+for tp in TP_NAME:
+
+    empty_filename, filename_case1, filename_case2 = find_strange_filename_infere(pattern,tp,'Run.Test')
+    
+    # Append row to df
+    df_strange_filenames_Run_Test = pd.concat([
+        df_strange_filenames_Run_Test,
+        pd.DataFrame({'TP': [tp], 'empty_filename': [empty_filename], 'filename_case1': [filename_case1], 'filename_case2': [filename_case2]})
+    ], ignore_index=True)
+
+df_strange_filenames_Run_Test
 
 # %%
 for i in filename_case2:
@@ -444,8 +457,6 @@ plt.legend(title="Verbs")
 plt.tight_layout()
 plt.show()
 
-# %%
-
 # %% [markdown]
 # ### Number of using of each verb in each seance only for TP_prog
 
@@ -506,7 +517,75 @@ plt.tight_layout()
 plt.show()
 
 # %% [markdown]
-# # OLD
+# ### Number of empty filename_infere in each seance
+
+# %%
+df_empty_filename_in_each_seance = pd.DataFrame(columns=['seance','num_empty_filename']) # create the df
+
+for seance in SORTED_SEANCE:
+
+    num_total = ((df['seance'] == seance) & (df['filename_infere'] == '')).sum() # filter on seance and TP_prog
+
+    # Append row to df
+    df_empty_filename_in_each_seance = pd.concat([
+        df_empty_filename_in_each_seance,
+        pd.DataFrame({'seance': [seance], 'num_empty_filename': [num_total]})
+    ], ignore_index=True)
+
+df_empty_filename_in_each_seance
+
+# %%
+labels = SORTED_SEANCE
+values = df_empty_filename_in_each_seance['num_empty_filename']
+
+plt.subplots(figsize=(17, 6))
+plt.bar(labels, values)
+plt.title("Number of empty filename_infere in each seance")
+plt.xlabel("Seance")
+plt.ylabel("Number of empty filename_infere")
+plt.show()
+
+
+# %% [markdown]
+# ### Create a dataframe of column 'tests'
+
+# %%
+def convert_column_tests_to_df(df):
+    
+    df_test_not_empty = df[df['tests'] != '']['tests']
+
+    df_all_tests = None
+    frames = []
+
+    for test_value in df_test_not_empty:
+        
+        lst = ast.literal_eval(test_value) # extract the list inside the string
+        df_one_test = pd.DataFrame(lst)
+        frames.append(df_one_test)
+
+    df_all_tests = pd.concat(frames, ignore_index=True)
+    return df_all_tests
+    
+df_of_column_test = convert_column_tests_to_df(df)  
+df_of_column_test 
+
+# %% [markdown]
+# ### Add Red or Green column for Run.Test
+
+# %% [markdown]
+# How write boolean for test green or red for Run.Test : This column should be added by the values in 'status' column?
+
+# %%
+df_of_column_test[df_of_column_test['status'] == False]
+
+# %% [markdown]
+# ### Keep research data only
+
+# %%
+df['research_usage'].unique()
+
+# %% [markdown]
+# ### Example of an student who worked alone and then en binome during one seance
 
 # %%
 # Example of the error above
@@ -515,39 +594,20 @@ df[(df['seance'] == 'semaine_1') & ( (df['actor'] == 'hichame.haddou.etu'))][['a
 # %%
 df[(df['seance'] == 'semaine_1') & ( (df['binome'] == 'hichame.haddou.etu'))][['actor','binome']].head(10)
 
-# %%
-presence_actor  = df.groupby('seance')['actor'].unique() 
-presence_actor  = presence_actor.loc[SORTED_SEANCE] # Sort in the order of semester
-
-presence_binome  = df.groupby('seance')['binome'].unique() 
-presence_binome  = presence_binome.loc[SORTED_SEANCE] # Sort in the order of semester
-
-df_all_students = pd.DataFrame(columns=['week', 'num_students', 'name_students'])
-
-for seance in SORTED_SEANCE:
-
-    # Append row
-    all_students = set(presence_actor[seance]).union(set(presence_binome[seance]))
-
-    df_all_students = pd.concat([
-        df_all_students,
-        pd.DataFrame({'week': [seance], 'num_students': [len(all_students)], 'name_students': [all_students]})
-    ], ignore_index=True)
-
-
-df_all_students
-
 # %% [markdown]
 # # ToDo
 #
-# - change seance by TP
-# - change the nale x variable                                   
-#
-# - semaine_5: there are two sessions, but only one sessions they weere working, because the second session was contrl TP and the internet was cut
-# - add the part to see how many filename_infere are empty in each semaine
+# - semaine_5: there are two sessions, but only one sessions they were working, because the second session was controle TP and the internet was cut
+# - add the part to see how many filename_infere are empty in each semaine : DONE!
 # - Ignore the part of **utilisation print**
 #
 # - filename_infere of students who save their files in the correct name but not the correct name of the semaine
 #
-# - add dataframe for the cases one, two, for each TP (create a function)
+# - add dataframe for the cases one, two, for each TP (create a function) : DONE!
 # - add matrix with columns seance and TP : DONE!
+#
+# - see how created df of column 'test' (in Amadouho version) : Done!
+# - How write boolean for test green or red for Run.Test
+# - we want just Nom_TP_PPROGRAMMATION without the first week
+# - Leave the part after the print on Etude_sur_les_testes.py
+# - See cleaning.keep_research_data_only in notebooks/Init_data.py
