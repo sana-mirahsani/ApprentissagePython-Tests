@@ -41,7 +41,7 @@ import matplotlib.pyplot as plt
 # ## Load DataFrame
 
 # %%
-df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='Final_nettoyage_2425.csv')
+df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='phase2_nettoyage_fichiere.csv')
 
 # %% [markdown]
 # ## Analyze
@@ -186,8 +186,8 @@ count_table
 # %%
 count_table.plot(kind='bar', figsize=(14, 6))
 
-plt.title("Number of Files per TP and Type_TP")
-plt.ylabel("Number of Files")
+plt.title("Number of trace per TP and Type_TP")
+plt.ylabel("Number of trace")
 plt.xlabel("TP")
 plt.xticks(rotation=45)
 plt.legend(title="Type_TP")
@@ -234,6 +234,143 @@ plt.xticks(rotation=45)
 plt.legend(title="Verbs")
 plt.tight_layout()
 plt.show()
+
+# %%
+from src.data.variable_constant_2425 import SORTED_SEANCE, all_TP_functions_name 
+import re
+from src.data.variable_constant_2425 import FILES_BY_TP
+from src.features import io_utils, data_cleaning
+
+# Global variable pattern
+pattern = ''
+for tp_name in FILES_BY_TP:
+
+    file_name = '|'.join(tp_name)
+    pattern = pattern +  file_name + '|'
+
+pattern = pattern  + 'Irrelevant'
+
+
+# %%
+def find_strange_filename_infere(pattern,TP,verb):
+
+    # create the lists
+    filename_empty_index, filename_case1_index, filename_case2_index = [], [] , []
+
+    for index, row in df[(df['TP'] == TP) & (df['verb'] == verb)].iterrows():
+
+        match_state = re.search(pattern, row['P_codeState']) # search if the name of file is in the codeState
+
+        if match_state:
+            
+            # if the name between <trace></trace> is different from the name in filename_infere
+            if row['filename_infere'] != match_state.group():
+                filename_case1_index.append(index)
+                
+        else:
+            # if there is no name between <trace></trace> 
+            filename_infere = data_cleaning.find_filename_by_function_name(all_TP_functions_name,row['P_codeState'])
+            if filename_infere == '': # if there is no good function's name in P_codeState
+                filename_empty_index.append(index)
+
+            else: # if the filename found by function's name is not same as the name in filename_infere
+                if row['filename_infere'] != filename_infere:
+                    filename_case2_index.append(index) 
+
+    return filename_empty_index, filename_case1_index, filename_case2_index
+
+
+# %%
+empty_filename, filename_case1, filename_case2 = find_strange_filename_infere(pattern,'Tp1','Run.Test')
+
+# %%
+for i in filename_case2:
+    print('----------------')
+    print(df.loc[i,'filename_infere'])
+    print(df.loc[i,'filename'])
+    print(df.loc[i,'P_codeState'])
+
+# %%
+for i in case2_index:
+    print('----------------')
+    print(df.loc[i,'P_codeState'])
+
+# %%
+df.loc[44754,'P_codeState']
+
+# %%
+pattern
+
+# %%
+df.loc[301556,'P_codeState']
+
+# %%
+df[(df['TP'] == 'Tp1') & (df['verb'] == 'Run.Test')& (df['tests'] != '[]')][['filename_infere','filename','P_codeState','tests']]
+
+# %%
+df.loc[179842,'tests']
+
+# %%
+df.loc[44754,'P_codeState']
+
+# %%
+df.loc[44754]
+
+# %%
+df[(df['TP'] == 'Tp1') & (df['verb'] == 'Run.Test')]['filename_infere'].unique()
+
+# %%
+df[(df['TP'] == 'Tp1') & (df['verb'] == 'Run.Test')]['tests'].unique()
+
+# %%
+import re
+from src.data.variable_constant_2425 import FILES_BY_TP, TP_name, Type_TP
+
+# Global variable pattern
+pattern = ''
+for tp_name in FILES_BY_TP:
+
+    file_name = '|'.join(tp_name)
+    pattern = pattern +  file_name + '|'
+
+pattern = pattern  + 'Irrelevant'
+
+match = re.search(pattern, df.loc[44754,'filename_infere']) 
+match
+
+# %%
+df.loc[44754,'filename']
+
+# %%
+from src.features import io_utils, data_cleaning
+pattern_list = pattern.split('|')
+
+# %%
+pattern_list
+
+# %%
+df.loc[126963,'filename']
+import difflib
+
+for correct_name in pattern_list:
+    
+    similarity = difflib.SequenceMatcher(None, correct_name[:-3], 'chaine_rep').ratio()
+    
+    if similarity > 0.7: print(True)
+
+#data_cleaning.find_similarity(pattern_list,'chaine_rep.py')
+
+# %%
+df.loc[126963,'filename']
+
+# %%
+df.loc[126963,'P_codeState']
+
+# %%
+df.loc[44754]
+
+# %%
+df[(df['TP'] == 'Tp1') & (df['verb'] == 'Run.Test') & (df['tests'] != '[]')][['filename_infere','filename','tests']]
 
 # %% [markdown]
 # ### Number of using of each verb in each TP
@@ -307,6 +444,8 @@ plt.legend(title="Verbs")
 plt.tight_layout()
 plt.show()
 
+# %%
+
 # %% [markdown]
 # ### Number of using of each verb in each seance only for TP_prog
 
@@ -347,20 +486,24 @@ plt.tight_layout()
 plt.show()
 
 # %% [markdown]
-# ### Get number of students who used 'Print' statement
+# ### Number of each TP in each seance
 
 # %%
-seance_before_print = ['semaine_1', 'semaine_2', 'semaine_3', 'semaine_4']
-df_seance : pd.DataFrame = df[df['seance'].isin(seance_before_print)]
+# create a crossttable of two columns of df
+count_table_seance_TP = pd.crosstab(df['seance'],df['TP'])
+count_table_seance_TP = count_table_seance_TP.reindex(index = SORTED_SEANCE, columns = TP_ORDER, fill_value=0)
+count_table_seance_TP
 
-run_verb = ['Run.Command', 'Run.Program', 'Run.Test', 'Run.Debugger']
-df_run : pd.DataFrame = df[df['verb'].isin(run_verb)]
+# %%
+count_table_seance_TP.plot(kind='bar', figsize=(14, 6))
 
-df_run[(df_run['P_codeState'].str.contains('print', case=False, regex=True)) |
-                  (df_run['F_codeState'].str.contains('print', case=False, regex=True)) |
-                  (df_run['commandRan'].str.contains('print', case=False, regex=True))
-                ]
-df_run
+plt.title("Number of TP in each semaine")
+plt.ylabel("Number of TPs")
+plt.xlabel("Seance")
+plt.xticks(rotation=45)
+plt.legend(title="TP")
+plt.tight_layout()
+plt.show()
 
 # %% [markdown]
 # # OLD
@@ -394,59 +537,6 @@ for seance in SORTED_SEANCE:
 
 df_all_students
 
-# %%
-# Test
-for seance in SORTED_SEANCE:
-    x = df_common_name[df_common_name['week']== seance]['num_common_names']
-    real_number = len(presence_actor[seance]) + len(presence_binome[seance]) - int(x.iloc[0])
-
-    if real_number != df_all_students[df_all_students['week']== seance]['num_students'].iloc[0]:
-        print(f'Error in week : {seance}')
-        break
-
-print("Analyze Correct!")
-
-# %%
-df_all_students.plot(kind='bar', figsize=(10, 5), color='skyblue')
-plt.title('Unique Actors per Seance')
-plt.xlabel('Seance')
-plt.ylabel('Number of Unique Actors')
-plt.xticks(rotation=45)
-plt.tight_layout()
-plt.show()
-
-# %%
-# check if you need them or not 
-df_all_students = data_cleaning.extract_students_each_week(df_clean)
-
-students_semaine_2 = list(df_all_students[df_all_students['week'] == 'semaine_2']['name_students'].iloc[0])
-students_semaine_2 = [item for item in students_semaine_2 if isinstance(item, str) and item.strip() != "" and item.lower() != "nan"] # remove the empty strings or nan
-
-df_analyze_students_semaine2 = data_cleaning.get_student_totals_each_week(df_clean, students_semaine_2, pattern) # takes maximum 1 min, it's normal
-
-# %%
-# Before
-students_trace_zero = df_analyze_students_semaine2[df_analyze_students_semaine2['total_trace'] == 0]['name'].unique()
-print(f" Number of students with zero trace in semaine_2 : {len(students_trace_zero)}")
-
-# %% [markdown]
-# Interpretation : they are students who were binome of an actor, that's why they don't have any trace, but it doesn't mean that they didn't work during this semaine, so we have to pick the values from their actors and put as their value in df_analyze_students_semaine2.
-
-# %%
-# Apply : Find actors 
-df_of_students_zero_trace = data_cleaning.actors_of_student_with_zero_trace(df_clean, students_trace_zero)
-df_of_students_zero_trace
-
-# %%
-# check if there is any binome with more than one actor
-errors = df_of_students_zero_trace[df_of_students_zero_trace['its_actor'].apply(lambda x: not (isinstance(x, (list, np.ndarray)) and len(x) == 1))]
-if errors.empty:
-    print("No there is no binome with more than one actor")
-
-# %%
-# Apply : Fill values of binome by their atcor's values
-df_analyze_students_semaine2 = data_cleaning.fill_values_of_binome_with_zero_trace(df_of_students_zero_trace,df_analyze_students_semaine2)
-
 # %% [markdown]
 # # ToDo
 #
@@ -456,6 +546,8 @@ df_analyze_students_semaine2 = data_cleaning.fill_values_of_binome_with_zero_tra
 # - semaine_5: there are two sessions, but only one sessions they weere working, because the second session was contrl TP and the internet was cut
 # - add the part to see how many filename_infere are empty in each semaine
 # - Ignore the part of **utilisation print**
-
-# %% [markdown]
-# +
+#
+# - filename_infere of students who save their files in the correct name but not the correct name of the semaine
+#
+# - add dataframe for the cases one, two, for each TP (create a function)
+# - add matrix with columns seance and TP : DONE!

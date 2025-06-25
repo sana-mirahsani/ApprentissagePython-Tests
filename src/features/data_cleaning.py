@@ -417,9 +417,11 @@ def find_similarity(TP_Files_name: list,filename_infere:str) -> str:
      
     for correct_name in TP_Files_name:
 
-        similarity = difflib.SequenceMatcher(None, correct_name, filename_infere).ratio()
+        # remove the .py
+        filename_infere_removed = filename_infere.replace('.py', '')
+        similarity = difflib.SequenceMatcher(None, correct_name[:-3], filename_infere_removed).ratio()
 
-        if similarity > 0.6:
+        if similarity > 0.7:
             return correct_name
         
     return '' # Wasn't similar!
@@ -521,10 +523,9 @@ def correct_filename_infere_in_subset(subset: pd.DataFrame,df: pd.DataFrame,patt
 
             else: # filename is not correct
                 #print('here2')
-                # Try to find the similar correct name
-                filename_infere = find_similarity(pattern_list,filename_infere)
+                
                 #print(filename_infere)
-                if filename_infere == '': # If the name is not similar
+                
                     #print('here3')
                     if row['verb'] in ['File.Open', 'File.Save']:
                         #print('here4')
@@ -557,6 +558,13 @@ def correct_filename_infere_in_subset(subset: pd.DataFrame,df: pd.DataFrame,patt
                             # Remove to test:
                             #print('here1')
                             #not_found_filename_index.append(index)
+    
+
+                    # if couldn't find filename_infere by codestate
+                    if filename_infere == '':
+                        # Try to find the similar correct name
+                        filename_infere = find_similarity(pattern_list,filename_infere)
+                
 
         # change filename_infere of df with the correct name
         df.at[index, 'filename_infere'] = filename_infere 
