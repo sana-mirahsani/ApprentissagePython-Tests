@@ -37,6 +37,21 @@ from src.data.constants import INTERIM_DATA_DIR
 from src.data.variable_constant_2425 import SORTED_SEANCE, TP_NAME
 import matplotlib.pyplot as plt
 
+# just for test
+from src.data.variable_constant_2425 import SORTED_SEANCE, all_TP_functions_name 
+import re
+from src.data.variable_constant_2425 import FILES_BY_TP
+from src.features import data_cleaning
+
+# Global variable pattern
+pattern = ''
+for tp_name in FILES_BY_TP:
+
+    file_name = '|'.join(tp_name)
+    pattern = pattern +  file_name + '|'
+
+pattern = pattern  + 'Irrelevant' 
+
 
 # %% [markdown]
 # ## Load DataFrame
@@ -236,21 +251,6 @@ plt.legend(title="Verbs")
 plt.tight_layout()
 plt.show()
 
-# %%
-from src.data.variable_constant_2425 import SORTED_SEANCE, all_TP_functions_name 
-import re
-from src.data.variable_constant_2425 import FILES_BY_TP
-from src.features import data_cleaning
-
-# Global variable pattern
-pattern = ''
-for tp_name in FILES_BY_TP:
-
-    file_name = '|'.join(tp_name)
-    pattern = pattern +  file_name + '|'
-
-pattern = pattern  + 'Irrelevant'
-
 
 # %%
 def find_strange_filename_infere(pattern,TP,verb):
@@ -297,8 +297,95 @@ for tp in TP_NAME:
 df_strange_filenames_Run_Test
 
 # %%
-for i in filename_case2:
+list_index = df_strange_filenames_Run_Test[df_strange_filenames_Run_Test['TP'] == 'Tp1']['empty_filename'].tolist()
+len(list_index[0])
+
+# %%
+(df['TP'] == 'Tp_GAME').sum()
+
+# %%
+list_index = df_strange_filenames_Run_Test[df_strange_filenames_Run_Test['TP'] == 'Tp_GAME']['filename_case2'].tolist()
+len(list_index[0])
+
+# %%
+df.loc[261557,'P_codeState']
+
+# %%
+df.loc[261557,'filename']
+
+# %%
+df.loc[261557,'seance']
+
+# %%
+df.loc[261557,'filename_infere']
+
+# %%
+for i in list_index[0]:
     print('----------------')
+    print(i)
+    print(df.loc[i,'filename_infere'])
+    print(df.loc[i,'filename'])
+    print(df.loc[i,'P_codeState'])
+
+# %%
+list_index = df_strange_filenames_Run_Test[df_strange_filenames_Run_Test['TP'] == 'Tp_GAME']['empty_filename'].tolist()
+len(list_index[0])
+
+# %%
+list_index = df_strange_filenames_Run_Test[df_strange_filenames_Run_Test['TP'] == 'Tp1']['filename_case2'].tolist()
+len(list_index[0])
+
+# %%
+for i in list_index[0]:
+    print(i)
+
+# %%
+df.loc[14163:14170,'filename_infere']
+
+# %%
+
+# %%
+df.loc[14165]
+
+# %%
+
+# %%
+data_cleaning.find_similarity(pattern_list,'tic_tac_toe.py')
+
+# %%
+df.loc[14166,['P_codeState','verb']]
+
+# %%
+subset = df.loc[14165:14170]
+
+# %%
+subset[['filename_infere','verb','filename']]
+
+# %%
+data_cleaning.correct_filename_infere_in_subset(subset,df,pattern)
+
+# %%
+subset[['filename_infere','verb','filename']]
+
+# %%
+df.loc[14166,'filename_infere'] = "tic_tac_toe.py"
+
+# %%
+df.loc[14168,['filename_infere','commandRan']]
+
+# %%
+data_cleaning.find_filename_by_codestate(pattern,df.loc[14166,'P_codeState'])
+
+# %%
+((df['verb'] == 'Run.Command') & (df['P_codeState'] == '')).sum()
+
+# %%
+(df['verb'] == 'Run.Command').sum()
+
+# %%
+for i in list_index[0]:
+    print('----------------')
+    print(i)
     print(df.loc[i,'filename_infere'])
     print(df.loc[i,'filename'])
     print(df.loc[i,'P_codeState'])
@@ -372,6 +459,8 @@ for correct_name in pattern_list:
     if similarity > 0.7: print(True)
 
 #data_cleaning.find_similarity(pattern_list,'chaine_rep.py')
+
+# %%
 
 # %%
 df.loc[126963,'filename']
@@ -574,6 +663,11 @@ df_of_column_test
 
 # %% [markdown]
 # How write boolean for test green or red for Run.Test : This column should be added by the values in 'status' column?
+#
+# - False : Red
+# - True : Green
+#
+# check this function df_tests = tests_utils.construct_DataFrame_from_all_tests(run_test_copy) in script_initialisation.py in thomas version
 
 # %%
 df_of_column_test[df_of_column_test['status'] == False]

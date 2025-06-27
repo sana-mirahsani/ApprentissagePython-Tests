@@ -482,97 +482,93 @@ def correct_filename_infere_in_subset(subset: pd.DataFrame,df: pd.DataFrame,patt
     """
 
     pattern_list = pattern.split('|')
-    # Remove to test:
-    #not_found_filename_index = []
 
     for index in subset.index:
         row = df.loc[index]
             
         filename_infere = row['filename_infere']
         
-        # check the emptyness (only for Run.Command and Run.Program, Ignore Docstring,session.start,session.end)
+        # check the emptyness (only for Run.Program)
         if filename_infere == '':
-            
-            if row['verb'] in ['Run.Command', 'Run.Program']:
 
-                if row['P_codeState'] != '': # P_codeState has a content
-                    filename_infere = find_filename_by_codestate(pattern,row['P_codeState'])
-                    
-                    if filename_infere == '':
-                        pass
-                        # Remove to test:
-                        #not_found_filename_index.append(index)
-
-                else:
-                    pass
-                    #print('here3')
-                    #not_found_filename_index.append(index)
-            else:
-                pass
-                # Remove to test:
-                #not_found_filename_index.append(index)   
-                #print(row['verb'])
-                #print(not_found_filename_index)
+                if (row['verb'] ==  'Run.Program') and (row['P_codeState'] != ''): # P_codeState has a content
+                    new_filename_infere = find_filename_by_codestate(pattern,row['P_codeState'])          
 
         # filename_infere non vide
         else:
             match = re.search(pattern, filename_infere) 
             
             if match: # if it's match, extract the correct name
-                filename_infere = match.group()
+                new_filename_infere = match.group()
 
             else: # filename is not correct
-                #print('here2')
-                
-                #print(filename_infere)
-                
-                    #print('here3')
-                    if row['verb'] in ['File.Open', 'File.Save']:
-                        #print('here4')
+                    # lets have a look to the codestate when possible
+                    if row['verb'] == 'File.Save':
+                        
                         if row['F_codeState'] != '': # F_codeState has a content
-                            filename_infere = find_filename_by_codestate(pattern,row['F_codeState'])
-                            #print('here5')
-                            if filename_infere == '':
-                                pass
-                                # Remove to test:
-                                #not_found_filename_index.append(index)
+                            new_filename_infere = find_filename_by_codestate(pattern,row['F_codeState'])
                             
-                        else:
-                            pass
-                            # Remove to test:
-                            #print('here2')
-                            #not_found_filename_index.append(index)
+                            # if  it can't find the name in codestate, it checks the old filename_infere with similarity
+                            if new_filename_infere == '':
+                                new_filename_infere = find_similarity(pattern_list,row['filename_infere'])
 
                     elif row['verb'] in ['Run.Test', 'Run.Command', 'Run.Program', 'Run.Debugger']:
 
                         if row['P_codeState'] != '': # P_codeState has a content
-                            filename_infere = find_filename_by_codestate(pattern,row['P_codeState'])
+                            new_filename_infere = find_filename_by_codestate(pattern,row['P_codeState'])
                             
-                            if filename_infere == '':
-                                pass
-                                # Remove to test:
-                                #not_found_filename_index.append(index)
-
-                        else:
-                            pass
-                            # Remove to test:
-                            #print('here1')
-                            #not_found_filename_index.append(index)
-    
-
-                    # if couldn't find filename_infere by codestate
-                    if filename_infere == '':
-                        # Try to find the similar correct name
-                        filename_infere = find_similarity(pattern_list,filename_infere)
-                
+                            # if  it can't find the name in codestate, it checks the old filename_infere with similarity
+                            if new_filename_infere == '':
+                                new_filename_infere = find_similarity(pattern_list,row['filename_infere'])      
 
         # change filename_infere of df with the correct name
-        df.at[index, 'filename_infere'] = filename_infere 
+        df.at[index, 'filename_infere'] = new_filename_infere 
 
-    # Remove to test:
-    #if filename_infere == '':
-    #    print("Can't find filename for these indices:")
-    #    print(not_found_filename_index)
+def correct_filename_infere_in_subset2(subset: pd.DataFrame,df: pd.DataFrame,pattern:str) -> None:
+
+    pattern_list = pattern.split('|')
+
+    for index in subset.index:
+
+        row = df.loc[index]
+        filename_infere = row['filename_infere']
+        new_filename_infere = filename_infere  # Default fallback
+        
+        # check the emptyness (only for Run.Program)
+        if filename_infere == '' and row['verb'] == 'Run.Program' and row['P_codeState']:
+            # Case 1: Empty filename, Run.Program with available P_codeState
+            new_filename_infere = find_filename_by_codestate(pattern, row['P_codeState'])
+
+        # filename_infere non vide
+        elif filename_infere != '':
+            match = re.search(pattern, filename_infere) 
+            
+            if match: 
+                # Case 2: filename_infere already valid
+                new_filename_infere = match.group()
+
+            else:
+                # Case 3: filename_infere not valid, try to fix based on verb and codestate
+                    if row['verb'] == 'File.Save':
+                        
+                        if row['F_codeState'] != '': # F_codeState has a content
+                            new_filename_infere = find_filename_by_codestate(pattern,row['F_codeState'])
+                            
+                            # if  it can't find the name in codestate, it checks the old filename_infere with similarity
+                            if new_filename_infere == '':
+                                new_filename_infere = find_similarity(pattern_list,row['filename_infere'])
+
+                    elif row['verb'] in ['Run.Test', 'Run.Command', 'Run.Program', 'Run.Debugger']:
+
+                        if row['P_codeState'] != '': # P_codeState has a content
+                            new_filename_infere = find_filename_by_codestate(pattern,row['P_codeState'])
+                            
+                            # if  it can't find the name in codestate, it checks the old filename_infere with similarity
+                            if new_filename_infere == '':
+                                new_filename_infere = find_similarity(pattern_list,row['filename_infere'])      
+
+        # change filename_infere of df with the correct name
+        df.at[index, 'filename_infere'] = new_filename_infere 
 
 # Fill empty string by using sandwich method
 def sandwich(subset:pd.DataFrame,df: pd.DataFrame) -> None:

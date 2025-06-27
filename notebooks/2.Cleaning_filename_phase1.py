@@ -62,7 +62,7 @@ sys.path.append('../') # these two lines allow the notebook to find the path to 
 import pandas as pd
 import re
 import numpy as np
-from src.features import io_utils, data_cleaning, data_testing
+from src.features import io_utils, data_cleaning
 from src.data.constants import INTERIM_DATA_DIR
 from src.data.variable_constant_2425 import FILES_BY_TP
 
@@ -176,6 +176,9 @@ total_commandRan_start_Run = len(df_clean[df_clean['verb'] == 'Run.Program']['co
 
 print(f"Total rows of not empty strings in commandRan for Run.Program : {total_non_empty_commandRan}")
 print(f"Total rows of commandRan starts with %Run in Run.Program : {total_commandRan_start_Run}")
+
+# %% [markdown]
+# There are values in commandRan which they include %Run Editor content.
 
 # %%
 # Apply
