@@ -4,6 +4,7 @@
 #                  Library
 #------------------------------------------------
 import pandas as pd 
+from typing import Tuple
 import sys
 sys.path.append('../')
 #------------------------------------------------
@@ -105,7 +106,7 @@ def get_number_of_empty_filename_for_week(week: str,df : pd.DataFrame) -> None:
         print(f"Total number of emptystring for {verb} : {total}")
 
 # Test if there are still incorrect filename_infere after removing the too short traces
-def test_incorrect_names(week: str, df : pd.DataFrame, pattern: str)-> None:
+def test_incorrect_names(week: str, df : pd.DataFrame, pattern: str) -> None:
 
     """
     Test if there is any incorrect filename_infere or not after removing the too_short_session.
@@ -130,4 +131,21 @@ def test_incorrect_names(week: str, df : pd.DataFrame, pattern: str)-> None:
     else:
         print("There are still invalid names, something is wrong...")
     
-    
+# Check after the cleanign part, is there any sessions that doesn't include Run.Test at all in each TP_prog
+def check_not_including_Run_Test_fast(df: pd.DataFrame, tp_prog_indices: list) -> Tuple[list, int]:
+    result = []
+
+    session_starts = df[df['verb'] == 'Session.Start'].index.tolist()
+    session_ends = df[df['verb'] == 'Session.End'].index.tolist()
+
+    sessions = list(zip(session_starts, session_ends))
+    tp_prog_set = set(tp_prog_indices)  # for faster lookup
+
+    for start_idx, end_idx in sessions:
+        # Check if any TP_prog falls within this session
+        if any(i in tp_prog_set for i in range(start_idx, end_idx + 1)):
+            session_slice = df.loc[start_idx:end_idx]
+            if not (session_slice['verb'] == 'Run.Test').any():
+                result.append((start_idx, end_idx))
+
+    return result, len(result)

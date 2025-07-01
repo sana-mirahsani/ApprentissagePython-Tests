@@ -86,7 +86,7 @@ import numpy as np
 from src.features import io_utils, data_cleaning, data_testing
 from src.data.constants import INTERIM_DATA_DIR
 from src.data.variable_constant_2425 import FILES_BY_TP, TP_name, Type_TP
-
+ 
 # Global variable pattern
 pattern = ''
 for tp_name in FILES_BY_TP:
@@ -524,4 +524,4 @@ df_clean['Type_TP']
 # ## Save the final dataframe
 
 # %%
-io_utils.write_csv(df_clean,INTERIM_DATA_DIR,'phase2_nettoyage_fichiere.csv')
+io_utils.write_csv(df_clean,INTERIM_DATA_DIR,'phase2_nettoyage_fichiere')

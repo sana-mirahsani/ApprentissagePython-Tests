@@ -200,7 +200,7 @@ def cleaning_manual_actors_2425(df: pd.DataFrame, name: str) -> pd.DataFrame:
 #                  filename cleaning
 #------------------------------------------------
 # Cut datafram into small parts
-def cut_df(df: pd.DataFrame, week: str, student_name: str) -> list:
+def cut_df_by_seance(df: pd.DataFrame, week: str, student_name: str) -> list:
     '''
     Extract indices of all session.start and session.end of a week for a specific student.
 
@@ -641,7 +641,7 @@ def create_df_indices(list_students: list, df: pd.DataFrame,week: str) -> pd.Dat
 
     # Fill df_indices for each student in a week
     for student in list_students: # it takes 15 second maximum, it's normal
-        indices, too_short_indices = cut_df(df,week,student)
+        indices, too_short_indices = cut_df_by_seance(df,week,student)
 
         df_indices = pd.concat([
             df_indices,
