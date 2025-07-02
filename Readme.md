@@ -75,6 +75,10 @@ jupytext --set-formats ipynb,py:percent 2.Cleaning_filename_phase1.ipynb
         The final similarity score is calculated with the formula:
         similarity ratio = 2 * (total matching characters) / length of string A + length of string B
 
+- How and where dataframe traces250102_clean is sorted ?
+    Before the cleaning process, there is another process which is called **process_raw_data** and it gets the data from server in json format and transforms it into a dataframe and then it sorts them in this order : first in order of alphabet of the actor column, second in order of the session.id column in descending order, and third in order of the tempstamp.date column. This process produce the data **traces250102_clean** which is the input data of **1.Cleaning_actors.ipynb**. This **process_raw_data** is done by Thomas and it is in **cleaning.py** module.
+
+
 ​
 
 

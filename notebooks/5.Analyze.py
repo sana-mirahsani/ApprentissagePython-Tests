@@ -642,98 +642,104 @@ for index, row in df_too_short.iterrows():
                 
                 print(indices)
 
+
 # %% [markdown]
 # There is no Run.Test in too_short_sessions
 
 # %% [markdown]
-# ### 4.12 Calculate how many students didn't do the run.test in each TP, TP_prog
-#
-# Questions: how can be understand they didn't do a Run.Test?
+# ### 4.12 Calculate how many students doing or not doing the run.test in each TP (TP_prog)
 
 # %%
-df_not_doing_run_test = pd.DataFrame(columns=['TP','total_number_students','total_number_students_not_run_test']) # create the df
+# can eb in data_testing
+def calculate_verb_in_TP(df,verb,tp): 
+
+    df_filtered = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')] 
+    actor_column  = df_filtered['actor']
+    binome_column = df_filtered['binome']
+    all_students  = set(actor_column).union(set(binome_column))
+    all_students.remove('')
+
+    students_excluding_verb = []
+    students_including_verb = []
+
+    for name in all_students:    
+
+        verbs_of_student = df_filtered[(df_filtered['actor'] == name) | (df_filtered['binome'] == name)]['verb'].unique()
+        
+        if not verb in verbs_of_student: # not doing Run.Test
+            students_excluding_verb.append(name)
+        
+        else: # doing Run.Test
+            students_including_verb.append(name)
+    
+    total_num_of_students = len(all_students)
+    total_num_of_students_excluding_verb = len(students_excluding_verb)
+    total_num_of_students_including_verb = len(students_including_verb)
+    
+    return total_num_of_students, total_num_of_students_including_verb, total_num_of_students_excluding_verb
+
+
+# %%
+df_run_test = pd.DataFrame(columns=['TP','total_number_students','doing_run_test','not_doing_run_test']) # create the df
 
 for tp in TP_NAME:
-
-    df_filtered = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')] # filter on TP & TP_prog
-
-    # calculate the number total of students
-    actor_column1  = df_filtered['actor']
-    binome_column1 = df_filtered['binome']
-    all_students1  = set(actor_column1).union(set(binome_column1))
-    total_number1  = len(all_students1)
-    print(total_number1)
-
-    # filter on NOT doing Run.Test
-    df_filtered_new = df_filtered[df_filtered['verb'] != 'Run.Test']
-    actor_column  = df_filtered_new['actor']
-
-    binome_column = df_filtered_new['binome']
-
-    all_students  = set(actor_column).union(set(binome_column))
-    print(len(all_students))
-
+    
+    if tp != 'Tp10':
+        total_students , total_students_including_run_test, total_students_excluding_run_test = calculate_verb_in_TP(df,'Run.Test',tp)
+    
+    else: 
+        total_students , total_students_including_run_test, total_students_excluding_run_test = 0, 0 , 0
+        
     # Append row to df
-    df_not_doing_run_test = pd.concat([
-        df_not_doing_run_test,
-        pd.DataFrame({'TP': [tp], 'total_number_students' : [total_number1],'total_number_students_not_run_test' : [len(all_students)]})
+    df_run_test = pd.concat([
+        df_run_test,
+        pd.DataFrame({'TP': [tp], 'total_number_students' : [total_students], 'doing_run_test' : [total_students_including_run_test], 'not_doing_run_test' : [total_students_excluding_run_test]})
     ], ignore_index=True)
 
-df_not_doing_run_test
-
-# %% [markdown]
-# ### 4.13 Calculate the total number of session.Start and .End without including any Run.Test in TP_prog only (specially in Tp_game).
+df_run_test 
 
 # %%
-df.loc[1010:1020,'session.id']
+df_run_test.set_index('TP')[['total_number_students','doing_run_test','not_doing_run_test']].plot(kind='bar', figsize=(12, 6))
 
-# %%
-df_indices_excluding_run_test = pd.DataFrame(columns=['TP', 'indices', 'total_num_No_Run_Test'])
-
- # Fill df_indices for each student in a week
-for tp in TP_NAME: # it takes 4 mins maximum, it's normal because it checks for all TPs
-
-    # extract the list of indices of each TP
-    indices_to_check = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')].index.tolist()
-
-    if indices_to_check:
-        # if there is a TP_prog
-        final_indices, total_num_No_Run_Test = data_testing.check_not_including_Run_Test_in_session(df,indices_to_check)
-
-        # Fill the dataframe
-        df_indices_excluding_run_test = pd.concat([
-            df_indices_excluding_run_test,
-            pd.DataFrame({'TP': [tp], 'indices': [final_indices], 'total_num_No_Run_Test': [len(final_indices)]})
-        ], ignore_index=True)
-
-df_indices_excluding_run_test
+plt.title("Comparing the total number of students with the number of students Not doing Run.Test in TP_prog")
+plt.ylabel("Number of students")
+plt.xlabel("TP")
+plt.xticks(rotation=45)
+plt.legend(title="Verbs")
+plt.tight_layout()
+plt.show()
 
 
 # %% [markdown]
-# add the plotting
-# add another filtrage by the name students (only actors not the binomes)
-
-# %% [markdown]
-# ### 4.14 Run.test rate per TP
+# ### 4.13 Run Test Participation Rate per TP (TP_prog)
 
 # %%
-# Function to calculate the percentage
-def calculation(tp,df):
+# Function to calculate the percentage ( can be in data_testing)
+def verb_rate_by_tp(tp,df,verb):
     
-    actor1 = set(df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')]['actor']) # extract the actors
-    binome1 = set(df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')]['binome']) # extract the binomes
+    df_filtered   = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')] 
+    actor_column  = df_filtered['actor']
+    binome_column = df_filtered['binome']
+    all_students  = set(actor_column).union(set(binome_column))
+    all_students.remove('')
 
-    actor2 = set(df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog') & (df['verb'] == 'Run.Test')]['actor']) # extract the actors of only Run.Test
-    binome2 = set(df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog') & (df['verb'] == 'Run.Test')]['binome']) # extract the binomes of only Run.Test
+    students_including_verb = []
 
-    all1 = actor1.union(binome1) # union on actors and binomes of TP_prog
-    all2 = actor2.union(binome2) # union on actors and binomes of TP_prog and Run.Test
+    for name in all_students:    
 
-    print(tp)
-    run_test_rate_per_tp = (len(all2) / len(all1)) * 100
-    print(f"In {tp}: {run_test_rate_per_tp:.2f}% of students made the Run.Test.")
+        verbs_of_student = df_filtered[(df_filtered['actor'] == name) | (df_filtered['binome'] == name)]['verb'].unique()
+        
+        if verb in verbs_of_student: # doing Run.Test
+            students_including_verb.append(name)
+    
+    total_num_of_students = len(all_students)
+    total_num_of_students_including_verb = len(students_including_verb)
+    
+    verb_rate_per_tp = (total_num_of_students_including_verb / total_num_of_students) * 100
 
-    return run_test_rate_per_tp
+    print(f"In {tp}: {verb_rate_per_tp:.2f}% of students made the Run.Test.")
+
+    return verb_rate_per_tp  
 
 
 # %%
@@ -742,7 +748,7 @@ run_test_rate_per_tp_all = [] # list to save all percentage
 for tp in TP_NAME:
 
     if tp != 'Tp10':
-        percentage = calculation(tp,df) # calculate the percentage
+        percentage = verb_rate_by_tp(tp,df,'Run.Test') # calculate the percentage
         run_test_rate_per_tp_all.append(percentage) # store the result
     
     else: # it's TP10 and there is TP_prog!
@@ -752,14 +758,155 @@ for tp in TP_NAME:
 # Plotting
 plt.figure(figsize=(8, 5))
 plt.plot(TP_NAME, run_test_rate_per_tp_all, marker='o', linestyle='-', color='skyblue')
-plt.title('Percentage Values')
+plt.title('Rate of students doing Run.Test per each TP')
 plt.ylabel('Percentage (%)')
-plt.ylim(0, 100)  # Since you're dealing with percentages
+plt.ylim(0, 100) 
 plt.grid(True)
 plt.show()
 
+
 # %% [markdown]
-# ### 4.15 In TP_GAME, look for each student, in the newest file of Run.Test, how many their column tests is empty and isn't
+# ### 4.14 How many of doing Run.Test percentage is empty tests 
+
+# %%
+def calculation_empty_test(df,verb,tp):
+
+    df_filtered   = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')] 
+    actor_column  = df_filtered['actor']
+    binome_column = df_filtered['binome']
+    all_students  = set(actor_column).union(set(binome_column))
+    all_students.remove('')
+
+    students_doing_test = []
+    students_with_empty_test = []
+
+    for name in all_students:
+        verbs_of_student = df_filtered[(df_filtered['actor'] == name) | (df_filtered['binome'] == name)]['verb'].unique()
+                
+        if verb in verbs_of_student: # doing Run.Test
+            array_tests_unique = df_filtered[(df_filtered['actor'] == name) | (df_filtered['binome'] == name)]['tests'].unique()
+            
+            students_doing_test.append(name) # add to a list
+
+            if (array_tests_unique.size == 2) & (array_tests_unique[1] == '[]'): # means the test is empty
+                
+                    students_with_empty_test.append(name) # student did the run.test but it is empty
+
+    return len(students_doing_test), len(students_with_empty_test)
+
+
+# %%
+df_empty_test = pd.DataFrame(columns=['TP','num_doing_run_test','num_doing_empty_run_test']) # create the df
+
+for tp in TP_NAME:
+    
+    if tp != 'Tp10':
+        total_students_doing_test , total_students_with_empty_test = calculation_empty_test(df,'Run.Test',tp)
+    
+    else: 
+        total_students_doing_test , total_students_with_empty_test = 0, 0 
+        
+    # Append row to df
+    df_empty_test = pd.concat([
+        df_empty_test,
+        pd.DataFrame({'TP': [tp], 'num_doing_run_test' : [total_students_doing_test], 'num_doing_empty_run_test' : [total_students_with_empty_test]})
+    ], ignore_index=True)
+
+df_empty_test 
+
+# %%
+df_empty_test.set_index('TP')[['num_doing_run_test','num_doing_empty_run_test']].plot(kind='bar', figsize=(12, 6))
+
+plt.title("Number of students doing the empty tests in each TP_prog")
+plt.ylabel("Number of students")
+plt.xlabel("TP")
+plt.xticks(rotation=45)
+plt.legend(title="Verbs")
+plt.tight_layout()
+plt.show()
+
+# %% [markdown]
+# ### 4.15 Find the session.Start and session.End without including any Run.Test in each TP (TP_prog)
+
+# %%
+# A list to store all the indices
+records = []
+
+for tp in TP_NAME:
+    tp_df = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')] # filter on TP and TP_prog
+    indices_to_check = tp_df.index.tolist() # extract the indices of files of TP_prog
+
+    if indices_to_check:
+        final_indices, total_num_No_Run_Test = data_testing.check_not_including_Run_Test_fast(df, indices_to_check) # check each indices if they include any Run.Test or not
+
+        records.append({
+            'TP': tp,
+            'indices': final_indices,
+            'total_num_No_Run_Test': total_num_No_Run_Test
+        }) 
+
+    else:
+        records.append({
+            'TP': tp,
+            'indices': [],
+            'total_num_No_Run_Test': 0
+        }) 
+
+df_indices_excluding_run_test = pd.DataFrame(records) # convert the dictionary into a dataframe
+
+df_indices_excluding_run_test
+
+# %%
+labels = TP_NAME
+values = df_indices_excluding_run_test['total_num_No_Run_Test']
+
+plt.subplots(figsize=(17, 6))
+plt.bar(labels, values)
+plt.title("Number of sessions with NO Run.Test in TP_prog")
+plt.xlabel("TP")
+plt.ylabel("Number of sessions")
+plt.show()
+
+# %% [markdown]
+# ### 4.16 Calculate how many students didn't do any Run.Test in their session.Start and session.End during each TP (TP_prog)
+
+# %%
+records_student = [] 
+
+for idx, row in df_indices_excluding_run_test.iterrows():
+    tp_name = row['TP']
+    index_ranges = row['indices']  # list of tuples like (start, end)
+
+    actors_in_ranges = set()
+    
+    for start_idx, end_idx in index_ranges:
+        # Select the slice from original DataFrame
+        actor_slice = df.loc[start_idx:end_idx, 'actor']
+        actors_in_ranges.update(actor_slice.unique())
+
+    records_student.append({
+            'TP': tp_name,
+            'students_name': actors_in_ranges,
+            'total_num': len(actors_in_ranges)
+        }) 
+
+# %%
+df_students_excluding_run_test = pd.DataFrame(records_student)
+df_students_excluding_run_test 
+
+# %%
+labels = TP_NAME
+values = df_students_excluding_run_test['total_num']
+
+plt.subplots(figsize=(17, 6))
+plt.bar(labels, values)
+plt.title("Number of students with NO Run.Test in their sessions")
+plt.xlabel("TP")
+plt.ylabel("Number of studnets")
+plt.show()
+
+# %% [markdown]
+# ### 4.17 In TP_GAME, look for each student, in the newest file of Run.Test, how many their column tests is empty and isn't
 
 # %%
 actors  = set(df[(df['TP'] == 'Tp_GAME') & (df['verb'] == 'Run.Test')]['actor'])
@@ -785,6 +932,58 @@ for student in all_students:
     else: num_students_with_a_tests += 1
 
 num_students_with_empty_tests, num_students_with_a_tests
+
+
+# %% [markdown]
+# ### 4.18 Number of students who did each file.py in TP_GAME, extract the name of students
+
+# %%
+def calculation_files_of_tp_game(df,filename):
+
+    df_TP_game = df[df['TP'] == 'Tp_GAME'] 
+    actor_column  = df_TP_game['actor']
+    binome_column = df_TP_game['binome']
+    all_students  = set(actor_column).union(set(binome_column))
+    all_students.remove('')
+
+    actor_column_filename  = df_TP_game[df_TP_game['filename_infere'] == filename]['actor']
+    binome_column_filename = df_TP_game[df_TP_game['filename_infere'] == filename]['binome']
+    all_students_filename  = set(actor_column_filename).union(set(binome_column_filename))
+    all_students_filename.remove('')
+
+    return len(all_students), len(all_students_filename)
+
+
+# %%
+files_tp_game = (df[df['TP'] == 'Tp_GAME']['filename_infere'].unique()).tolist()
+files_tp_game.remove('experimentations_fichiers.py')
+files_tp_game
+
+# %%
+df_files_tp_game = pd.DataFrame(columns=['filename','total_number_students']) # create the df
+
+for filename in files_tp_game:
+    
+    total_students , total_students_in_filename = calculation_files_of_tp_game(df,filename)
+     
+    # Append row to df
+    df_files_tp_game = pd.concat([
+        df_files_tp_game,
+        pd.DataFrame({'filename': [filename], 'total_number_students' : [total_students_in_filename]})
+    ], ignore_index=True)
+
+df_files_tp_game
+
+# %%
+labels = files_tp_game
+values = df_files_tp_game['total_number_students']
+
+plt.subplots(figsize=(17, 6))
+plt.bar(labels, values)
+plt.title("Number of students doing in each file of TP_GAME")
+plt.xlabel("file")
+plt.ylabel("Number of studnets")
+plt.show()
 
 
 # %% [markdown]
@@ -852,6 +1051,8 @@ df[(df['seance'] == 'semaine_1') & ( (df['binome'] == 'hichame.haddou.etu'))][['
 # %% [markdown]
 # # ToDo
 #
+# **DONE:**
+# - We must anonymized the too_short_sessions.csv, the column of actors
 # - semaine_5: there are two sessions, but only one sessions they were working, because the second session was controle TP and the internet was cut
 # - Ignore the part of **utilisation print**
 # - we want just Nom_TP_PPROGRAMMATION without the first week
@@ -859,40 +1060,27 @@ df[(df['seance'] == 'semaine_1') & ( (df['binome'] == 'hichame.haddou.etu'))][['
 # - How write boolean for test green or red for Run.Test : DONE!
 # - See cleaning.keep_research_data_only in notebooks/Init_data.py
 # - try to find another way of coding of correct_filename_infere_in_subset, reduce the number of if
-# - Fill the interpretations
-#
-# New :
 # - correct the filename_inere in case 1 and two by the P_codeState, and calculate the percentage of emoing traces only for those with empty filename, which we can't find the filename by the P_codeState : Done!
+# - add diagram to compare the number of students using each verb and the total number of present student in TP (TP_prog) : DONE! 4.8
+# - Calculate the total number of Run.Test in the too_short_session : DONE! 4.11
+# - calculate the percentage of how many students in each TP, (only TP_prog) did the Run.Test from all present students : Done! 4.14
+# - In 4.15 :add the plotting and change the code: DONE! the time of execution reduced from 4 mins to 3s !
+# - add in Readme how the dataframe form json is sorted by actor (alphabet) an then by session.id and then tempstamp.date, this is in cleaning.py of Thomas version : DONE!
+# - Calculate how many students didn't do the run.test in each TP, TP_prog : DONE!
+# - add in 4.13, the student which were in 60% of doing the run.test, are they empty tests or not. you should extract their name: DONE!
+# - add number of student who did each file.py in TP_GAME : DONE 4.18
 #
-# - add diagram to compare the number of students using each verb and the total number of present student in TP (TP_prog) : DONE!
-#
-# - Calculate the total number of Run.Test in the too_short_session : DONE!
-#
-# - Calculate how many students didn't do the run.test in each TP, TP_prog : DONE! but I'm not sure about the calculation
-#
-# - Calculate the total number of session.Start and .End without including any Run.Test in TP_prog only (specially in Tp_game) : DONE! but I'm not sure if the way I calculated is correct or not!
-#
-# - calculate the percentage of how many students in each TP, (only TP_prog) did the Run.Test from all present students : Done! 
+# **In process:**
 #
 # - In each TP_GAME, look for each student, in the newest file of Run.Test, how many their column tests is empty and isn't : DONE but need to check 
 #
 # - look Run.Test in each TP if the value in column tests is empty or not.
 # if the Run.Test is clicked once and the tests is empty so there is no Run.Test
 #
-# - We must anonymized the too_short_sessions.csv, the column of actors
-#
-# - In 4.15 :add the plotting 
-#
-# - add in Readme how the dataframe form json is sorted by actor (alphabet) an then by session.id and then tempstamp.date, this is in cleaning.py of Thomas version
-#
+# **New :**
 # - How many students stoped doing run.test in TP-GAME 
+# - check the students who didn't do the test during the TP_GAME, wht is the reason, didn't they do any test during other TP or not, for these people check also if they 
 #
 # - check this https://gitlab.univ-lille.fr/L1-programmation/analyse-des-traces/-/blob/amadou_analyse/notebooks/PJI_amadou_2024.py 
 #
-# - check the students who didn't do the test during the TP_GAME, wht is the reason, didn't they do any test during other TP or not, for these people check also if they 
-#
-# - add number of student who did each file.py in TP_GAME, extract the name of students
-#
-# - add in TP_GAME and for student who didn't do the run.test, in which of P_codestate (the last one) is not empty, and if there is any name in the previous step, then check eachf ile for them (if they had worked on all files)
-#
-# - add in 4.15, the student which were in 60% of doing the run.test, are they empty tests or not. you should extract their name.
+# - add in TP_GAME and for student who didn't do the run.test, in which of P_codestate (the last one) is not empty, and if there is any name in the previous step, then check each file for them (if they had worked on all files)
