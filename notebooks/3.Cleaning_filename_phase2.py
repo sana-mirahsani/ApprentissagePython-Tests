@@ -65,8 +65,8 @@
 #     <br>
 #
 # 4. Add column TP
-# 5. 
-# 6. Save new DataFrame : phase2_nettoyage_fichiere.csv
+# 5. Add column TP_Type
+# 6. Save the final dataframe : phase2_nettoyage_fichiere.csv
 #
 #
 # _________________________________________________________
@@ -521,7 +521,7 @@ print(f"Total empty : {tota_empty}")
 df_clean['Type_TP']
 
 # %% [markdown]
-# ## Save the final dataframe
+# ## 6.Save the final dataframe
 
 # %%
 io_utils.write_csv(df_clean,INTERIM_DATA_DIR,'phase2_nettoyage_fichiere')

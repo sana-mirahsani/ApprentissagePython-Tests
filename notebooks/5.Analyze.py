@@ -985,29 +985,123 @@ plt.xlabel("file")
 plt.ylabel("Number of studnets")
 plt.show()
 
+# %% [markdown]
+# ### AMADOUE's code
+
+# %%
+# extract one file of TP_game and one actor
+df_filtered = df[(df['TP'] == 'Tp_GAME')  & (df['filename_infere'] == 'tictactoe.py') & (df['actor'] == 'abaly.oura.etu')]
+
+# %%
+df_filtered[['timestamp.$date','session.duration','verb','P_codeState','F_codeState','tests','result.success']]
+
+# %%
+df.loc[207,'P_codeState']
+
+# %%
+df_filtered   = df[(df['TP'] == 'Tp_GAME') & (df['Type_TP'] == 'TP_prog')] 
+actor_column  = df_filtered['actor']
+binome_column = df_filtered['binome']
+all_students  = set(actor_column).union(set(binome_column))
+all_students.remove('')
+
+students_doing_test = []
+students_with_empty_test = []
+verb = 'Run.Test'
+
+for name in all_students:
+    verbs_of_student = df_filtered[(df_filtered['actor'] == name) | (df_filtered['binome'] == name)]['verb'].unique()
+            
+    if verb in verbs_of_student: # doing Run.Test
+        array_tests_unique = df_filtered[(df_filtered['actor'] == name) | (df_filtered['binome'] == name)]['tests'].unique()
+        
+        students_doing_test.append(name) # add to a list
+
+        if (array_tests_unique.size == 2) & (array_tests_unique[1] == '[]'): # means the test is empty
+            
+                students_with_empty_test.append(name) # student did the run.test but it is empty
+
+# extract students with a real test
+student_with_a_test = set(students_doing_test) - set(students_with_empty_test)
+student_with_a_test
+
+# %%
+df_filtered = df[(df['TP'] == 'Tp_GAME') & ((df['actor'] == 'abdoulaye.nguere.etu') | (df['binome'] == 'abdoulaye.nguere.etu'))]
+
+# %%
+df_filtered[['timestamp.$date','session.duration','verb','P_codeState','F_codeState','tests','result.success']]
+
+# %%
+df_filtered.loc[119224,'tests']
 
 # %% [markdown]
-# ## Create a dataframe of column 'tests'
+# ### Create a dataframe of column 'tests'
+
+# %%
+df['tests'].unique()
+
+# %%
+df[df['TP'] == 'Tp_GAME']['tests'].unique()
+
 
 # %%
 def convert_column_tests_to_df(df):
     
-    df_test_not_empty = df[df['tests'] != '']['tests']
+    df_test_not_empty = df['tests']
 
     df_all_tests = None
     frames = []
-
-    for test_value in df_test_not_empty:
+    
+    for index, test_value in df_test_not_empty.items():
         
-        lst = ast.literal_eval(test_value) # extract the list inside the string
-        df_one_test = pd.DataFrame(lst)
-        frames.append(df_one_test)
+        if (test_value != '') and (test_value != '[]'):
+            lst = ast.literal_eval(test_value) # extract the list inside the string
+            df_one_test = pd.DataFrame(lst)
+            # add the column of actor and filename_infere and verb and P_codeState
+            df_one_test.insert(0, 'original_index', index)
+            df_one_test.insert(1, 'filename_infere', df.loc[index,'filename_infere'])
+            df_one_test.insert(2, 'actor', df.loc[index,'actor'])
+            df_one_test.insert(3, 'P_codeState', df.loc[index,'P_codeState'])
+           
+            frames.append(df_one_test)        
 
     df_all_tests = pd.concat(frames, ignore_index=True)
     return df_all_tests
     
 df_of_column_test = convert_column_tests_to_df(df)  
 df_of_column_test 
+
+# %%
+df_of_column_test.loc[0,'original_index']
+
+# %%
+print(df_of_column_test.loc[0,'P_codeState'])
+
+# %%
+df_of_column_test[(df_of_column_test['actor'] == 'abaly.oura.etu') & (df_of_column_test['filename_infere'] == 'tictactoe.py')]
+
+# %%
+df_of_column_test[df_of_column_test['actor'] == 'abaly.oura.etu']['filename_infere'].unique()
+
+# %%
+df_of_column_test.loc[0,'verdict']
+
+# %%
+df.loc[2]
+
+# %%
+df_of_column_test['verdict'].unique()
+
+# %% [markdown]
+# Different values in verdict columns : 
+#
+# - **PassedVerdict** : The code is passed with the correct output (as excepted)
+# - **ExceptionVerdict** : It didn’t reach the end of the test due to an error.
+# - **FailedVerdict** : The code ran successfully, but the output was incorrect.
+# - **PassedSetupVerdict** : The code passed a setup check, not the actual test.
+
+# %%
+df_of_column_test[df_of_column_test['verdict'] == 'PassedVerdict']['']
 
 # %% [markdown]
 # ### Add Red or Green column for Run.Test
@@ -1030,7 +1124,7 @@ df_of_column_test['color_test'] = np.where(df_of_column_test['status'] == True, 
 df_of_column_test[['color_test','status']] 
 
 # %% [markdown]
-# ### Keep research data only
+# ## Keep research data only
 
 # %%
 df['research_usage'].unique()
@@ -1069,18 +1163,19 @@ df[(df['seance'] == 'semaine_1') & ( (df['binome'] == 'hichame.haddou.etu'))][['
 # - Calculate how many students didn't do the run.test in each TP, TP_prog : DONE!
 # - add in 4.13, the student which were in 60% of doing the run.test, are they empty tests or not. you should extract their name: DONE!
 # - add number of student who did each file.py in TP_GAME : DONE 4.18
+# - look Run.Test in each TP if the value in column tests is empty or not. if the Run.Test is clicked once and the tests is empty so there is no Run.Test:  DONE 4.18
+# - In each TP_GAME, look for each student, in the newest file of Run.Test, how many their column tests is empty and isn't : DONE but need to check 
 #
 # **In process:**
 #
-# - In each TP_GAME, look for each student, in the newest file of Run.Test, how many their column tests is empty and isn't : DONE but need to check 
 #
-# - look Run.Test in each TP if the value in column tests is empty or not.
-# if the Run.Test is clicked once and the tests is empty so there is no Run.Test
+#
 #
 # **New :**
 # - How many students stoped doing run.test in TP-GAME 
-# - check the students who didn't do the test during the TP_GAME, wht is the reason, didn't they do any test during other TP or not, for these people check also if they 
+# - check the students who didn't do the test during the TP_GAME, wht is the reason, didn't they do any test during other TP or not
+# - add in TP_GAME and for student who didn't do the run.test, in which of P_codestate (the last one) is not empty, and if there is any name in the previous step, then check each file for them (if they had worked on all files)
 #
 # - check this https://gitlab.univ-lille.fr/L1-programmation/analyse-des-traces/-/blob/amadou_analyse/notebooks/PJI_amadou_2024.py 
 #
-# - add in TP_GAME and for student who didn't do the run.test, in which of P_codestate (the last one) is not empty, and if there is any name in the previous step, then check each file for them (if they had worked on all files)
+#
