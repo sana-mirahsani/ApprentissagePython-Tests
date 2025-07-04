@@ -712,62 +712,7 @@ plt.show()
 
 
 # %% [markdown]
-# ### 4.13 Run Test Participation Rate per TP (TP_prog)
-
-# %%
-# Function to calculate the percentage ( can be in data_testing)
-def verb_rate_by_tp(tp,df,verb):
-    
-    df_filtered   = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')] 
-    actor_column  = df_filtered['actor']
-    binome_column = df_filtered['binome']
-    all_students  = set(actor_column).union(set(binome_column))
-    all_students.remove('')
-
-    students_including_verb = []
-
-    for name in all_students:    
-
-        verbs_of_student = df_filtered[(df_filtered['actor'] == name) | (df_filtered['binome'] == name)]['verb'].unique()
-        
-        if verb in verbs_of_student: # doing Run.Test
-            students_including_verb.append(name)
-    
-    total_num_of_students = len(all_students)
-    total_num_of_students_including_verb = len(students_including_verb)
-    
-    verb_rate_per_tp = (total_num_of_students_including_verb / total_num_of_students) * 100
-
-    print(f"In {tp}: {verb_rate_per_tp:.2f}% of students made the Run.Test.")
-
-    return verb_rate_per_tp  
-
-
-# %%
-run_test_rate_per_tp_all = [] # list to save all percentage
-
-for tp in TP_NAME:
-
-    if tp != 'Tp10':
-        percentage = verb_rate_by_tp(tp,df,'Run.Test') # calculate the percentage
-        run_test_rate_per_tp_all.append(percentage) # store the result
-    
-    else: # it's TP10 and there is TP_prog!
-        run_test_rate_per_tp_all.append(0)
-
-# %%
-# Plotting
-plt.figure(figsize=(8, 5))
-plt.plot(TP_NAME, run_test_rate_per_tp_all, marker='o', linestyle='-', color='skyblue')
-plt.title('Rate of students doing Run.Test per each TP')
-plt.ylabel('Percentage (%)')
-plt.ylim(0, 100) 
-plt.grid(True)
-plt.show()
-
-
-# %% [markdown]
-# ### 4.14 How many of doing Run.Test percentage is empty tests 
+# ### 4.13 Calculate how many students are doing the empty tests
 
 # %%
 def calculation_empty_test(df,tp):
@@ -776,7 +721,9 @@ def calculation_empty_test(df,tp):
     actor_column  = df_filtered['actor']
     binome_column = df_filtered['binome']
     all_students  = set(actor_column).union(set(binome_column))
-    all_students.remove('')
+    
+    if '' in all_students:
+        all_students.remove('')
 
     students_doing_test = []
     students_with_empty_test = []
@@ -793,56 +740,37 @@ def calculation_empty_test(df,tp):
             if (array_tests_unique.size == 1) & (array_tests_unique[0] == '[]'): # means the test is empty
                 
                     students_with_empty_test.append(name) # student did the run.test but it is empty
-    print(students_with_empty_test)
-    return len(students_doing_test), len(students_with_empty_test)
+    
+    return all_students, students_doing_test, students_with_empty_test
 
 
 # %%
-df_empty_test = pd.DataFrame(columns=['TP','num_doing_run_test','num_doing_empty_run_test']) # create the df
+df_empty_test = pd.DataFrame(columns=['TP','total_student','num_doing_run_test','num_doing_empty_run_test','name_doing_run_test','name_doing_empty_run_test']) # create the df
+students_doing_test_all_tp = []
+students_with_empty_test_all_tp = []
 
 for tp in TP_NAME:
     
-    if tp != 'Tp10':
-        total_students_doing_test , total_students_with_empty_test = calculation_empty_test(df,tp)
-    
-    else: 
-        total_students_doing_test , total_students_with_empty_test = 0, 0 
-        
+    # start the calculation
+    all_students, total_students_doing_test , total_students_with_empty_test = calculation_empty_test(df,tp)
+
     # Append row to df
-    df_empty_test = pd.concat([
-        df_empty_test,
-        pd.DataFrame({'TP': [tp], 'num_doing_run_test' : [total_students_doing_test], 'num_doing_empty_run_test' : [total_students_with_empty_test]})
-    ], ignore_index=True)
+    if tp != 'Tp10':
+        df_empty_test = pd.concat([
+            df_empty_test,
+            pd.DataFrame({'TP': [tp], 'total_student': [len(all_students)],'num_doing_run_test' : [len(total_students_doing_test)], 'num_doing_empty_run_test' : [len(total_students_with_empty_test)], 'name_doing_run_test' : [total_students_doing_test], 'name_doing_empty_run_test' : [total_students_with_empty_test]})
+        ], ignore_index=True)
+
+    else:
+        df_empty_test = pd.concat([
+            df_empty_test,
+            pd.DataFrame({'TP': [tp], 'total_student': [0], 'num_doing_run_test' : [0],'num_doing_empty_run_test' : [0], 'name_doing_run_test' : [''], 'name_doing_empty_run_test' : ['']})
+        ], ignore_index=True)
 
 df_empty_test 
 
 # %%
-df_filtered   = df[df['seance'] == 'semaine_11'] 
-actor_column  = df_filtered['actor']
-
-all_students  = set(actor_column).union(set(binome_column))
-all_students.remove('')
-
-students_doing_test = []
-students_with_empty_test = []
-
-for name in all_students:
-    verbs_of_student = df_filtered[(df_filtered['actor'] == name) | (df_filtered['binome'] == name)]['verb'].unique()
-            
-    if verb in verbs_of_student: # doing Run.Test
-        array_tests_unique = df_filtered[(df_filtered['actor'] == name) | (df_filtered['binome'] == name)]['tests'].unique()
-        
-        students_doing_test.append(name) # add to a list
-        if array_tests_unique.size == 2:
-            print(array_tests_unique)
-        if (array_tests_unique.size == 2) & (array_tests_unique[1] == '[]'): # means the test is empty
-            
-                students_with_empty_test.append(name) # student did the run.test but it is empty
-
-
-
-# %%
-df_empty_test.set_index('TP')[['num_doing_run_test','num_doing_empty_run_test']].plot(kind='bar', figsize=(12, 6))
+df_empty_test.set_index('TP')[['total_student','num_doing_run_test','num_doing_empty_run_test']].plot(kind='bar', figsize=(12, 6))
 
 plt.title("Number of students doing the empty tests in each TP_prog")
 plt.ylabel("Number of students")
@@ -850,6 +778,71 @@ plt.xlabel("TP")
 plt.xticks(rotation=45)
 plt.legend(title="Verbs")
 plt.tight_layout()
+plt.show()
+
+# %% [markdown]
+# ### 4.14 Run Test Participation Rate per TP (TP_prog)
+
+# %% [markdown]
+# - add how many students in ech TP , TP_prog, did the run test and from doing this run.test, how many of them are doing only empty ones and the percentage of doing run.test - empty run.test = a value / total students who did the TP 
+
+# %%
+df_empty_test.columns
+
+# %%
+total_students = df_empty_test[df_empty_test['TP'] == 'Tp9']['total_student'].iloc[0]
+total_students
+
+# %%
+df_empty_test[df_empty_test['TP'] == 'Tp9']['num_doing_run_test'].iloc[0], df_empty_test[df_empty_test['TP'] == 'Tp9']['num_doing_empty_run_test'].iloc[0]
+
+
+# %%
+# Function to calculate the percentage (can be in data_testing)
+def run_test_rate_by_tp(tp,df):
+
+    # This function calculates the result by the calculation of calculation_empty_test()
+    total_num_of_students = df[df_empty_test['TP'] == tp]['total_student'].iloc[0]
+    total_num_of_students_doing_test = df[df['TP'] == tp]['num_doing_run_test'].iloc[0]
+    total_num_of_students_doing_empty_test = df[df['TP'] == tp]['num_doing_empty_run_test'].iloc[0]
+
+    total_num_of_students_doing_real_test = total_num_of_students_doing_test - total_num_of_students_doing_empty_test
+
+    test_rate_per_tp = (total_num_of_students_doing_test / total_num_of_students) * 100
+    real_test_rate_per_tp = (total_num_of_students_doing_real_test / total_num_of_students) * 100
+
+    print(f"------------------{tp}-----------------------")
+    print(f"{test_rate_per_tp:.2f}% of students made the Run.Test and {real_test_rate_per_tp:.2f}% of them are the real test.")
+    
+    return test_rate_per_tp, real_test_rate_per_tp
+
+
+# %%
+run_test_rate_per_tp_all  = [] # list to save all percentage
+real_test_rate_per_tp_all = [] # list to save all percentage real test
+
+for tp in TP_NAME:
+
+    if tp != 'Tp10':
+        percentage_test, percentage_real_test = run_test_rate_by_tp(tp,df_empty_test) # calculate the percentage
+        run_test_rate_per_tp_all.append(percentage_test) # store the result
+
+        real_test_rate_per_tp_all.append(percentage_real_test) # store the result of real test
+    
+    else: # it's TP10 and there is TP_prog!
+        run_test_rate_per_tp_all.append(0)
+        real_test_rate_per_tp_all.append(0)
+
+# %%
+# Plotting
+plt.figure(figsize=(8, 5))
+plt.plot(TP_NAME, run_test_rate_per_tp_all, marker='o', linestyle='-', color='skyblue', label = 'Doing Run Test')
+plt.plot(TP_NAME, real_test_rate_per_tp_all, marker='o', linestyle='-', color='orange', label = 'Doing Real Test')
+plt.title('Rate of students doing Run.Test and real test per each TP')
+plt.ylabel('Percentage (%)')
+plt.ylim(0, 100) 
+plt.grid(True)
+plt.legend()
 plt.show()
 
 # %% [markdown]
@@ -1011,6 +1004,53 @@ plt.title("Number of students doing in each file of TP_GAME")
 plt.xlabel("file")
 plt.ylabel("Number of studnets")
 plt.show()
+
+# %% [markdown]
+# ### 4.19 Extract the consecutive Run.Test of students who is doing a real test
+
+# %%
+df_empty_test
+
+# %%
+all_students_doing_real_test = {} # a dictionary of students doing the real test in each TP by looking df_empty_test
+
+for tp in TP_NAME:
+    df_filtered_tp = df_empty_test[df_empty_test['TP'] == tp]
+    
+    students_doing_run_test   = set(df_filtered_tp['name_doing_run_test'].iloc[0])
+    students_doing_empty_test = set(df_filtered_tp['name_doing_empty_run_test'].iloc[0])
+
+    students_doing_real_test = list(students_doing_run_test - students_doing_empty_test)  
+    all_students_doing_real_test.update({tp :students_doing_real_test})
+
+all_students_doing_real_test 
+
+
+# %%
+def extract_consecutive_run_test(df,tp):
+    """
+    Extract the consecutive indices of Run.Test
+    In all_students_doing_real_test, we have the name of all students for each TP, who did a real test (Did Run.Test and tests is not empty),
+    I extract the students which have more than 2 Run.Test in a TP.
+    Then extract these indices, and check if there are consecutive indices or not, if so it will print the name and the number of total Run.Test appearence. 
+    """
+    
+    for name in all_students_doing_real_test[tp]:
+        df_filtered = df[(df['TP'] == tp) & ((df['actor'] == name) | (df['binome'] == name))]
+        if 'Run.Test' in df_filtered['verb'].unique():
+            num = df_filtered['verb'].value_counts()['Run.Test']
+
+            if num > 2:
+                
+                lst = df[(df['TP'] == tp) & ((df['actor'] == name) | (df['binome'] == name)) & (df['verb'] == 'Run.Test')].index.tolist()
+
+                is_consecutive = all(b - a == 1 for a, b in zip(lst, lst[1:]))
+                if is_consecutive:
+                    print(name,num)
+
+for tp in TP_NAME:
+    print(tp)
+    extract_consecutive_run_test(df,tp)
 
 # %% [markdown]
 # ### AMADOUE's code
@@ -1183,6 +1223,8 @@ df[(df['seance'] == 'semaine_1') & ( (df['binome'] == 'hichame.haddou.etu'))][['
 # - add number of student who did each file.py in TP_GAME : DONE 4.18
 # - look Run.Test in each TP if the value in column tests is empty or not. if the Run.Test is clicked once and the tests is empty so there is no Run.Test:  DONE 4.18
 # - In each TP_GAME, look for each student, in the newest file of Run.Test, how many their column tests is empty and isn't : DONE but need to check 
+# - check this https://gitlab.univ-lille.fr/L1-programmation/analyse-des-traces/-/blob/amadou_analyse/notebooks/PJI_amadou_2024.py 
+# - add how many students in ech TP , TP_prog, did the run test and from doing this run.test, how many of them are doing only empty ones and the percentage of doing run.test - empty run.test = a value / total students who did the TP : DONE!
 #
 # **In process:**
 #
@@ -1190,27 +1232,17 @@ df[(df['seance'] == 'semaine_1') & ( (df['binome'] == 'hichame.haddou.etu'))][['
 #
 #
 # **New :**
+#
+# - find the index for each run.test of students which has already a test but not empty, and find the indices which are continued (if it is hard leave it)
+#
 # - How many students stoped doing run.test in TP-GAME 
 # - check the students who didn't do the test during the TP_GAME, wht is the reason, didn't they do any test during other TP or not
 #
 # - add in TP_GAME and for student who didn't do the run.test, in which of P_codestate (the last one) is not empty, and if there is any name in the previous step, then check each file for them (if they had worked on all files)
 #
-# - check this https://gitlab.univ-lille.fr/L1-programmation/analyse-des-traces/-/blob/amadou_analyse/notebooks/PJI_amadou_2024.py 
-#
-# - add how many students in ech TP , TP_prog, did the run test and from doing this run.test, how many of them are doing only empty ones and the percentage of doing run.test - empty run.test = a value / total students who did the TP 
-#
-# - add the diagram of how man did the run.test vide, on the same diagram which how many students did a run.test (4.13)
-#
-# - find the index for each run.test of students which has already a test but not empty, and find the indices which are continued (if it is hard leave it)
-#
 # start lundi:
 # - 
 #
 # ## To show : 
-# - 4.12 
-# - 4.13
-# - 4.14
-# - 4.15 question : why do we need to check session by session
-# - 4.16
-# - 4.18
-# - AMADOUE's code
+# - 4.14, add a diagram on Run_test rate
+#
