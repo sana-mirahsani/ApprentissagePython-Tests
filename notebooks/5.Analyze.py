@@ -673,6 +673,7 @@ def calculate_verb_in_TP(df,verb,tp):
             students_including_verb.append(name)
     
     total_num_of_students = len(all_students)
+    
     total_num_of_students_excluding_verb = len(students_excluding_verb)
     total_num_of_students_including_verb = len(students_including_verb)
     
@@ -769,7 +770,7 @@ plt.show()
 # ### 4.14 How many of doing Run.Test percentage is empty tests 
 
 # %%
-def calculation_empty_test(df,verb,tp):
+def calculation_empty_test(df,tp):
 
     df_filtered   = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')] 
     actor_column  = df_filtered['actor']
@@ -779,19 +780,20 @@ def calculation_empty_test(df,verb,tp):
 
     students_doing_test = []
     students_with_empty_test = []
-
+    verb = 'Run.Test'
+    
     for name in all_students:
         verbs_of_student = df_filtered[(df_filtered['actor'] == name) | (df_filtered['binome'] == name)]['verb'].unique()
                 
         if verb in verbs_of_student: # doing Run.Test
-            array_tests_unique = df_filtered[(df_filtered['actor'] == name) | (df_filtered['binome'] == name)]['tests'].unique()
+            array_tests_unique = df_filtered[(df_filtered['verb'] == verb) & ((df_filtered['actor'] == name) | (df_filtered['binome'] == name))]['tests'].unique()
             
             students_doing_test.append(name) # add to a list
-
-            if (array_tests_unique.size == 2) & (array_tests_unique[1] == '[]'): # means the test is empty
+           
+            if (array_tests_unique.size == 1) & (array_tests_unique[0] == '[]'): # means the test is empty
                 
                     students_with_empty_test.append(name) # student did the run.test but it is empty
-
+    print(students_with_empty_test)
     return len(students_doing_test), len(students_with_empty_test)
 
 
@@ -801,7 +803,7 @@ df_empty_test = pd.DataFrame(columns=['TP','num_doing_run_test','num_doing_empty
 for tp in TP_NAME:
     
     if tp != 'Tp10':
-        total_students_doing_test , total_students_with_empty_test = calculation_empty_test(df,'Run.Test',tp)
+        total_students_doing_test , total_students_with_empty_test = calculation_empty_test(df,tp)
     
     else: 
         total_students_doing_test , total_students_with_empty_test = 0, 0 
@@ -813,6 +815,31 @@ for tp in TP_NAME:
     ], ignore_index=True)
 
 df_empty_test 
+
+# %%
+df_filtered   = df[df['seance'] == 'semaine_11'] 
+actor_column  = df_filtered['actor']
+
+all_students  = set(actor_column).union(set(binome_column))
+all_students.remove('')
+
+students_doing_test = []
+students_with_empty_test = []
+
+for name in all_students:
+    verbs_of_student = df_filtered[(df_filtered['actor'] == name) | (df_filtered['binome'] == name)]['verb'].unique()
+            
+    if verb in verbs_of_student: # doing Run.Test
+        array_tests_unique = df_filtered[(df_filtered['actor'] == name) | (df_filtered['binome'] == name)]['tests'].unique()
+        
+        students_doing_test.append(name) # add to a list
+        if array_tests_unique.size == 2:
+            print(array_tests_unique)
+        if (array_tests_unique.size == 2) & (array_tests_unique[1] == '[]'): # means the test is empty
+            
+                students_with_empty_test.append(name) # student did the run.test but it is empty
+
+
 
 # %%
 df_empty_test.set_index('TP')[['num_doing_run_test','num_doing_empty_run_test']].plot(kind='bar', figsize=(12, 6))
@@ -1026,6 +1053,7 @@ student_with_a_test = set(students_doing_test) - set(students_with_empty_test)
 student_with_a_test
 
 # %%
+# analyze the test of students who has done a test (not the empty one)
 df_filtered = df[(df['TP'] == 'Tp_GAME') & ((df['actor'] == 'abdoulaye.nguere.etu') | (df['binome'] == 'abdoulaye.nguere.etu'))]
 
 # %%
@@ -1034,15 +1062,9 @@ df_filtered[['timestamp.$date','session.duration','verb','P_codeState','F_codeSt
 # %%
 df_filtered.loc[119224,'tests']
 
+
 # %% [markdown]
 # ### Create a dataframe of column 'tests'
-
-# %%
-df['tests'].unique()
-
-# %%
-df[df['TP'] == 'Tp_GAME']['tests'].unique()
-
 
 # %%
 def convert_column_tests_to_df(df):
@@ -1059,10 +1081,6 @@ def convert_column_tests_to_df(df):
             df_one_test = pd.DataFrame(lst)
             # add the column of actor and filename_infere and verb and P_codeState
             df_one_test.insert(0, 'original_index', index)
-            df_one_test.insert(1, 'filename_infere', df.loc[index,'filename_infere'])
-            df_one_test.insert(2, 'actor', df.loc[index,'actor'])
-            df_one_test.insert(3, 'P_codeState', df.loc[index,'P_codeState'])
-           
             frames.append(df_one_test)        
 
     df_all_tests = pd.concat(frames, ignore_index=True)
@@ -1072,13 +1090,13 @@ df_of_column_test = convert_column_tests_to_df(df)
 df_of_column_test 
 
 # %%
-df_of_column_test.loc[0,'original_index']
+df_of_column_test[(df_of_column_test['filename_infere'] == 'tictactoe.py') & (df_of_column_test['actor'] == 'abdoulaye.nguere.etu')]
 
 # %%
 print(df_of_column_test.loc[0,'P_codeState'])
 
 # %%
-df_of_column_test[(df_of_column_test['actor'] == 'abaly.oura.etu') & (df_of_column_test['filename_infere'] == 'tictactoe.py')]
+df_of_column_test[(df_of_column_test['bino'] == 'abaly.oura.etu') & (df_of_column_test['filename_infere'] == 'tictactoe.py')]
 
 # %%
 df_of_column_test[df_of_column_test['actor'] == 'abaly.oura.etu']['filename_infere'].unique()
@@ -1174,8 +1192,25 @@ df[(df['seance'] == 'semaine_1') & ( (df['binome'] == 'hichame.haddou.etu'))][['
 # **New :**
 # - How many students stoped doing run.test in TP-GAME 
 # - check the students who didn't do the test during the TP_GAME, wht is the reason, didn't they do any test during other TP or not
+#
 # - add in TP_GAME and for student who didn't do the run.test, in which of P_codestate (the last one) is not empty, and if there is any name in the previous step, then check each file for them (if they had worked on all files)
 #
 # - check this https://gitlab.univ-lille.fr/L1-programmation/analyse-des-traces/-/blob/amadou_analyse/notebooks/PJI_amadou_2024.py 
 #
+# - add how many students in ech TP , TP_prog, did the run test and from doing this run.test, how many of them are doing only empty ones and the percentage of doing run.test - empty run.test = a value / total students who did the TP 
 #
+# - add the diagram of how man did the run.test vide, on the same diagram which how many students did a run.test (4.13)
+#
+# - find the index for each run.test of students which has already a test but not empty, and find the indices which are continued (if it is hard leave it)
+#
+# start lundi:
+# - 
+#
+# ## To show : 
+# - 4.12 
+# - 4.13
+# - 4.14
+# - 4.15 question : why do we need to check session by session
+# - 4.16
+# - 4.18
+# - AMADOUE's code
