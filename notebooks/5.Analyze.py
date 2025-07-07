@@ -780,22 +780,9 @@ plt.legend(title="Verbs")
 plt.tight_layout()
 plt.show()
 
+
 # %% [markdown]
 # ### 4.14 Run Test Participation Rate per TP (TP_prog)
-
-# %% [markdown]
-# - add how many students in ech TP , TP_prog, did the run test and from doing this run.test, how many of them are doing only empty ones and the percentage of doing run.test - empty run.test = a value / total students who did the TP 
-
-# %%
-df_empty_test.columns
-
-# %%
-total_students = df_empty_test[df_empty_test['TP'] == 'Tp9']['total_student'].iloc[0]
-total_students
-
-# %%
-df_empty_test[df_empty_test['TP'] == 'Tp9']['num_doing_run_test'].iloc[0], df_empty_test[df_empty_test['TP'] == 'Tp9']['num_doing_empty_run_test'].iloc[0]
-
 
 # %%
 # Function to calculate the percentage (can be in data_testing)
@@ -1009,7 +996,7 @@ plt.show()
 # ### 4.19 Extract the consecutive Run.Test of students who is doing a real test
 
 # %%
-df_empty_test
+df_empty_test # this dataframe is created in 4.13 part
 
 # %%
 all_students_doing_real_test = {} # a dictionary of students doing the real test in each TP by looking df_empty_test
@@ -1051,6 +1038,169 @@ def extract_consecutive_run_test(df,tp):
 for tp in TP_NAME:
     print(tp)
     extract_consecutive_run_test(df,tp)
+
+# %% [markdown]
+# ### 4.20 Get_mad_actors
+
+# %% [markdown]
+# Now we are facing with two different type of students during on TP_GAME, the one who did a Run.Test but their tests column is not empty, and the one with the empty tests. Alos now we want to know what is the reason that they are students with empty tests, and find another type of students in doing Run.Test but not empty. This type consider the students who pushed the Test button without changing any thing (mad students). Since we already have the list of students with Run.Test (not empty) in 4.19, we can use this list to find them easier.
+
+# %%
+std_list = all_students_doing_real_test['Tp_GAME']
+std_list[0]
+
+# %%
+df[(df['TP'] == 'Tp_GAME') & (df['binome'] == 'kade-bhoye.wann.etu')][['verb','P_codeState','filename_infere','tests','timestamp.$date']]
+
+# %%
+df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'kade-bhoye.wann.etu')][['verb','P_codeState','filename_infere','tests','timestamp.$date']]
+
+# %%
+print(df.loc[143788,'P_codeState']) # Run.program
+
+# %%
+print(df.loc[143789,'P_codeState']) # Run.Test
+
+# %% [markdown]
+#  File.Save
+
+# %%
+print(df.loc[143791,'P_codeState']) # Run.Test with an error
+
+# %%
+print(df.loc[143791,'tests'])
+
+# %% [markdown]
+# File.Save
+
+# %%
+print(df.loc[143793,'P_codeState']) # Run.Test with fixed bug
+
+# %%
+print(df.loc[143794,['commandRan','P_codeState']]) # Run.Command
+
+# %%
+print(df.loc[143795,['commandRan','P_codeState','verb']]) # Docstring.Generate
+
+# %%
+print(df.loc[143796,['commandRan','P_codeState','verb']]) # filen.Save
+
+# %%
+print(df.loc[143797,'P_codeState']) # Run.Test
+
+# %%
+print(df.loc[143797,'tests'])
+
+# %%
+print(df.loc[143798,'P_codeState']) # Run.program
+
+# %%
+print(df.loc[143799,'commandRan']) # Run.command
+
+# %%
+print(df.loc[143800,'commandRan']) # Run.command
+
+# %%
+print(df.loc[143801,'verb']) # File.Save
+
+# %%
+print(df.loc[143802,'P_codeState']) # Run.Program
+
+# %%
+print(df.loc[143803,'P_codeState']) # Run.Program
+
+# %%
+print(df.loc[143804,'P_codeState']) # Run.Test
+
+# %%
+print(df.loc[143804,'tests'])
+
+# %%
+print(df.loc[143805,'P_codeState']) # Run.Program
+
+# %%
+print(df.loc[143806,'P_codeState']) # Run.Program
+
+# %%
+print(df.loc[143807:143814,['verb','commandRan','actor','filename_infere']]) # Run.Command
+
+# %%
+df.loc[143814,'filename_infere'] # 'File.Open'
+
+# %%
+print(df.loc[143815,'filename_infere']) # File.Save
+
+# %%
+print(df.loc[143816,'P_codeState']) # Run.Program
+
+# %%
+print(df.loc[143816,'P_codeState']) # Run.Program
+
+# %%
+print(df.loc[143817,'P_codeState']) # Run.Program
+
+# %%
+print(df.loc[143818,'P_codeState']) # Run.Program
+
+# %%
+print(df.loc[143819,'commandRan']) # Docstring.Generate
+
+# %%
+print(df.loc[143820,'filename_infere']) # File.Save
+
+# %%
+print(df.loc[143821,'P_codeState']) # Run.Program
+
+# %%
+print(df.loc[143822,'P_codeState']) # Run.Program
+
+# %%
+print(df.loc[143823,'filename_infere']) # File.Save
+
+# %%
+print(df.loc[143824,'P_codeState']) # Run.Program
+
+# %%
+print(df.loc[143825,'P_codeState']) # Run.Program
+
+# %%
+print(df.loc[143826,'P_codeState']) # Run.Program
+
+# %%
+print(df.loc[143827,'P_codeState']) # Run.Test
+
+# %%
+print(df.loc[143827,'tests']) # tests
+
+# %%
+print(df.loc[143828,'filename_infere']) # File.Save
+
+# %%
+print(df.loc[143829,'P_codeState']) # Run.Program
+
+# %%
+print(df.loc[143830,'P_codeState']) # Run.Program
+
+# %%
+print(df.loc[143831,'filename_infere']) # File.Save
+
+# %%
+print(df.loc[143832,'P_codeState']) # Run.Program
+
+# %% [markdown]
+# Conclusion
+#
+# At first student, started with a code which had a bug and then he fixed the bug (he found it and fixed it) but after a while in the same day, he got stuck on a part of code, that it wasn't not correct but he couldn't find it! even when he tried with Run.Test find he couldn't because every time he ran the run.Test on the part which was correct and he forgot to change the part to test, so every time the Run.Test was PASSED but when he tried to execute the code, it raised an error! At the end he tried several ways to find the bug but he couldn't so it gave up even though the result of test is successful.
+#
+# This means that they are students with not empty test and a progress but at the end they gave up, so checking only the content of P_codeState and tests is not enough, we need a value that says when the Run.programm is there, is the result successful or it raised an error? because as we saw sometimes the reuslt of tests is True but there is a bug in the code. Also if student do the run.test and the result is not successful it is easy to find it, because in this case, we only need to check the result of test, and if in this case the content of P_codeState is still the same in each run.test and run.test is not successful, so it means the students tried just pushing the button!
+# So we can conclude there are 3 types of students from the students with a real test (not students with the empty tests)
+#
+# - they started , they changed, at the end the result of test or the execution is successful (there is no bug at the end) -> strong students
+# - they strated, they changed, but at the end the gave up because even the result of test are correct, their code can't be executed! -> medium students 1
+# - they started, they changed, but at the end the gave up because the result of run.test is always wrong and the code doesn't executed! -> medium students 2
+# - they started, but they didn't change a big thing, they just wanted to see how it works -> lazy students
+# - they strated, but they didn't chnage any thing at all at the beginning or when they got an error, the same code with the same test result -> mad students
+# - they started, they add one thing and the result is okay, the test is successful and the code is executable but they didn't continue very much (they just tried once or twice) -> lazy students with good result
 
 # %% [markdown]
 # ### AMADOUE's code
@@ -1228,21 +1378,21 @@ df[(df['seance'] == 'semaine_1') & ( (df['binome'] == 'hichame.haddou.etu'))][['
 #
 # **In process:**
 #
-#
+# - find the index for each run.test of students which has already a test but not empty, and find the indices which are continued (if it is hard leave it) : Done but should be analyze the correctness
 #
 #
 # **New :**
-#
-# - find the index for each run.test of students which has already a test but not empty, and find the indices which are continued (if it is hard leave it)
 #
 # - How many students stoped doing run.test in TP-GAME 
 # - check the students who didn't do the test during the TP_GAME, wht is the reason, didn't they do any test during other TP or not
 #
 # - add in TP_GAME and for student who didn't do the run.test, in which of P_codestate (the last one) is not empty, and if there is any name in the previous step, then check each file for them (if they had worked on all files)
 #
-# start lundi:
-# - 
+# - check message de Mirabelle
+#
+# - check the get_mad_actors : these are the students who stopped the progress after not having a successful result of Run.Test
 #
 # ## To show : 
 # - 4.14, add a diagram on Run_test rate
+# - 4.19
 #
