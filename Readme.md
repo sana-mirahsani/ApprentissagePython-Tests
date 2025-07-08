@@ -79,7 +79,26 @@ jupytext --set-formats ipynb,py:percent 2.Cleaning_filename_phase1.ipynb
     Before the cleaning process, there is another process which is called **process_raw_data** and it gets the data from server in json format and transforms it into a dataframe and then it sorts them in this order : first in order of alphabet of the actor column, second in order of the session.id column in descending order, and third in order of the tempstamp.date column. This process produce the data **traces250102_clean** which is the input data of **1.Cleaning_actors.ipynb**. This **process_raw_data** is done by Thomas and it is in **cleaning.py** module.
 
 
-​
+## add later in analyze:
+
+- By the size of difference found, you can check if the part was added or was deleted or it was completely change or it was just a tiny differences
+
+- Students can't be grouped by the day because it's various but we can calculate the averag of work for each student or the average of progress for each student during each TP
+
+- In TP_GAME, because there are 4 different files, we should analyze it seperatly and do the average method for each file and for each student.
+
+- different types of students :
+    - **strong students** : They started strongly and they solved all the bugs without any giving up.
+    
+    - **tried failed students** : they tried and they changed but at the end they gave up because they couldn't find the bug (Whether the result of test is successful or not)
+    
+    - **tried successful students** : They tried and they have a progress and at the end they understood the TP.
+    
+    - **lazy students** : They don't have lot's of traces for a TP and during the TP they didn't change a specific thing. (wether the test result is passed or not)
+    
+    - **mad students** : They tried lot's of Run.Test with the same code or a tiny difference during a day
+
+
 
 
 

@@ -1047,7 +1047,7 @@ for tp in TP_NAME:
 
 # %%
 std_list = all_students_doing_real_test['Tp_GAME']
-std_list[0]
+std_list[1]
 
 # %%
 df[(df['TP'] == 'Tp_GAME') & (df['binome'] == 'kade-bhoye.wann.etu')][['verb','P_codeState','filename_infere','tests','timestamp.$date']]
@@ -1195,12 +1195,315 @@ print(df.loc[143832,'P_codeState']) # Run.Program
 # This means that they are students with not empty test and a progress but at the end they gave up, so checking only the content of P_codeState and tests is not enough, we need a value that says when the Run.programm is there, is the result successful or it raised an error? because as we saw sometimes the reuslt of tests is True but there is a bug in the code. Also if student do the run.test and the result is not successful it is easy to find it, because in this case, we only need to check the result of test, and if in this case the content of P_codeState is still the same in each run.test and run.test is not successful, so it means the students tried just pushing the button!
 # So we can conclude there are 3 types of students from the students with a real test (not students with the empty tests)
 #
-# - they started , they changed, at the end the result of test or the execution is successful (there is no bug at the end) -> strong students
-# - they strated, they changed, but at the end the gave up because even the result of test are correct, their code can't be executed! -> medium students 1
-# - they started, they changed, but at the end the gave up because the result of run.test is always wrong and the code doesn't executed! -> medium students 2
-# - they started, but they didn't change a big thing, they just wanted to see how it works -> lazy students
-# - they strated, but they didn't chnage any thing at all at the beginning or when they got an error, the same code with the same test result -> mad students
-# - they started, they add one thing and the result is okay, the test is successful and the code is executable but they didn't continue very much (they just tried once or twice) -> lazy students with good result
+# different types of students :
+#     - **strong students** : They started strongly and they solved all the bugs without any giving up.
+#     
+#     - **tried failed students** : they tried and they changed but at the end they gave up because they couldn't find the bug (Whether the result of test is successful or not)
+#     
+#     - **tried successful students** : They tried and they have a progress and at the end they understood the TP.
+#     
+#     - **lazy students** : They don't have lot's of traces for a TP and during the TP they didn't change a specific thing. (wether the test result is passed or not)
+#     
+#     - **mad students** : They tried lot's of Run.Test with the same code or a tiny difference during a day
+
+# %% [markdown]
+# ### analyze function
+
+# %%
+strong_student = []
+tried_failed_students = []
+tried_successful_students = []
+lazy_students = []
+mad_students = []
+
+# %%
+std_list = all_students_doing_real_test['Tp_GAME']
+std_list
+
+# %%
+# add the correct format of time 
+df['correct_time'] = pd.to_datetime(df['timestamp.$date'], format='mixed')
+df['correct_time'] = df['correct_time'].dt.date
+
+# %%
+std_list[0]
+
+# %%
+# extract the different days in one TP for one student
+unique_days = df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'avsin.ata.etu')]['correct_time'].unique()
+unique_days
+
+# %%
+# day one
+analyze_the_process_of_each_day(unique_days[0],'avsin.ata.etu') # lazy_student just for this day
+
+# %%
+# day two
+analyze_the_process_of_each_day(unique_days[1],'avsin.ata.etu') # tried_successful_students just for this day
+
+# %%
+std_list[1]
+
+# %%
+unique_days = df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'hugo.vandewalle2.etu')]['correct_time'].unique()
+unique_days
+
+# %%
+# day one
+analyze_the_process_of_each_day(unique_days[0],'hugo.vandewalle2.etu') # strong_student ( because it starts strongly and most of his test.results are )
+
+# %%
+# day one
+analyze_the_process_of_each_day(unique_days[1],'hugo.vandewalle2.etu') # strong_students
+
+# %%
+# another example
+df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'ibrahima-al-amine.diaw.etu')][['verb','P_codeState','filename_infere','tests','timestamp.$date','correct_time']] 
+
+# %%
+# extract the different days in one TP for one student
+unique_days = df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'ibrahima-al-amine.diaw.etu')]['correct_time'].unique()
+unique_days
+
+# %%
+# day one
+analyze_the_process_of_each_day(unique_days[0],'ibrahima-al-amine.diaw.etu')
+
+# %%
+# day two
+analyze_the_process_of_each_day(unique_days[1],'ibrahima-al-amine.diaw.etu')
+
+# %%
+# day 3
+analyze_the_process_of_each_day(unique_days[2],'ibrahima-al-amine.diaw.etu')
+
+# %%
+# day 4
+analyze_the_process_of_each_day(unique_days[3],'ibrahima-al-amine.diaw.etu')
+
+# %%
+# day 5
+analyze_the_process_of_each_day(unique_days[4],'ibrahima-al-amine.diaw.etu')
+
+# %%
+# another students 
+std_list[2]
+
+# %%
+# extract the different days in one TP for one student
+unique_days = df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'richard.kpande-adzare.etu')]['correct_time'].unique()
+unique_days
+
+# %%
+# day 1
+analyze_the_process_of_each_day(unique_days[0],'richard.kpande-adzare.etu')
+
+# %%
+# day 1
+analyze_the_process_of_each_day(unique_days[1],'richard.kpande-adzare.etu')
+
+# %%
+# day 2
+analyze_the_process_of_each_day(unique_days[2],'richard.kpande-adzare.etu')
+
+# %%
+print(std_list[3])
+# extract the different days in one TP for one student
+unique_days = df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'alix.carton2.etu')]['correct_time'].unique()
+unique_days
+
+# %%
+# day 1
+analyze_the_process_of_each_day(unique_days[0],'alix.carton2.etu')
+
+# %%
+# check each different day for this student during the TP_GAME
+df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'ibrahima-al-amine.diaw.etu') & (df['correct_time'] == unique_days[0])][['verb','filename_infere','P_codeState','commandRan']]
+
+# %% [markdown]
+# Conclusion for this day : Just open and save action on one file
+
+# %%
+df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'ibrahima-al-amine.diaw.etu') & (df['correct_time'] == unique_days[1])][['verb','filename_infere','P_codeState','commandRan','tests']]
+
+# %%
+print(df.loc[118421,'P_codeState']) # Run.Test
+
+# %%
+print(df.loc[118421,'tests']) # multipie test so it should check the size of the test and check the status and verdict and line tested of each dictionary
+
+# %%
+df_of_column_test[df_of_column_test['original_index'] == 118421] # successful test
+
+# %% [markdown]
+# What is a successful test?
+#
+# A successful test, is the test that includes atleast once all the function written in the code and its verdict is PassedVerdict and the status is True.
+
+# %%
+print(df.loc[118425,'P_codeState']) # Run.Test : add some parts , P_codeState is different
+
+# %%
+df_of_column_test[df_of_column_test['original_index'] == 118425] # incomplete test!
+
+# %% [markdown]
+# What is a incomplete test?
+#
+# An incomplete test is a test that all the verdict are Passedverdict and their status are True but it doesn't include all the function's name in the P_codeState
+
+# %%
+df.loc[118427,'commandRan'] # Run.Command
+
+# %% [markdown]
+# it just ran a function in a shell and entered (since there is \n at the end)
+
+# %%
+print(df.loc[118430,'P_codeState'] )# Run.Test
+
+# %%
+df_of_column_test[df_of_column_test['original_index'] == 118430] # incomplete test! with different P_codeState
+
+# %%
+print(df.loc[118433,'P_codeState'] )# Run.Test
+
+# %%
+df_of_column_test[df_of_column_test['original_index'] == 118433] # incomplete test! without any changes but with different P_codeState
+
+# %%
+print(df.loc[118435,'P_codeState'] )# Run.Test
+
+# %%
+df_of_column_test[df_of_column_test['original_index'] == 118435] # again with same test (incomplete) but with different P_codeState
+
+# %% [markdown]
+# **conclusion** for the second day for this person:
+#
+# He tried and wrote something but after a while he didn't change the test part at all but every time before every run.test he add or change the code in the P_codeState
+
+# %%
+df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'ibrahima-al-amine.diaw.etu') & (df['correct_time'] == unique_days[2])][['verb','filename_infere','P_codeState','commandRan','tests']]
+
+# %%
+print(df.loc[118671,'P_codeState']) # Run.test
+
+# %%
+df_of_column_test[df_of_column_test['original_index'] == 118671] # Run.Test incomplete test and same test but different P_codeState
+
+# %%
+print(df.loc[118672,'P_codeState']) # Run.Program no changes 
+
+# %% [markdown]
+# **conclusion**
+#
+# For the third day, he worked on another file which is not very important but he tried Run.Test and Run.program with the same code and with the same test result as the day before.
+
+# %%
+df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'ibrahima-al-amine.diaw.etu') & (df['correct_time'] == unique_days[3])][['verb','filename_infere','P_codeState','commandRan']]
+
+# %% [markdown]
+# This day just open the file
+
+# %%
+df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'ibrahima-al-amine.diaw.etu') & (df['correct_time'] == unique_days[4])][['verb','filename_infere','P_codeState','commandRan']]
+
+# %%
+print(df.loc[119224,'P_codeState']) # Run.test
+
+# %%
+df_of_column_test[df_of_column_test['original_index'] == 119224] # complete-error test!
+
+# %% [markdown]
+# what is a complete-error test?
+#
+# It means all the functions in the code are included in the tests but there is at least one test with FailedVerdict and False status.
+
+# %%
+print(df.loc[119226,'P_codeState']) # Run.test
+
+# %%
+df_of_column_test[df_of_column_test['original_index'] == 119226] # complete-error test! with a tiny difference in test part
+
+# %%
+check_difference_between_two_code(df.loc[119224,'P_codeState'],df.loc[119226,'P_codeState'])
+
+# %%
+print(df.loc[119228,'P_codeState']) # Run.test
+
+# %%
+df_of_column_test[df_of_column_test['original_index'] == 119228] # successful test! with a progress
+
+# %%
+check_difference_between_two_code(df.loc[119226,'P_codeState'],df.loc[119228,'P_codeState'])
+
+# %%
+print(df.loc[119231,'P_codeState']) # Run.test
+
+# %%
+df_of_column_test[df_of_column_test['original_index'] == 119231] # successful test! with a progress
+
+# %% [markdown]
+# ### functions for checking different type of actors
+
+# %%
+import difflib
+
+def check_difference_between_two_code(code1,code2):
+
+    diff = list(difflib.ndiff(code1.splitlines(), code2.splitlines()))
+    has_changes = any(line.startswith('- ') or line.startswith('+ ') for line in diff)
+
+    if has_changes:
+        print("Differences found:")
+        for line in diff:
+            if line.startswith('- ') or line.startswith('+ '):
+                print(line)
+    else:
+        print("No differences.")
+
+
+# %%
+def analyze_the_process_of_each_day(day,actor):
+
+    df_one_day = df[(df['TP'] == 'Tp_GAME') & (df['actor'] == actor) & (df['correct_time'] == day)][['verb','filename_infere','P_codeState','commandRan']]
+    print(f"Student : {actor}, Day : {day}")
+    last_p_code_state = None
+
+    if len(df_one_day) > 2:
+
+        for index, row in df_one_day.iterrows():
+
+            print(row['filename_infere'],row['verb'],index)
+
+            if row['verb'] == 'Run.Command':
+                print(row['commandRan'])
+
+            elif row['verb'] == 'Run.Test':
+                print("--------------------------------------------------------------------------------------------------------------")
+                print(row['P_codeState'])
+
+                if last_p_code_state:
+                    check_difference_between_two_code(last_p_code_state,row['P_codeState'])
+
+                last_p_code_state = row['P_codeState']
+
+                print(df_of_column_test[df_of_column_test['original_index'] == index])
+
+            elif row['verb'] == 'Run.Program':
+                print(row['P_codeState'])
+
+                if last_p_code_state:
+                    check_difference_between_two_code(last_p_code_state,row['P_codeState'])
+
+                last_p_code_state = row['P_codeState']
+            
+            elif row['verb'] == 'Run.Debugger':
+                print(row['P_codeState'])
+
+                if last_p_code_state:
+                    check_difference_between_two_code(last_p_code_state,row['P_codeState'])
+
+                last_p_code_state = row['P_codeState']
+
 
 # %% [markdown]
 # ### AMADOUE's code
