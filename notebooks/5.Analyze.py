@@ -1095,6 +1095,9 @@ print(df.loc[143797,'tests'])
 print(df.loc[143798,'P_codeState']) # Run.program
 
 # %%
+print(df.loc[143798,'stderr'])
+
+# %%
 print(df.loc[143799,'commandRan']) # Run.command
 
 # %%
@@ -1196,15 +1199,16 @@ print(df.loc[143832,'P_codeState']) # Run.Program
 # So we can conclude there are 3 types of students from the students with a real test (not students with the empty tests)
 #
 # different types of students :
-#     - **strong students** : They started strongly and they solved all the bugs without any giving up.
-#     
-#     - **tried failed students** : they tried and they changed but at the end they gave up because they couldn't find the bug (Whether the result of test is successful or not)
-#     
-#     - **tried successful students** : They tried and they have a progress and at the end they understood the TP.
-#     
-#     - **lazy students** : They don't have lot's of traces for a TP and during the TP they didn't change a specific thing. (wether the test result is passed or not)
-#     
-#     - **mad students** : They tried lot's of Run.Test with the same code or a tiny difference during a day
+# <br>
+#     - strong students : They started strongly and they solved all the bugs without any giving up.
+#     <br>
+#     - tried failed students : they tried and they changed but at the end they gave up because they couldn't find the bug (Whether the result of test is successful or not)
+#     <br>
+#     - tried successful students : They tried and they have a progress and at the end they understood the TP.
+#     <br>
+#     - lazy students : They don't have lot's of traces for a TP and during the TP they didn't change a specific thing. (wether the test result is passed or not)
+#     <br>
+#     - mad students : They tried lot's of Run.Test with the same code or a tiny difference during a day
 
 # %% [markdown]
 # ### analyze function
@@ -1236,6 +1240,9 @@ unique_days
 # %%
 # day one
 analyze_the_process_of_each_day(unique_days[0],'avsin.ata.etu') # lazy_student just for this day
+
+# %%
+df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'avsin.ata.etu')]['binome']
 
 # %%
 # day two
@@ -1506,6 +1513,113 @@ def analyze_the_process_of_each_day(day,actor):
 
 
 # %% [markdown]
+# ### Red_test
+
+# %% [markdown]
+# Different type of students of Red test:
+#
+# - passed_after_failing_test : Students solved the problem after having a Red Test
+#
+# - abandoned_file_started_new : Students couldn't solve the bug and restart a another test
+#
+# - red_test_no_recovery : Students couldn't solve the bug and there is no more Run.Test (the left completely!) after a red test
+
+# %%
+all_students_doing_real_test['Tp1'] # 4.19
+
+# %%
+df_filtered = df[(df['TP'] == 'Tp1')  & (df['actor'] == 'aya.rhani.etu')]['verb']
+df_filtered
+
+# %%
+df_of_column_test.loc[44754] # only one test and the test is red : red_test_no_recovery
+
+
+# %% [markdown]
+# So before checking each test, I should check if there is any Run.Test in a TP or not, if there is, check if there is any red test or not,if all of them are green no need to check.
+
+# %%
+def find_red_test(name,df,tp):
+    all_tests_index = []
+    tests_index = []
+
+    df_just_run_test = df[(df['TP'] == tp)  & (df['actor'] == name) & (df['verb'] == 'Run.Test')]
+    
+    for index, row in df_just_run_test.iterrows():
+        
+        test_color = df_of_column_test[df_of_column_test['original_index'] == index]['color_test']
+
+        if (test_color == 'Green').all():
+
+            pass
+        else:
+            print(f"The real index of the df : {index}")
+            tests_index.append(df_of_column_test[df_of_column_test['original_index'] == index].index.tolist())
+            
+    return tests_index
+
+
+# %%
+all_test_result = []
+
+for name in all_students_doing_real_test['Tp1']:
+   
+    all_indices = find_red_test(name,df,'Tp1')
+    print(all_indices)
+
+    test_result = {}
+    test_result['name'] = name
+    test_result['indices_red_test'] = all_indices
+   
+    print(test_result)
+    all_test_result.append(test_result)
+
+# %%
+all_test_result
+
+# %%
+all_test_result = []
+
+for name in all_students_doing_real_test['Tp2']:
+   
+    all_indices = find_red_test(name,df,'Tp2')
+    print(all_indices)
+
+    test_result = {}
+    test_result['name'] = name
+    test_result['indices_red_test'] = all_indices
+   
+    print(test_result)
+    all_test_result.append(test_result)
+
+# %%
+all_test_result
+
+# %% [markdown]
+# - students with only run.test are consider as red_test_no_recovery
+#
+
+# %%
+for i in index:
+    print('----------------------------------------------------------------------------------------------')
+    print(df_of_column_test.loc[i], df.loc[i,'filename_infere'])
+
+# %%
+df_of_column_test.loc[21177], df.loc[21177,'filename_infere']
+
+# %%
+df_of_column_test.loc[21421], df.loc[21421,'filename_infere']
+
+# %%
+df_of_column_test.loc[21437], df.loc[21437,'filename_infere']
+
+# %%
+df_of_column_test.loc[21531], df.loc[21437,'filename_infere']
+
+# %%
+df_of_column_test.loc[21541], df.loc[21541,'filename_infere']
+
+# %% [markdown]
 # ### AMADOUE's code
 
 # %%
@@ -1694,6 +1808,13 @@ df[(df['seance'] == 'semaine_1') & ( (df['binome'] == 'hichame.haddou.etu'))][['
 # - check message de Mirabelle
 #
 # - check the get_mad_actors : these are the students who stopped the progress after not having a successful result of Run.Test
+#
+# - look first which students has the red tests and what they did?
+#     - test red and solved the bug
+#     - test red and left and went to do something else
+#     - test red and didn't do anything else
+#
+# - check the bizzar indices ( maybe the analyze should be repeated)
 #
 # ## To show : 
 # - 4.14, add a diagram on Run_test rate

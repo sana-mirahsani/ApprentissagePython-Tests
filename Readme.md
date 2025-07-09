@@ -97,12 +97,3 @@ jupytext --set-formats ipynb,py:percent 2.Cleaning_filename_phase1.ipynb
     - **lazy students** : They don't have lot's of traces for a TP and during the TP they didn't change a specific thing. (wether the test result is passed or not)
     
     - **mad students** : They tried lot's of Run.Test with the same code or a tiny difference during a day
-
-
-
-
-
-
-
-
-
