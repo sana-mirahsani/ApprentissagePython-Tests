@@ -163,6 +163,53 @@ def find_filename_by_sandwich(df_index,df):
 
 
 # %%
+def test_incorrect_names(week: str, df : pd.DataFrame, pattern: str) -> None:
+
+    """
+    Test if there is any incorrect filename_infere or not after removing the too_short_session.
+
+    Args:
+        week : A value of the seance column.
+        df : The original dataframe.
+        pattern : A string of filenames.
+
+    Returns:
+        None 
+    """
+
+    # check if there is still any invalid names 
+    print(df[df['filename_infere'] != ''])
+    try:
+        subset = df[(df['seance'] == week) & (df['filename_infere'] != '')]
+    except Exception as error:
+        print('here1')
+        print(error)
+
+    try:
+        total_invalid_names = (~ subset['filename_infere'].str.contains(pattern, na = False)).sum()
+    except Exception as error:
+        print('here2')
+        print(error)
+        
+    if total_invalid_names == 0:
+        print('There is no more invalid names, YAY!')
+        return df
+
+    else:
+        print("There are still invalid names, something is wrong...")
+
+
+# %%
+df_clean[(df_clean['seance'] == 'semaine_1') & (df_clean['filename_infere'] != '')]['filename_infere'].unique()
+
+# %%
+df_clean[(df_clean['seance'] == 'semaine_1') & (df_clean['filename_infere'] != '')][['filename_infere','verb']]
+
+# %%
+df_clean[(df_clean['seance'] == 'semaine_2') & (df_clean['filename_infere'] != '')]['filename_infere'].unique()
+
+
+# %%
 # main process
 def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
 
@@ -173,86 +220,61 @@ def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
     print('----------------------------------------')
 
     # create the list of students of the current week
-    try:
-        print('creating list of students...')
-        list_students_semaine = df[df['seance'] == week]['actor'].unique().tolist()
-        print('process ok!')
-    except Exception as error:
-        print(f"Error!! {error}")
+    print('creating list of students...')
+    list_students_semaine = df[df['seance'] == week]['actor'].unique().tolist()
+    print('process ok!')
 
     # create the dataframe of all sessions for each students in the current week
-    try:
-        print('creating df_indices...')
-        df_indices = data_cleaning.create_df_indices(list_students_semaine,df,week)
-        print('process ok!')
-    except Exception as error:
-        print(f"Error!! {error}")
+    print('creating df_indices...')
+    df_indices = data_cleaning.create_df_indices(list_students_semaine,df,week)
+    print('process ok!')
 
     # save too_short_sessions in another dataframe before removing them
-    try:
-        print('saving too_short_sessions...')
-        io_utils.write_too_short_indices_to_csv(df_indices,INTERIM_DATA_DIR, week, filename='too_short_sessions')
-    except Exception as error:
-        print(f"Error!! {error}")
+    print('saving too_short_sessions...')
+    io_utils.write_too_short_indices_to_csv(df_indices,INTERIM_DATA_DIR, week, filename='too_short_sessions')
 
     # test the total empty strings in the current week for each verb
-    try:
-        print('Get total number of empty strings...')
-        data_testing.get_number_of_empty_filename_for_week(week,df)
-    except Exception as error:
-        print(f"Error!! {error}")
-
+    print('Get total number of empty strings...')
+    data_testing.get_number_of_empty_filename_for_week(week,df)
+   
     # phase 1 :process of checking or filling the correct name in filename_infere
-    try:
-        print('Start validate process of filename...')
-        validate_process_of_filename(df_indices,df,pattern)
-    except Exception as error:
-        print(f"Error!! {error}")
+    print('Start validate process of filename...')
+    validate_process_of_filename(df_indices,df,pattern)
+
+    print('Testtttttttttttttttttttttttttt:')
+    test_incorrect_names(df, week, pattern)
 
     # Test total for the current semaine
     data_testing.test_filename_infere_each_week(week,df,pattern)
     print('----------------------------------------')
 
     # check if there too_short_indices, then remove them
-    try:
-        print('Start removing too_short_indices (if they exist!)...')
-        df = data_cleaning.check_invalid_names(df,df_indices)
-    except Exception as error:
-        print(f"Error!! {error}")
+    print('Start removing too_short_indices (if they exist!)...')
+
+    df = data_cleaning.check_invalid_names(df,df_indices)
+    io_utils.write_csv(df,INTERIM_DATA_DIR,'error_df')
 
     # test if there is any incorrect name even after removing too_short_indices
-    try:
-        print('Test incorrect names again:')
-        data_testing.test_incorrect_names(df, week, pattern)
-    except Exception as error:
-        print(f"Error!! {error}")
-
+    print('Test incorrect names again:')
+    test_incorrect_names(df, week, pattern)
+    
     # Test total for the current semaine
     data_testing.test_filename_infere_each_week(week,df,pattern)
     print('----------------------------------------')
 
     # creating new dataframe of only traces with filename_infere = ''
-    try:
-        print('creating new dataframe of empty filename_infere...')
-        subset_empty_strings = df[(df['seance'] == week) & (df['filename_infere'] == '') & (df['verb'] != 'Docstring.Generate')] 
-        print('process ok!')
-    except Exception as error:
-        print(f"Error!! {error}")
+    print('creating new dataframe of empty filename_infere...')
+    subset_empty_strings = df[(df['seance'] == week) & (df['filename_infere'] == '') & (df['verb'] != 'Docstring.Generate')] 
+    print('process ok!')
 
     # create the dataframe of all sessions for each students in the current week
-    try:
-        print('creating df_indices_new...')
-        df_indices_new = data_cleaning.create_df_indices(list_students_semaine,subset_empty_strings,week)
-        print('process ok!')
-    except Exception as error:
-        print(f"Error!! {error}")
+    print('creating df_indices_new...')
+    df_indices_new = data_cleaning.create_df_indices(list_students_semaine,subset_empty_strings,week)
+    print('process ok!')
     
     # phase 2: filling empty filename_infere by sandwich method
-    try:
-        print('start sandwich method...')
-        find_filename_by_sandwich(df_indices_new,df)
-    except Exception as error:
-        print(f"Error!! {error}")
+    print('start sandwich method...')
+    find_filename_by_sandwich(df_indices_new,df)
 
     # Test total for the current semaine
     data_testing.test_filename_infere_each_week(week,df,pattern)

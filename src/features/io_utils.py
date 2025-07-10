@@ -27,11 +27,8 @@ def reading_dataframe(dir : str, file_name : str) -> pd.DataFrame:
         print(f"Directory is ok.")
 
         # convert to dataframe
-        try:
-            df = pd.read_csv(file_path, keep_default_na=False)
-            return df
-        except Exception as error:
-            print(f"There is an error is reading the dataframe, error : {error}")
+        df = pd.read_csv(file_path, keep_default_na=False)
+        return df
 
     else:
         print(f"The filepath : {file_path} does not exist.")
@@ -61,12 +58,8 @@ def write_csv(df : pd.DataFrame, dir: str, file_name: None) -> None:
         print(f"Directory is ok.")
 
         # convert to csv
-        try:
-            df.to_csv(dir + file_name + ".csv", mode = mode_input, index=False)
-            print("File saved.")
-            
-        except Exception as error:
-            print(f"There is an error in saving the dataframe in csv, error : {error}")
+        df.to_csv(dir + file_name + ".csv", mode = mode_input, index=False)
+        print("File saved.")
 
     else:
         print(f"The directory: {dir} doesn't exist.")
@@ -106,8 +99,4 @@ def write_too_short_indices_to_csv(df : pd.DataFrame, dir: str, week : str, file
         df_combined = new_df
 
     # save them into a csv file
-    try:
-        write_csv(df_combined,dir,filename)
-
-    except:
-        print('There is an error in saving too_short_sessions in csv!')
+    write_csv(df_combined,dir,filename)

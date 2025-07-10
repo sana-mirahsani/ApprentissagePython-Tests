@@ -217,46 +217,35 @@ def cut_df_by_seance(df: pd.DataFrame, week: str, student_name: str) -> list:
     empty_trace_pairs = []
 
     # Filter dataframe for the week and student
-    try:
-        df_filtered = df[(df['seance'] == week) & (df['actor'] == student_name)]
+    df_filtered = df[(df['seance'] == week) & (df['actor'] == student_name)]
 
+    if len(df_filtered) == 0 :
+        df_filtered = df[(df['seance'] == week) & (df['binome'] == student_name)]
         if len(df_filtered) == 0 :
-            df_filtered = df[(df['seance'] == week) & (df['binome'] == student_name)]
-            if len(df_filtered) == 0 :
-                print(f"No trace with this name in semaine : {student_name}")
-                
-
-    except Exception as error:
-        print('here1')
-        print(error)
-
+            print(f"No trace with this name in semaine : {student_name}")
+    
     indices = df_filtered.index[df_filtered['verb'].isin(['Session.Start', 'Session.End'])].tolist()
     values  = df_filtered.loc[indices, 'verb'].tolist()
 
     i = 0
     while i < len(values) - 1:
         
-        try:
-            if values[i] == 'Session.Start' and values[i+1] == 'Session.End':
-            
-                start_idx = indices[i]
-                end_idx   = indices[i+1]
+        if values[i] == 'Session.Start' and values[i+1] == 'Session.End':
+        
+            start_idx = indices[i]
+            end_idx   = indices[i+1]
 
-                if abs(start_idx - end_idx) > 2: # put useful indices in pairs
-                    
-                    pairs.append([start_idx,end_idx])
+            if abs(start_idx - end_idx) > 2: # put useful indices in pairs
                 
-                else: # put useless indices in empty_trace_pairs to remove them later
-                    empty_trace_pairs.append([start_idx,end_idx])
-                
-                i += 2  # move past the 1 and 2
-            else:
-                print(f"invalid pair {indices[i]}")
-                i += 1  # skip if it's not a valid pair
-
-        except Exception as error:
+                pairs.append([start_idx,end_idx])
             
-            print(error)
+            else: # put useless indices in empty_trace_pairs to remove them later
+                empty_trace_pairs.append([start_idx,end_idx])
+            
+            i += 2  # move past the 1 and 2
+        else:
+            print(f"invalid pair {indices[i]}")
+            i += 1  # skip if it's not a valid pair
 
     # return all indices
     return pairs, empty_trace_pairs
@@ -328,11 +317,7 @@ def extract_short_filename_from_commandRan_Run_Debugger(commandRan_Run_Debugger:
     '''
 
     # Remove %Debug from the beginning
-    try:
-        cleaned = commandRan_Run_Debugger.str.replace('^%Debug ', '', regex=True).str.rstrip()
-    
-    except Exception as error:
-        print(error)
+    cleaned = commandRan_Run_Debugger.str.replace('^%Debug ', '', regex=True).str.rstrip()
         
     # Remove \n from the end
     cleaned = cleaned.str.replace('\n', '', regex=False)
@@ -487,6 +472,7 @@ def correct_filename_infere_in_subset(subset: pd.DataFrame,df: pd.DataFrame,patt
         row = df.loc[index]
             
         filename_infere = row['filename_infere']
+        new_filename_infere = ''
         
         # check the emptyness (only for Run.Program)
         if filename_infere == '':
@@ -519,7 +505,7 @@ def correct_filename_infere_in_subset(subset: pd.DataFrame,df: pd.DataFrame,patt
                             
                             # if  it can't find the name in codestate, it checks the old filename_infere with similarity
                             if new_filename_infere == '':
-                                new_filename_infere = find_similarity(pattern_list,row['filename_infere'])      
+                                new_filename_infere = find_similarity(pattern_list,row['filename_infere'])         
 
         # change filename_infere of df with the correct name
         df.at[index, 'filename_infere'] = new_filename_infere 
@@ -671,16 +657,9 @@ def remove_too_short_traces(df: pd.DataFrame,df_indices: pd.DataFrame) -> pd.Dat
                 start = activity[0]
                 end   = activity[1]
 
-                try:
-                    df = df.drop(index=range(start , end + 1)) # remove useless indices
-                except Exception as error:
-                    print(f"Error in removing useless traces : {error}")
-                    return None
-                
-            try:
-                row['too_short_indices'].clear()
-            except:
-                print("Removing failed!")
+                df = df.drop(index=range(start , end + 1)) # remove useless indices
+            
+            row['too_short_indices'].clear()
                 
     return df
 

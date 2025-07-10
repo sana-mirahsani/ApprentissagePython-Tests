@@ -203,7 +203,7 @@ for i in list_indices[0]:
     print(df.loc[i,'filename'])
     print(df.loc[i,'filename_infere'])
     print(df.loc[i,'P_codeState'])
-    
+
 
 # %%
 # save the removed trace into a csv

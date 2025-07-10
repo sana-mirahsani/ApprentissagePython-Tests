@@ -106,7 +106,7 @@ def get_number_of_empty_filename_for_week(week: str,df : pd.DataFrame) -> None:
         print(f"Total number of emptystring for {verb} : {total}")
 
 # Test if there are still incorrect filename_infere after removing the too short traces
-def test_incorrect_names(week: str, df : pd.DataFrame, pattern: str) -> None:
+def test_incorrect_names(df : pd.DataFrame, week: str, pattern: str) -> None:
 
     """
     Test if there is any incorrect filename_infere or not after removing the too_short_session.
