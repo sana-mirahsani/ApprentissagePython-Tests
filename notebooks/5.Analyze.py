@@ -203,7 +203,7 @@ for i in list_indices[0]:
     print(df.loc[i,'filename'])
     print(df.loc[i,'filename_infere'])
     print(df.loc[i,'P_codeState'])
-
+    
 
 # %%
 # save the removed trace into a csv
@@ -1525,7 +1525,7 @@ def analyze_the_process_of_each_day(day,actor):
 # - red_test_no_recovery : Students couldn't solve the bug and there is no more Run.Test (the left completely!) after a red test
 
 # %%
-all_students_doing_real_test['Tp1'] # 4.19
+all_students_doing_real_test['Tp1'] # 4.19 
 
 # %%
 df_filtered = df[(df['TP'] == 'Tp1')  & (df['actor'] == 'aya.rhani.etu')]['verb']
@@ -1536,88 +1536,287 @@ df_of_column_test.loc[44754] # only one test and the test is red : red_test_no_r
 
 
 # %% [markdown]
-# So before checking each test, I should check if there is any Run.Test in a TP or not, if there is, check if there is any red test or not,if all of them are green no need to check.
-
-# %%
-def find_red_test(name,df,tp):
-    all_tests_index = []
-    tests_index = []
-
-    df_just_run_test = df[(df['TP'] == tp)  & (df['actor'] == name) & (df['verb'] == 'Run.Test')]
-    
-    for index, row in df_just_run_test.iterrows():
-        
-        test_color = df_of_column_test[df_of_column_test['original_index'] == index]['color_test']
-
-        if (test_color == 'Green').all():
-
-            pass
-        else:
-            print(f"The real index of the df : {index}")
-            tests_index.append(df_of_column_test[df_of_column_test['original_index'] == index].index.tolist())
-            
-    return tests_index
-
-
-# %%
-all_test_result = []
-
-for name in all_students_doing_real_test['Tp1']:
-   
-    all_indices = find_red_test(name,df,'Tp1')
-    print(all_indices)
-
-    test_result = {}
-    test_result['name'] = name
-    test_result['indices_red_test'] = all_indices
-   
-    print(test_result)
-    all_test_result.append(test_result)
-
-# %%
-all_test_result
-
-# %%
-all_test_result = []
-
-for name in all_students_doing_real_test['Tp2']:
-   
-    all_indices = find_red_test(name,df,'Tp2')
-    print(all_indices)
-
-    test_result = {}
-    test_result['name'] = name
-    test_result['indices_red_test'] = all_indices
-   
-    print(test_result)
-    all_test_result.append(test_result)
-
-# %%
-all_test_result
-
-# %% [markdown]
-# - students with only run.test are consider as red_test_no_recovery
+# - Before checking each test, I should check if there is any Run.Test in a TP or not, if there is, check if there is any red test or not,if all of them are green no need to check.
+#
+# - Remember, in each TP_prog, for each students, there might be multipie tests for a Run.Test (if there are any Run.Test)
+#
+# - normal behavior , expected behavoir 
+#
+# Things to check :
+# filename_infere, codestate, function's name, 
+#
+# - first : check if filename is same 
+# - second : check if codestate is same
+# - third : check if function's name are same of tests
+#
+#     if filename is same : 
+#
+#         consider like same run.test
+#
+#         if codestate is same:
+#             consider like same run.test
+#
+#             if functions name are same in tests:
+#                 consider like same test
+#             
+#             else:
+#                 different run.test
+#         else:
+#             different run.test
+#     else:
+#         different run.test
+#
+#
 #
 
 # %%
-for i in index:
-    print('----------------------------------------------------------------------------------------------')
-    print(df_of_column_test.loc[i], df.loc[i,'filename_infere'])
+def find_red_test(name,df,tp): 
+    
+    tests_index_red = []
+    tests_index_green = []
+
+    df_just_run_test = df[(df['TP'] == tp)  & (df['Type_TP'] == 'TP_prog') & ((df['actor'] == name) | (df['binome'] == name)) & (df['verb'] == 'Run.Test')] # filter on Red_Test
+    
+    for index, row in df_just_run_test.iterrows(): # iterate on all Run.Test
+        
+        test_color = df_of_column_test[df_of_column_test['original_index'] == index]['color_test'] # extract all colors for this (one) Run.Test from df_of_column_test (4.21 & 4.22)
+
+        if (test_color == 'Green').all():
+            # There was no red test for the current Run.Test
+            tests_index_green.append(index)
+        else:
+            # There is at least one red test in the current Run.Test
+            #print(f"The real index of the df : {index}")
+            tests_index_red.append(index) # Index of the Run.Test
+            
+    return tests_index_red, tests_index_green
+
 
 # %%
-df_of_column_test.loc[21177], df.loc[21177,'filename_infere']
+all_test_result_TP1 = []
+
+for name in all_students_doing_real_test['Tp1']:
+   
+    all_indices_red, all_indices_green = find_red_test(name,df,'Tp1')
+
+    test_result = {}
+    test_result['name'] = name
+    test_result['indices_red_test'] = all_indices_red
+    test_result['indices_green_test'] = all_indices_green
+   
+    all_test_result_TP1.append(test_result)
+
+all_test_result_TP1
 
 # %%
-df_of_column_test.loc[21421], df.loc[21421,'filename_infere']
+all_test_result_TP2 = [] 
+
+for name in all_students_doing_real_test['Tp2']:
+   
+    all_indices_red, all_indices_green  = find_red_test(name,df,'Tp2')
+
+    test_result = {}
+    test_result['name'] = name
+    test_result['indices_red_test'] = all_indices_red
+    test_result['indices_green_test'] = all_indices_green
+   
+    all_test_result_TP2.append(test_result)
+
+all_test_result_TP2
+
+# %% [markdown]
+# #### Analyze TP2
+
+# %% [markdown]
+# - First check different filename, classify by each filename_infere
+# - Each Run.Test 2 by 2 are compared
+#     - Do they have overlap?
+#     - Is it added test?
+#     - Is it deleted test?
+#     - Is same exact test (name and tested line is checked) with same Verdict?
+#     - Is same exact test (name and tested line is checked) BUT different Verdict? (meaning student understood the problem)
 
 # %%
-df_of_column_test.loc[21437], df.loc[21437,'filename_infere']
+df_test_TP2 = pd.DataFrame(all_test_result_TP2)
+df_test_TP2
 
 # %%
-df_of_column_test.loc[21531], df.loc[21437,'filename_infere']
+list1 = df_test_TP2[df_test_TP2['name'] == 'abdelrahmane.bendjeladjel.etu']['indices_red_test'].loc[1] 
+list2 = df_test_TP2[df_test_TP2['name'] == 'abdelrahmane.bendjeladjel.etu']['indices_green_test'].loc[1]
+
+merged_sorted = sorted(list1 + list2)
+merged_sorted
 
 # %%
-df_of_column_test.loc[21541], df.loc[21541,'filename_infere']
+# find unique filenames
+unique_filename_infere = df.loc[merged_sorted,'filename_infere'].unique()
+unique_filename_infere
+
+# %%
+# check tests
+df_of_column_test[df_of_column_test['original_index'] == 1659]
+
+# %%
+# check tests
+df_of_column_test[df_of_column_test['original_index'] == 1661]
+
+# %%
+# check tests
+df_of_column_test[df_of_column_test['original_index'] == 1664]
+
+# %%
+# check tests
+df_of_column_test[df_of_column_test['original_index'] == 1666]
+
+# %%
+# check tests
+df_of_column_test[df_of_column_test['original_index'] == 1668]
+
+# %%
+# check tests
+df_of_column_test[df_of_column_test['original_index'] == 1670]
+
+# %%
+# check tests
+df_of_column_test[df_of_column_test['original_index'] == 1673]
+
+# %%
+# check tests
+df_of_column_test[df_of_column_test['original_index'] == 1675]
+
+# %%
+# check tests
+df_of_column_test[df_of_column_test['original_index'] == 1679]
+
+# %%
+# check tests
+df_of_column_test[df_of_column_test['original_index'] == 1681]
+
+# %%
+df_test_TP2[df_test_TP2['name'] == 'manel.cherief.etu']['indices_red_test'].loc[0] ,df_test_TP2[df_test_TP2['name'] == 'manel.cherief.etu']['indices_green_test'].loc[0]
+
+# %%
+list1 = df_test_TP2[df_test_TP2['name'] == 'manel.cherief.etu']['indices_red_test'].loc[0] 
+list2 = df_test_TP2[df_test_TP2['name'] == 'manel.cherief.etu']['indices_green_test'].loc[0]
+
+merged_sorted = sorted(list1 + list2)
+merged_sorted
+
+# %%
+# find unique filenames
+unique_filename_infere = df.loc[merged_sorted,'filename_infere'].unique()
+unique_filename_infere
+
+# %%
+# find unique days
+unique_correct_time = df.loc[merged_sorted,'correct_time'].unique()
+unique_correct_time
+
+# %%
+run_test = df.loc[merged_sorted]
+run_test[run_test['correct_time'] == unique_correct_time[0]]
+
+# %%
+df.loc[174404:174411]
+
+# %%
+if df.loc[174404,'codestate'] == df.loc[174409,'codestate']: print(True) # codestates are not equal
+
+# %%
+code1 = df.loc[174404,'codestate']
+code2 = df.loc[174409,'codestate']
+
+check_difference_between_two_code(code1,code2) # P_codestate are different
+
+
+# %%
+print(code1)
+
+# %%
+print(code2)
+
+# %%
+# check tests
+df_of_column_test[df_of_column_test['original_index'] == 174404]
+
+# %%
+df_of_column_test[df_of_column_test['original_index'] == 174409]
+
+# %%
+df_of_column_test[df_of_column_test['original_index'] == 174411]
+
+# %%
+df_of_column_test[df_of_column_test['original_index'] == 174413]
+
+# %%
+df_of_column_test[df_of_column_test['original_index'] == 174416]
+
+# %%
+df_of_column_test[df_of_column_test['original_index'] == 174419]
+
+# %%
+df_of_column_test[df_of_column_test['original_index'] == 174421]
+
+# %%
+df_of_column_test[df_of_column_test['original_index'] == 174424]
+
+# %%
+df_of_column_test[df_of_column_test['original_index'] == 174427]
+
+# %%
+df_of_column_test[df_of_column_test['original_index'] == 174430]
+
+# %%
+df_of_column_test[df_of_column_test['original_index'] == 174433]
+
+# %%
+df_of_column_test[df_of_column_test['original_index'] == 174435]
+
+# %%
+df_run_test = df.loc[merged_sorted]
+run_test_day1 = df_run_test[df_run_test['correct_time'] == unique_correct_time[0]]
+#run_test_day1
+
+# %%
+df_1 = df.loc[41643:41653]
+df_filtered = df_1[df_1['verb'] == 'Run_Test']
+df_filtered.duplicated(['P_codeState'])
+
+# %%
+df.loc[41643:41653]
+
+# %%
+df_filtered = df_test_TP2[df_test_TP2['name'] == 'aurelien.bithorel.etu']
+
+# %%
+df_of_column_test.loc[100982,'name'], df_of_column_test.loc[100982,'tested_line']
+
+# %%
+df_of_column_test.loc[100999,'name'] , df_of_column_test.loc[100999,'tested_line']
+
+# %%
+df_of_column_test.loc[101016,'name'], df_of_column_test.loc[101016,'tested_line']
+
+# %%
+for index, row in df_filtered.iterrows():
+    print('----------------------------------')
+    print(row['name'])
+    k = 0
+
+    for i in row['indices_red_test']:
+        print(f'--------{k+1} runtest------------------')
+        print(df.loc[i,'filename_infere'])
+        print(df_of_column_test[df_of_column_test['original_index'] == i])
+
+# %%
+print(df.loc[41643,'tests'])
+
+# %% [markdown]
+# Extract all unique tests and count the number of try for each unique test, then find :
+# - if there is any failed and given up try
+# - if there is any failed and solved try
+#
+# Before starts, check if there is any duplicated tests in all Run.Test (exactly the same)
 
 # %% [markdown]
 # ### AMADOUE's code
@@ -1671,7 +1870,7 @@ df_filtered.loc[119224,'tests']
 
 
 # %% [markdown]
-# ### Create a dataframe of column 'tests'
+# ### 4.21 Create a dataframe of column 'tests'
 
 # %%
 def convert_column_tests_to_df(df):
@@ -1697,24 +1896,6 @@ df_of_column_test = convert_column_tests_to_df(df)
 df_of_column_test 
 
 # %%
-df_of_column_test[(df_of_column_test['filename_infere'] == 'tictactoe.py') & (df_of_column_test['actor'] == 'abdoulaye.nguere.etu')]
-
-# %%
-print(df_of_column_test.loc[0,'P_codeState'])
-
-# %%
-df_of_column_test[(df_of_column_test['bino'] == 'abaly.oura.etu') & (df_of_column_test['filename_infere'] == 'tictactoe.py')]
-
-# %%
-df_of_column_test[df_of_column_test['actor'] == 'abaly.oura.etu']['filename_infere'].unique()
-
-# %%
-df_of_column_test.loc[0,'verdict']
-
-# %%
-df.loc[2]
-
-# %%
 df_of_column_test['verdict'].unique()
 
 # %% [markdown]
@@ -1725,11 +1906,8 @@ df_of_column_test['verdict'].unique()
 # - **FailedVerdict** : The code ran successfully, but the output was incorrect.
 # - **PassedSetupVerdict** : The code passed a setup check, not the actual test.
 
-# %%
-df_of_column_test[df_of_column_test['verdict'] == 'PassedVerdict']['']
-
 # %% [markdown]
-# ### Add Red or Green column for Run.Test
+# ### 4.22 Add Red or Green column for Run.Test
 
 # %% [markdown]
 # How write boolean for test green or red for Run.Test : This column should be added by the values in 'status' column?
@@ -1815,6 +1993,10 @@ df[(df['seance'] == 'semaine_1') & ( (df['binome'] == 'hichame.haddou.etu'))][['
 #     - test red and didn't do anything else
 #
 # - check the bizzar indices ( maybe the analyze should be repeated)
+#
+# - remove all try and except
+#
+# - check the file duplicated_runTest.ipynb
 #
 # ## To show : 
 # - 4.14, add a diagram on Run_test rate
