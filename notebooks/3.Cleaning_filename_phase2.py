@@ -163,53 +163,6 @@ def find_filename_by_sandwich(df_index,df):
 
 
 # %%
-def test_incorrect_names(week: str, df : pd.DataFrame, pattern: str) -> None:
-
-    """
-    Test if there is any incorrect filename_infere or not after removing the too_short_session.
-
-    Args:
-        week : A value of the seance column.
-        df : The original dataframe.
-        pattern : A string of filenames.
-
-    Returns:
-        None 
-    """
-
-    # check if there is still any invalid names 
-    print(df[df['filename_infere'] != ''])
-    try:
-        subset = df[(df['seance'] == week) & (df['filename_infere'] != '')]
-    except Exception as error:
-        print('here1')
-        print(error)
-
-    try:
-        total_invalid_names = (~ subset['filename_infere'].str.contains(pattern, na = False)).sum()
-    except Exception as error:
-        print('here2')
-        print(error)
-        
-    if total_invalid_names == 0:
-        print('There is no more invalid names, YAY!')
-        return df
-
-    else:
-        print("There are still invalid names, something is wrong...")
-
-
-# %%
-df_clean[(df_clean['seance'] == 'semaine_1') & (df_clean['filename_infere'] != '')]['filename_infere'].unique()
-
-# %%
-df_clean[(df_clean['seance'] == 'semaine_1') & (df_clean['filename_infere'] != '')][['filename_infere','verb']]
-
-# %%
-df_clean[(df_clean['seance'] == 'semaine_2') & (df_clean['filename_infere'] != '')]['filename_infere'].unique()
-
-
-# %%
 # main process
 def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
 
@@ -241,9 +194,6 @@ def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
     print('Start validate process of filename...')
     validate_process_of_filename(df_indices,df,pattern)
 
-    print('Testtttttttttttttttttttttttttt:')
-    test_incorrect_names(df, week, pattern)
-
     # Test total for the current semaine
     data_testing.test_filename_infere_each_week(week,df,pattern)
     print('----------------------------------------')
@@ -256,7 +206,7 @@ def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
 
     # test if there is any incorrect name even after removing too_short_indices
     print('Test incorrect names again:')
-    test_incorrect_names(df, week, pattern)
+    data_testing.test_incorrect_names(df, week, pattern)
     
     # Test total for the current semaine
     data_testing.test_filename_infere_each_week(week,df,pattern)
@@ -428,6 +378,12 @@ subset[~ subset['filename_infere'].str.contains(pattern, na = False)]['seance'].
 # <br>
 #
 # Overall, having only 18,261 unresolved entries out of 304,851 total, and successfully inferring 266,887 correct filenames, is a strong result.
+#
+# | Phase | Filled | Correct | Incorrect | EmptyTotal | OtherVerbsEmpty |
+# |----------|----------|----------|----------|----------|----------|
+# | Phase1   | 213,995  | 158,437  | 55,558  | 92,919  | 53,239 |
+# | Phase2   | 266,925  | 266,925  | 0       | 37,273  | 18,261 |
+#
 
 # %% [markdown]
 # **Explanation**

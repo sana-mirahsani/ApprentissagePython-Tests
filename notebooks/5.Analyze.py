@@ -264,7 +264,7 @@ old_df_before_removing = df.copy() # save the original one just in case
 len(df)
 
 # %%
-columns = ['empty_filename', 'filename_case1', 'filename_case2']
+columns = ['filename_impossible_to_find_index', 'filename_case1', 'filename_case2']
 
 for tp in TP_NAME:
 
@@ -1516,23 +1516,23 @@ def analyze_the_process_of_each_day(day,actor):
 # ### Red_test
 
 # %% [markdown]
-# Different type of students of Red test:
+# Different type of students of Red test: This is not correct
 #
 # - passed_after_failing_test : Students solved the problem after having a Red Test
 #
 # - abandoned_file_started_new : Students couldn't solve the bug and restart a another test
 #
 # - red_test_no_recovery : Students couldn't solve the bug and there is no more Run.Test (the left completely!) after a red test
+#
+# Red test: At least one of the colors in tests is red
+#
+# New classification:
+#
+# - progressed students
+# - blocked students
 
 # %%
 all_students_doing_real_test['Tp1'] # 4.19 
-
-# %%
-df_filtered = df[(df['TP'] == 'Tp1')  & (df['actor'] == 'aya.rhani.etu')]['verb']
-df_filtered
-
-# %%
-df_of_column_test.loc[44754] # only one test and the test is red : red_test_no_recovery
 
 
 # %% [markdown]
@@ -1592,6 +1592,9 @@ def find_red_test(name,df,tp):
     return tests_index_red, tests_index_green
 
 
+# %% [markdown]
+# #### Analyze TP1
+
 # %%
 all_test_result_TP1 = []
 
@@ -1608,6 +1611,18 @@ for name in all_students_doing_real_test['Tp1']:
 
 all_test_result_TP1
 
+# %% [markdown]
+# #### Analyze TP2
+
+# %% [markdown]
+# - First check different filename, classify by each filename_infere
+# - Each Run.Test 2 by 2 are compared
+#     - Do they have overlap?
+#     - Is it added test?
+#     - Is it deleted test?
+#     - Is same exact test (name and tested line is checked) with same Verdict?
+#     - Is same exact test (name and tested line is checked) BUT different Verdict? (meaning student understood the problem)
+
 # %%
 all_test_result_TP2 = [] 
 
@@ -1622,27 +1637,79 @@ for name in all_students_doing_real_test['Tp2']:
    
     all_test_result_TP2.append(test_result)
 
-all_test_result_TP2
-
-# %% [markdown]
-# #### Analyze TP2
-
-# %% [markdown]
-# - First check different filename, classify by each filename_infere
-# - Each Run.Test 2 by 2 are compared
-#     - Do they have overlap?
-#     - Is it added test?
-#     - Is it deleted test?
-#     - Is same exact test (name and tested line is checked) with same Verdict?
-#     - Is same exact test (name and tested line is checked) BUT different Verdict? (meaning student understood the problem)
-
-# %%
+# convert dict to df
 df_test_TP2 = pd.DataFrame(all_test_result_TP2)
 df_test_TP2
 
+
 # %%
-list1 = df_test_TP2[df_test_TP2['name'] == 'abdelrahmane.bendjeladjel.etu']['indices_red_test'].loc[1] 
-list2 = df_test_TP2[df_test_TP2['name'] == 'abdelrahmane.bendjeladjel.etu']['indices_green_test'].loc[1]
+# step 0 : merge all indices of Run.Test
+def merge_red_and_green_test(name):
+
+    list_red_test   = df_test_TP2[df_test_TP2['name'] == name]['indices_red_test'].iloc[0]
+    list_green_test = df_test_TP2[df_test_TP2['name'] == name]['indices_green_test'].iloc[0]
+
+    # merge and sort in ascending order
+    merged_sorted = sorted(list_red_test + list_green_test)
+    return merged_sorted
+
+
+# %%
+# step1 : classify Run.Test by different filename_infere
+def classify_by_filename(all_list_indices):
+    
+    unique_filename_infere = df.loc[all_list_indices,'filename_infere'].unique().tolist()
+    
+    # Select only the rows at the given indices
+    selected_rows = df.loc[all_list_indices]
+
+    # Group them by the 'filename_infere' column
+    run_test_classification = selected_rows.groupby('filename_infere')
+
+    # Example: print each group
+    for filename, group in run_test_classification:
+        print(f"\nGroup: {filename}")
+        print(group)
+
+    return run_test_classification
+
+
+# %%
+# step2 : check the overlab
+def find_overlab_tests(test1_index,test2_index):
+
+    # extract the two tests
+    test1 = df_of_column_test[df_of_column_test['original_index'] == test1_index]
+    test2 = df_of_column_test[df_of_column_test['original_index'] == test2_index]
+
+    # check if they have overlab by merging them
+    overlap = test1.merge(test2, how='inner')
+
+    if not overlap.empty: # they have overlab
+        print("There is overlap!")
+        print(overlap)
+    else:
+        print("No overlap.")
+
+
+
+# %%
+different_filenames
+
+# %%
+for filename, group in different_filenames:
+        print(f"\nGroup: {filename}")
+        print(type(group))
+
+# %%
+# main
+all_indices = merge_red_and_green_test('massil.kichi.etu') # step 0
+different_filenames = classify_by_filename(all_indices) # step 1
+
+
+# %%
+list1 = df_test_TP2[df_test_TP2['name'] == 'massil.kichi.etu']['indices_red_test'].loc[0] 
+list2 = df_test_TP2[df_test_TP2['name'] == 'massil.kichi.etu']['indices_green_test'].loc[0]
 
 merged_sorted = sorted(list1 + list2)
 merged_sorted
@@ -1811,63 +1878,13 @@ for index, row in df_filtered.iterrows():
 # %%
 print(df.loc[41643,'tests'])
 
+
 # %% [markdown]
 # Extract all unique tests and count the number of try for each unique test, then find :
 # - if there is any failed and given up try
 # - if there is any failed and solved try
 #
 # Before starts, check if there is any duplicated tests in all Run.Test (exactly the same)
-
-# %% [markdown]
-# ### AMADOUE's code
-
-# %%
-# extract one file of TP_game and one actor
-df_filtered = df[(df['TP'] == 'Tp_GAME')  & (df['filename_infere'] == 'tictactoe.py') & (df['actor'] == 'abaly.oura.etu')]
-
-# %%
-df_filtered[['timestamp.$date','session.duration','verb','P_codeState','F_codeState','tests','result.success']]
-
-# %%
-df.loc[207,'P_codeState']
-
-# %%
-df_filtered   = df[(df['TP'] == 'Tp_GAME') & (df['Type_TP'] == 'TP_prog')] 
-actor_column  = df_filtered['actor']
-binome_column = df_filtered['binome']
-all_students  = set(actor_column).union(set(binome_column))
-all_students.remove('')
-
-students_doing_test = []
-students_with_empty_test = []
-verb = 'Run.Test'
-
-for name in all_students:
-    verbs_of_student = df_filtered[(df_filtered['actor'] == name) | (df_filtered['binome'] == name)]['verb'].unique()
-            
-    if verb in verbs_of_student: # doing Run.Test
-        array_tests_unique = df_filtered[(df_filtered['actor'] == name) | (df_filtered['binome'] == name)]['tests'].unique()
-        
-        students_doing_test.append(name) # add to a list
-
-        if (array_tests_unique.size == 2) & (array_tests_unique[1] == '[]'): # means the test is empty
-            
-                students_with_empty_test.append(name) # student did the run.test but it is empty
-
-# extract students with a real test
-student_with_a_test = set(students_doing_test) - set(students_with_empty_test)
-student_with_a_test
-
-# %%
-# analyze the test of students who has done a test (not the empty one)
-df_filtered = df[(df['TP'] == 'Tp_GAME') & ((df['actor'] == 'abdoulaye.nguere.etu') | (df['binome'] == 'abdoulaye.nguere.etu'))]
-
-# %%
-df_filtered[['timestamp.$date','session.duration','verb','P_codeState','F_codeState','tests','result.success']]
-
-# %%
-df_filtered.loc[119224,'tests']
-
 
 # %% [markdown]
 # ### 4.21 Create a dataframe of column 'tests'
@@ -1916,9 +1933,6 @@ df_of_column_test['verdict'].unique()
 # - True : Green
 #
 # check this function df_tests = tests_utils.construct_DataFrame_from_all_tests(run_test_copy) in script_initialisation.py in thomas version
-
-# %%
-df_of_column_test[df_of_column_test['status'] == False]
 
 # %%
 # add column color_test
@@ -1970,6 +1984,7 @@ df[(df['seance'] == 'semaine_1') & ( (df['binome'] == 'hichame.haddou.etu'))][['
 # - In each TP_GAME, look for each student, in the newest file of Run.Test, how many their column tests is empty and isn't : DONE but need to check 
 # - check this https://gitlab.univ-lille.fr/L1-programmation/analyse-des-traces/-/blob/amadou_analyse/notebooks/PJI_amadou_2024.py 
 # - add how many students in ech TP , TP_prog, did the run test and from doing this run.test, how many of them are doing only empty ones and the percentage of doing run.test - empty run.test = a value / total students who did the TP : DONE!
+# - add table in phase2, to explain better in markdown
 #
 # **In process:**
 #
@@ -1998,7 +2013,13 @@ df[(df['seance'] == 'semaine_1') & ( (df['binome'] == 'hichame.haddou.etu'))][['
 #
 # - check the file duplicated_runTest.ipynb
 #
+# - add part to find all the run.Test red and see how many students did Run.Debogguer just after this test red
+#
+#
 # ## To show : 
 # - 4.14, add a diagram on Run_test rate
 # - 4.19
+#
+
+# %% [markdown]
 #
