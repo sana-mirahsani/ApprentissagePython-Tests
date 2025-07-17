@@ -30,9 +30,9 @@
 #
 #     3.4 Check empty filename_infere of **Run.Program**
 #
-#         3.4.1 Fill empty filename_infere of **Run.Program** by P_codestate 
+#         3.4.1 Fill empty filename_infere of Run.Program by P_codestate 
 #         
-#         3.4.2 Fill empty filename_infere of **Run.Program** by commandRan
+#         3.4.2 Fill empty filename_infere of Run.Program by commandRan
 #
 #     3.5 Check empty filename_infere of **Run.Command** 
 #     <br>

@@ -121,15 +121,7 @@ def validate_process_of_filename(df_index,df,pattern):
             
             subset_df = df.loc[start:end]
 
-            try:
-                data_cleaning.correct_filename_infere_in_subset(subset_df,df,pattern)
-            
-            except Exception as errors:
-                name = row['name_students']
-                print(f'Student: {name}')
-                print(f'Activity in {start} : {end}')
-                print(errors)
-                break
+            data_cleaning.correct_filename_infere_in_subset(subset_df,df,pattern)
 
     print('successful!!')   
 
@@ -149,15 +141,8 @@ def find_filename_by_sandwich(df_index,df):
                 df.loc[subset_df.index, 'filename_infere'] = 'Irrelevant'
             
             else:
-                try:
-                    data_cleaning.sandwich(subset_df,df)
+                data_cleaning.sandwich(subset_df,df)
                 
-                except Exception as errors:
-                    name = row['name_students']
-                    print(f'Student: {name}')
-                    print(f'Activity in {start} : {end}')
-                    print(errors)
-                    break
 
     print('successful!!')    
 
@@ -186,6 +171,8 @@ def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
     print('saving too_short_sessions...')
     io_utils.write_too_short_indices_to_csv(df_indices,INTERIM_DATA_DIR, week, filename='too_short_sessions')
 
+    df_too_short = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='too_short_sessions.csv')
+    
     # test the total empty strings in the current week for each verb
     print('Get total number of empty strings...')
     data_testing.get_number_of_empty_filename_for_week(week,df)
@@ -379,10 +366,36 @@ subset[~ subset['filename_infere'].str.contains(pattern, na = False)]['seance'].
 #
 # Overall, having only 18,261 unresolved entries out of 304,851 total, and successfully inferring 266,887 correct filenames, is a strong result.
 #
-# | Phase | Filled | Correct | Incorrect | EmptyTotal | OtherVerbsEmpty |
-# |----------|----------|----------|----------|----------|----------|
-# | Phase1   | 213,995  | 158,437  | 55,558  | 92,919  | 53,239 |
-# | Phase2   | 266,925  | 266,925  | 0       | 37,273  | 18,261 |
+# | Phase | Total_trace |Filled_trace | Correct_trace | Incorrect_trace | EmptyTotal_trace | OtherVerbsEmpty_trace | FilledBySandwich |
+# |----------|----------|----------|----------|----------|----------|----------|----------|
+# | Phase1   | 306,946   | 213,995  | 158,437  | 55,558  | 92,919  | 53,239 | 0 |
+# | Phase2   | 304198   |266,925  | 266,925  | 0       | 37,273  | 18,261 | 59,783 |
+#
+# **Explanation**
+#
+# - Phase :
+#     In cleaning part (nettoyage) there are two phases, and each clean a part of data.
+#
+# - Total_trace :
+#     Total number of filename_infere in dataframe. The reason that Total_trace is different in phase1 and phase2, is because there were 2,748 traces with the values ' ' in their seance column. Since there were useless (something like a bug) we deleted them from df but saved them in a csv file. (check DF[seance] == '' part)
+#
+# - Filled_trace :
+#     Total number of filename_infere that are filled.
+#
+# - Correct_trace :
+#     Total number of filename_infere that are correct (comparing to the real names of files)
+#
+# - Incorrect_trace :
+#     Total number of filename_infere that are incorrect (comparing to the real names of files)
+#
+# - EmptyTotal_trace :
+#     Total filename_infere that are empty after cleaning part (This number includes all verbs such as session.start/session.end/dockstringgenerate)
+#
+# - OtherVerbsEmpty_trace :
+#     Total filename_infere of all verbs excluding session.start/session.end/dockstringgenerate which are still empty even after cleaning part.
+#
+# - FilledBySandwich :
+#     Total filename_infere filled by method snadwich in phase2, obviously the total number is zero for phase1 because there is no sandwich method.
 #
 
 # %% [markdown]

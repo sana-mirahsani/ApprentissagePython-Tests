@@ -19,8 +19,8 @@
 # %% [markdown]
 # # Analyze Workflow Overview:
 # 1. Import Libraries
-# 2. Bizzar indices
-# 3. Load DataFrame : Final_nettoyage_2425.csv
+# 2. Load DataFrame : phase2_nettoyage_fichiere.csv (It should be this one Final_nettoyage_2425.csv but for now we don't work with anonymized data because it is hard)
+# 3. Bizzar indices
 # 4. Analyze
 #
 #     4.1 Total number of students during semester
@@ -93,7 +93,7 @@ df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='phase2_nettoya
 # %% [markdown]
 # **What are these Bizzar indices?**
 #
-# There are filename_infere that are same as their filename but when I compare the content of their P_codeState, the name should be something else, it means that the student used a file which has already a name between traces or even with the function's name it should be another name, but she changed the name to another name which is correct also; and since in phase2 nettoyage, it checks first if the name is in the pattern, if so return the name without checking the P_codeState (it's more efficase than checking the content of P_codeState for each row), so it is obvious these names didn't change eventhough they should have. These traces are in three situations:
+# There are filename_infere that are correct but they are not as same as the name in their P_codeState; it means that the student changed the name of file into another name which is correct but not same as the name between traces or even when I look at the content of P_codeState, the functions shows another name of file. Since in phase2 nettoyage, it checks first if the name is in the pattern, if so return the name without checking the P_codeState (it's more efficase than checking the content of P_codeState for each row), so it is obvious these names didn't change eventhough they should have. These traces are in three situations:
 #
 # **Note :These traces are only for Run.Test and these are the number of traces , NOT number of the students**
 #
@@ -108,6 +108,43 @@ df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='phase2_nettoya
 #
 # **What we should to them?**
 # The filename_infere which will be found in case1 or case2, can be replaced by the name is found by whether the name between traces or the functions name in P_codeState, (since we are more sure that the name found by P_codeState is more correct, we can replace them) but for those in case **filename_impossible_to_find_index** , which means we can't find the name neither by their functions or name beween traces, we can't do anything, so we remove them to have a correct analyze.
+#
+# | Phase | Total_trace |Filled_trace | Correct_trace | Incorrect_trace | EmptyTotal_trace | OtherVerbsEmpty_trace | FilledBySandwich | BizzarIndices |
+# |----------|----------|----------|----------|----------|----------|----------|----------| ----------|
+# | Phase1   | 306,946   | 213,995  | 158,437  | 55,558  | 92,919  | 53,239 | 0 | 0 |
+# | Phase2   | 304198   |266,925  | 266,925  | 0       | 37,273  | 18,261 | 59,783 | 574 |
+#
+# **Explanation**
+#
+# - Phase :
+#     In cleaning part (nettoyage) there are two phases, and each clean a part of data.
+#
+# - Total_trace :
+#     Total number of filename_infere in dataframe. The reason that Total_trace is different in phase1 and phase2, is because there were 2,748 traces with the values ' ' in their seance column. Since there were useless (something like a bug) we deleted them from df but saved them in a csv file. (check DF[seance] == '' part)
+#
+# - Filled_trace :
+#     Total number of filename_infere that are filled.
+#
+# - Correct_trace :
+#     Total number of filename_infere that are correct (comparing to the real names of files)
+#
+# - Incorrect_trace :
+#     Total number of filename_infere that are incorrect (comparing to the real names of files)
+#
+# - EmptyTotal_trace :
+#     Total filename_infere that are empty after cleaning part (This number includes all verbs such as session.start/session.end/dockstringgenerate)
+#
+# - OtherVerbsEmpty_trace :
+#     Total filename_infere of all verbs excluding session.start/session.end/dockstringgenerate which are still empty even after cleaning part.
+#
+# - FilledBySandwich :
+#     Total filename_infere filled by method snadwich in phase2, obviously the total number is zero for phase1 because there is no sandwich method.
+#
+# - BizzarIndices :
+#     Total number of Bizzar filename_infere (I already explain them before), they will be deleted from df.
+
+# %% [markdown]
+# ### Extract these strange indices
 
 # %%
 # extract these strange indices
@@ -175,41 +212,18 @@ for tp in TP_NAME:
 
 df_strange_filenames_Run_Test
 
-# %%
-df.loc[261557,'P_codeState']
-
-# %%
-df.loc[261557,'filename_infere']
-
-# %%
-for index, row in df_strange_filenames_Run_Test.iterrows():
-    print(row['TP'])
-    print(len(row['filename_case1']))
-
-
-# %%
-for index, row in df_strange_filenames_Run_Test.iterrows():
-    print(len(row['filename_case1']))
-
-# %%
-list_indices = df_strange_filenames_Run_Test[df_strange_filenames_Run_Test['TP'] == 'Tp6']['filename_case2'].tolist()
-
-# %%
-for i in list_indices[0]:
-    
-    print('-----------------------')
-    print(i)
-    print(df.loc[i,'verb'])
-    print(df.loc[i,'filename'])
-    print(df.loc[i,'filename_infere'])
-    print(df.loc[i,'P_codeState'])
-    
+# %% [markdown]
+# ### Save bizzar indices into CSV
 
 # %%
 # save the removed trace into a csv
 io_utils.write_csv(df_strange_filenames_Run_Test,INTERIM_DATA_DIR,'bizzar_traces')
 
+# %% [markdown]
+# ### Calculate the percentage of removing bizzar indices
+
 # %%
+# calculate the percentage of removing traces of each TP
 all_percentage_removed = [] # save later for the plot
 
 for tp in TP_NAME:
@@ -256,6 +270,9 @@ plt.show()
 # **Interpretation** 
 #
 # The plot above illustrates the percentage of rows that it was impossible to find a filename_infere by their P_codeState so they need to be removed to ensure accurate analysis. As shown, the highest percentage is for TP1 at 1.1%, which is relatively minor and not a major concern. Notably, TP_GAME (the most critical case) requires only 0.3% of its rows to be removed. This suggests we can proceed with the removal without worrying about a significant impact on the results.
+
+# %% [markdown]
+# ### Remove bizzar indices from dataframe
 
 # %%
 old_df_before_removing = df.copy() # save the original one just in case
@@ -334,18 +351,9 @@ plt.show()
 # ### 4.3 Total number of students during each TP
 
 # %%
-# replace the empty strings in TP and Type_TP columns by not_found
-df['TP'] = df['TP'].replace('','not_found')
-df['Type_TP'] = df['Type_TP'].replace('','not_found')
-
-# create a list of order of TP
-TP_ORDER = TP_NAME
-TP_ORDER.append('not_found')
-
-# %%
 df_students_per_TP = pd.DataFrame(columns=['TP', 'number of students'])
 
-for tp in TP_ORDER:
+for tp in TP_NAME:
     actor_column  = df[df['TP'] == tp]['actor']
     column_binome = df[df['TP'] == tp]['binome']
     all_students  = set(actor_column).union(set(column_binome))
@@ -356,15 +364,14 @@ for tp in TP_ORDER:
         pd.DataFrame({'TP': [tp], 'number of students': len(all_students)})
     ], ignore_index=True)
 
-
-df_students_per_TP
+df_students_per_TP 
 
 # %%
 # remove the last value : filename_not_found
-df_students_per_TP_filtered = df_students_per_TP.iloc[:11]
+df_students_per_TP
 
-labels = df_students_per_TP_filtered['TP']
-values = df_students_per_TP_filtered['number of students']
+labels = df_students_per_TP['TP']
+values = df_students_per_TP['number of students']
 
 plt.subplots(figsize=(17, 6))
 plt.bar(labels, values)
@@ -372,9 +379,6 @@ plt.title("Nombre d'eleves par TP")
 plt.xlabel("TP")
 plt.ylabel("Nombre d'eleves")
 plt.show()
-
-# %% [markdown]
-# **Interpretation**
 
 # %% [markdown]
 # ### 4.4 Total number of students during TP_mani and TP_prog
@@ -385,7 +389,7 @@ Type_TPs = ['TP_mani', 'TP_prog'] # create a list of different types of tp
 
 for tp in TP_NAME:
 
-    all_types_tp = []   # saving all numbers of types of TP
+    all_types_tp = []  # saving all numbers of types of TP
 
     for type_tp in Type_TPs:
 
@@ -401,11 +405,10 @@ for tp in TP_NAME:
         pd.DataFrame({'TP': [tp], 'TP_mani': all_types_tp[0], 'TP_prog': all_types_tp[1]})
     ], ignore_index=True)
 
-
 df_students_per_Type_Tp
 
 # %%
-df_students_per_Type_Tp[:11].set_index('TP')[['TP_mani', 'TP_prog']].plot(kind='bar', figsize=(12, 6))
+df_students_per_Type_Tp.set_index('TP')[['TP_mani', 'TP_prog']].plot(kind='bar', figsize=(12, 6))
 
 plt.title("Number of Students in Each Type of TP")
 plt.ylabel("Number of Students")
@@ -419,9 +422,23 @@ plt.show()
 # ### 4.5 Number of TP_mani and TP_prog in each TP 
 
 # %%
-# create a crossttable of two columns of df
-count_table = pd.crosstab(df['TP'], df['Type_TP'])
-count_table = count_table.reindex(TP_ORDER)
+# First filter Type_TP only on TP_mani and TP_prog
+filtered_df = df[df['Type_TP'].isin(['TP_mani', 'TP_prog'])] 
+
+# Calculate crosstable
+count_table = pd.crosstab(df['TP'], filtered_df['Type_TP'])
+
+# Get the index to change the order, TP10 move to TP9
+current_order = list(count_table.index)
+
+# Remove TP10
+row_to_move = current_order.pop(1)
+
+# Add TP10 after TP9
+current_order.insert(9, row_to_move)
+
+# Reindex crosstable
+count_table = count_table.reindex(current_order)
 count_table
 
 # %%
@@ -466,7 +483,7 @@ for tp in TP_NAME:
 df_students_per_verb
 
 # %%
-df_students_per_verb[:11].set_index('TP')[['Run.Command', 'Run.Program','Run.Test','Run.Debugger']].plot(kind='bar', figsize=(12, 6))
+df_students_per_verb.set_index('TP')[['Run.Command', 'Run.Program','Run.Test','Run.Debugger']].plot(kind='bar', figsize=(12, 6))
 
 plt.title("Number of students per verb in each TP")
 plt.ylabel("Number of students")
@@ -518,7 +535,7 @@ plt.tight_layout()
 plt.show()
 
 # %% [markdown]
-# ### 4.8 Comparing the total number of students with the number of students using each verb in TP_prog
+# ### 4.8 Compare the total number of students with the number of students using each verb only in TP_prog
 
 # %%
 verbs = ['Run.Command','Run.Program','Run.Test','Run.Debugger']
@@ -570,7 +587,7 @@ plt.show()
 # %%
 # create a crossttable of two columns of df
 count_table_seance_TP = pd.crosstab(df['seance'],df['TP'])
-count_table_seance_TP = count_table_seance_TP.reindex(index = SORTED_SEANCE, columns = TP_ORDER, fill_value=0)
+count_table_seance_TP = count_table_seance_TP.reindex(index = SORTED_SEANCE, columns = TP_NAME, fill_value=0)
 count_table_seance_TP
 
 # %%
@@ -650,14 +667,16 @@ for index, row in df_too_short.iterrows():
 # ### 4.12 Calculate how many students doing or not doing the run.test in each TP (TP_prog)
 
 # %%
-# can eb in data_testing
+# can be in data_testing
 def calculate_verb_in_TP(df,verb,tp): 
 
     df_filtered = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')] 
     actor_column  = df_filtered['actor']
     binome_column = df_filtered['binome']
     all_students  = set(actor_column).union(set(binome_column))
-    all_students.remove('')
+
+    if '' in all_students:
+        all_students.remove('')
 
     students_excluding_verb = []
     students_including_verb = []
@@ -697,6 +716,7 @@ for tp in TP_NAME:
         pd.DataFrame({'TP': [tp], 'total_number_students' : [total_students], 'doing_run_test' : [total_students_including_run_test], 'not_doing_run_test' : [total_students_excluding_run_test]})
     ], ignore_index=True)
 
+# remove the last row which the empty filenameinfere (we don't need them)
 df_run_test 
 
 # %%
@@ -731,8 +751,9 @@ def calculation_empty_test(df,tp):
     
     for name in all_students:
         verbs_of_student = df_filtered[(df_filtered['actor'] == name) | (df_filtered['binome'] == name)]['verb'].unique()
-                
+        
         if verb in verbs_of_student: # doing Run.Test
+            
             array_tests_unique = df_filtered[(df_filtered['verb'] == verb) & ((df_filtered['actor'] == name) | (df_filtered['binome'] == name))]['tests'].unique()
             
             students_doing_test.append(name) # add to a list
@@ -755,7 +776,7 @@ for tp in TP_NAME:
     all_students, total_students_doing_test , total_students_with_empty_test = calculation_empty_test(df,tp)
 
     # Append row to df
-    if tp != 'Tp10':
+    if tp != 'Tp10' and tp != 'Tp1':
         df_empty_test = pd.concat([
             df_empty_test,
             pd.DataFrame({'TP': [tp], 'total_student': [len(all_students)],'num_doing_run_test' : [len(total_students_doing_test)], 'num_doing_empty_run_test' : [len(total_students_with_empty_test)], 'name_doing_run_test' : [total_students_doing_test], 'name_doing_empty_run_test' : [total_students_with_empty_test]})
@@ -764,7 +785,7 @@ for tp in TP_NAME:
     else:
         df_empty_test = pd.concat([
             df_empty_test,
-            pd.DataFrame({'TP': [tp], 'total_student': [0], 'num_doing_run_test' : [0],'num_doing_empty_run_test' : [0], 'name_doing_run_test' : [''], 'name_doing_empty_run_test' : ['']})
+            pd.DataFrame({'TP': [tp], 'total_student': [len(all_students)], 'num_doing_run_test' : [0],'num_doing_empty_run_test' : [0], 'name_doing_run_test' : [''], 'name_doing_empty_run_test' : ['']})
         ], ignore_index=True)
 
 df_empty_test 
@@ -938,7 +959,8 @@ for student in all_students:
     
     else: num_students_with_a_tests += 1
 
-num_students_with_empty_tests, num_students_with_a_tests
+print(f'In TP_GAME, number of students with empty tests : {num_students_with_empty_tests}')
+print(f'In TP_GAME, number of students with tests : {num_students_with_a_tests}')
 
 
 # %% [markdown]
@@ -992,8 +1014,64 @@ plt.xlabel("file")
 plt.ylabel("Number of studnets")
 plt.show()
 
+
 # %% [markdown]
-# ### 4.19 Extract the consecutive Run.Test of students who is doing a real test
+# ### 4.19 Create a dataframe of column 'tests'
+
+# %%
+def convert_column_tests_to_df(df):
+    
+    df_test_not_empty = df['tests']
+
+    df_all_tests = None
+    frames = []
+    
+    for index, test_value in df_test_not_empty.items():
+        
+        if (test_value != '') and (test_value != '[]'):
+            lst = ast.literal_eval(test_value) # extract the list inside the string
+            df_one_test = pd.DataFrame(lst)
+            # add the column of actor and filename_infere and verb and P_codeState
+            df_one_test.insert(0, 'original_index', index)
+            frames.append(df_one_test)        
+
+    df_all_tests = pd.concat(frames, ignore_index=True)
+    return df_all_tests
+
+# creating a dataframe from tests column in the original dataframe
+df_of_column_test = convert_column_tests_to_df(df)  
+df_of_column_test 
+
+# %%
+df_of_column_test['verdict'].unique()
+
+# %% [markdown]
+# Different values in verdict columns : 
+#
+# - **PassedVerdict** : The code is passed with the correct output (as excepted)
+# - **ExceptionVerdict** : It didn’t reach the end of the test due to an error.
+# - **FailedVerdict** : The code ran successfully, but the output was incorrect.
+# - **PassedSetupVerdict** : The code passed a setup check, not the actual test.
+
+# %% [markdown]
+# ### 4.20 Add Red or Green column for Run.Test
+
+# %% [markdown]
+# How write boolean for test green or red for Run.Test : This column should be added by the values in 'status' column?
+#
+# - False : Red
+# - True : Green
+#
+# check this function df_tests = tests_utils.construct_DataFrame_from_all_tests(run_test_copy) in script_initialisation.py in thomas version
+
+# %%
+# add column color_test
+df_of_column_test['color_test'] = np.where(df_of_column_test['status'] == True, 'Green', 'Red')
+
+df_of_column_test[['color_test','status']] 
+
+# %% [markdown]
+# ### 4.21 Extract the consecutive Run.Test of students who is doing a real test
 
 # %%
 df_empty_test # this dataframe is created in 4.13 part
@@ -1015,183 +1093,13 @@ all_students_doing_real_test
 
 # %%
 def extract_consecutive_run_test(df,tp):
+    """ Mirabelle code's
     """
-    Extract the consecutive indices of Run.Test
-    In all_students_doing_real_test, we have the name of all students for each TP, who did a real test (Did Run.Test and tests is not empty),
-    I extract the students which have more than 2 Run.Test in a TP.
-    Then extract these indices, and check if there are consecutive indices or not, if so it will print the name and the number of total Run.Test appearence. 
-    """
-    
-    for name in all_students_doing_real_test[tp]:
-        df_filtered = df[(df['TP'] == tp) & ((df['actor'] == name) | (df['binome'] == name))]
-        if 'Run.Test' in df_filtered['verb'].unique():
-            num = df_filtered['verb'].value_counts()['Run.Test']
+    pass
 
-            if num > 2:
-                
-                lst = df[(df['TP'] == tp) & ((df['actor'] == name) | (df['binome'] == name)) & (df['verb'] == 'Run.Test')].index.tolist()
-
-                is_consecutive = all(b - a == 1 for a, b in zip(lst, lst[1:]))
-                if is_consecutive:
-                    print(name,num)
-
-for tp in TP_NAME:
-    print(tp)
-    extract_consecutive_run_test(df,tp)
 
 # %% [markdown]
-# ### 4.20 Get_mad_actors
-
-# %% [markdown]
-# Now we are facing with two different type of students during on TP_GAME, the one who did a Run.Test but their tests column is not empty, and the one with the empty tests. Alos now we want to know what is the reason that they are students with empty tests, and find another type of students in doing Run.Test but not empty. This type consider the students who pushed the Test button without changing any thing (mad students). Since we already have the list of students with Run.Test (not empty) in 4.19, we can use this list to find them easier.
-
-# %%
-std_list = all_students_doing_real_test['Tp_GAME']
-std_list[1]
-
-# %%
-df[(df['TP'] == 'Tp_GAME') & (df['binome'] == 'kade-bhoye.wann.etu')][['verb','P_codeState','filename_infere','tests','timestamp.$date']]
-
-# %%
-df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'kade-bhoye.wann.etu')][['verb','P_codeState','filename_infere','tests','timestamp.$date']]
-
-# %%
-print(df.loc[143788,'P_codeState']) # Run.program
-
-# %%
-print(df.loc[143789,'P_codeState']) # Run.Test
-
-# %% [markdown]
-#  File.Save
-
-# %%
-print(df.loc[143791,'P_codeState']) # Run.Test with an error
-
-# %%
-print(df.loc[143791,'tests'])
-
-# %% [markdown]
-# File.Save
-
-# %%
-print(df.loc[143793,'P_codeState']) # Run.Test with fixed bug
-
-# %%
-print(df.loc[143794,['commandRan','P_codeState']]) # Run.Command
-
-# %%
-print(df.loc[143795,['commandRan','P_codeState','verb']]) # Docstring.Generate
-
-# %%
-print(df.loc[143796,['commandRan','P_codeState','verb']]) # filen.Save
-
-# %%
-print(df.loc[143797,'P_codeState']) # Run.Test
-
-# %%
-print(df.loc[143797,'tests'])
-
-# %%
-print(df.loc[143798,'P_codeState']) # Run.program
-
-# %%
-print(df.loc[143798,'stderr'])
-
-# %%
-print(df.loc[143799,'commandRan']) # Run.command
-
-# %%
-print(df.loc[143800,'commandRan']) # Run.command
-
-# %%
-print(df.loc[143801,'verb']) # File.Save
-
-# %%
-print(df.loc[143802,'P_codeState']) # Run.Program
-
-# %%
-print(df.loc[143803,'P_codeState']) # Run.Program
-
-# %%
-print(df.loc[143804,'P_codeState']) # Run.Test
-
-# %%
-print(df.loc[143804,'tests'])
-
-# %%
-print(df.loc[143805,'P_codeState']) # Run.Program
-
-# %%
-print(df.loc[143806,'P_codeState']) # Run.Program
-
-# %%
-print(df.loc[143807:143814,['verb','commandRan','actor','filename_infere']]) # Run.Command
-
-# %%
-df.loc[143814,'filename_infere'] # 'File.Open'
-
-# %%
-print(df.loc[143815,'filename_infere']) # File.Save
-
-# %%
-print(df.loc[143816,'P_codeState']) # Run.Program
-
-# %%
-print(df.loc[143816,'P_codeState']) # Run.Program
-
-# %%
-print(df.loc[143817,'P_codeState']) # Run.Program
-
-# %%
-print(df.loc[143818,'P_codeState']) # Run.Program
-
-# %%
-print(df.loc[143819,'commandRan']) # Docstring.Generate
-
-# %%
-print(df.loc[143820,'filename_infere']) # File.Save
-
-# %%
-print(df.loc[143821,'P_codeState']) # Run.Program
-
-# %%
-print(df.loc[143822,'P_codeState']) # Run.Program
-
-# %%
-print(df.loc[143823,'filename_infere']) # File.Save
-
-# %%
-print(df.loc[143824,'P_codeState']) # Run.Program
-
-# %%
-print(df.loc[143825,'P_codeState']) # Run.Program
-
-# %%
-print(df.loc[143826,'P_codeState']) # Run.Program
-
-# %%
-print(df.loc[143827,'P_codeState']) # Run.Test
-
-# %%
-print(df.loc[143827,'tests']) # tests
-
-# %%
-print(df.loc[143828,'filename_infere']) # File.Save
-
-# %%
-print(df.loc[143829,'P_codeState']) # Run.Program
-
-# %%
-print(df.loc[143830,'P_codeState']) # Run.Program
-
-# %%
-print(df.loc[143831,'filename_infere']) # File.Save
-
-# %%
-print(df.loc[143832,'P_codeState']) # Run.Program
-
-# %% [markdown]
-# Conclusion
+# Idea about students classification in Run.Test
 #
 # At first student, started with a code which had a bug and then he fixed the bug (he found it and fixed it) but after a while in the same day, he got stuck on a part of code, that it wasn't not correct but he couldn't find it! even when he tried with Run.Test find he couldn't because every time he ran the run.Test on the part which was correct and he forgot to change the part to test, so every time the Run.Test was PASSED but when he tried to execute the code, it raised an error! At the end he tried several ways to find the bug but he couldn't so it gave up even though the result of test is successful.
 #
@@ -1211,7 +1119,7 @@ print(df.loc[143832,'P_codeState']) # Run.Program
 #     - mad students : They tried lot's of Run.Test with the same code or a tiny difference during a day
 
 # %% [markdown]
-# ### analyze function
+# ### analyze function (Blocked for now!)
 
 # %%
 strong_student = []
@@ -1239,14 +1147,14 @@ unique_days
 
 # %%
 # day one
-analyze_the_process_of_each_day(unique_days[0],'avsin.ata.etu') # lazy_student just for this day
+#analyze_the_process_of_each_day(unique_days[0],'avsin.ata.etu') # lazy_student just for this day
 
 # %%
 df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'avsin.ata.etu')]['binome']
 
 # %%
 # day two
-analyze_the_process_of_each_day(unique_days[1],'avsin.ata.etu') # tried_successful_students just for this day
+#analyze_the_process_of_each_day(unique_days[1],'avsin.ata.etu') # tried_successful_students just for this day
 
 # %%
 std_list[1]
@@ -1257,11 +1165,11 @@ unique_days
 
 # %%
 # day one
-analyze_the_process_of_each_day(unique_days[0],'hugo.vandewalle2.etu') # strong_student ( because it starts strongly and most of his test.results are )
+#analyze_the_process_of_each_day(unique_days[0],'hugo.vandewalle2.etu') # strong_student ( because it starts strongly and most of his test.results are )
 
 # %%
 # day one
-analyze_the_process_of_each_day(unique_days[1],'hugo.vandewalle2.etu') # strong_students
+#analyze_the_process_of_each_day(unique_days[1],'hugo.vandewalle2.etu') # strong_students
 
 # %%
 # another example
@@ -1274,23 +1182,23 @@ unique_days
 
 # %%
 # day one
-analyze_the_process_of_each_day(unique_days[0],'ibrahima-al-amine.diaw.etu')
+#analyze_the_process_of_each_day(unique_days[0],'ibrahima-al-amine.diaw.etu')
 
 # %%
 # day two
-analyze_the_process_of_each_day(unique_days[1],'ibrahima-al-amine.diaw.etu')
+#analyze_the_process_of_each_day(unique_days[1],'ibrahima-al-amine.diaw.etu')
 
 # %%
 # day 3
-analyze_the_process_of_each_day(unique_days[2],'ibrahima-al-amine.diaw.etu')
+#analyze_the_process_of_each_day(unique_days[2],'ibrahima-al-amine.diaw.etu')
 
 # %%
 # day 4
-analyze_the_process_of_each_day(unique_days[3],'ibrahima-al-amine.diaw.etu')
+#analyze_the_process_of_each_day(unique_days[3],'ibrahima-al-amine.diaw.etu')
 
 # %%
 # day 5
-analyze_the_process_of_each_day(unique_days[4],'ibrahima-al-amine.diaw.etu')
+#analyze_the_process_of_each_day(unique_days[4],'ibrahima-al-amine.diaw.etu')
 
 # %%
 # another students 
@@ -1303,15 +1211,15 @@ unique_days
 
 # %%
 # day 1
-analyze_the_process_of_each_day(unique_days[0],'richard.kpande-adzare.etu')
+#analyze_the_process_of_each_day(unique_days[0],'richard.kpande-adzare.etu')
 
 # %%
 # day 1
-analyze_the_process_of_each_day(unique_days[1],'richard.kpande-adzare.etu')
+#analyze_the_process_of_each_day(unique_days[1],'richard.kpande-adzare.etu')
 
 # %%
 # day 2
-analyze_the_process_of_each_day(unique_days[2],'richard.kpande-adzare.etu')
+#analyze_the_process_of_each_day(unique_days[2],'richard.kpande-adzare.etu')
 
 # %%
 print(std_list[3])
@@ -1321,7 +1229,7 @@ unique_days
 
 # %%
 # day 1
-analyze_the_process_of_each_day(unique_days[0],'alix.carton2.etu')
+#analyze_the_process_of_each_day(unique_days[0],'alix.carton2.etu')
 
 # %%
 # check each different day for this student during the TP_GAME
@@ -1431,7 +1339,7 @@ print(df.loc[119226,'P_codeState']) # Run.test
 df_of_column_test[df_of_column_test['original_index'] == 119226] # complete-error test! with a tiny difference in test part
 
 # %%
-check_difference_between_two_code(df.loc[119224,'P_codeState'],df.loc[119226,'P_codeState'])
+#check_difference_between_two_code(df.loc[119224,'P_codeState'],df.loc[119226,'P_codeState'])
 
 # %%
 print(df.loc[119228,'P_codeState']) # Run.test
@@ -1440,7 +1348,7 @@ print(df.loc[119228,'P_codeState']) # Run.test
 df_of_column_test[df_of_column_test['original_index'] == 119228] # successful test! with a progress
 
 # %%
-check_difference_between_two_code(df.loc[119226,'P_codeState'],df.loc[119228,'P_codeState'])
+#check_difference_between_two_code(df.loc[119226,'P_codeState'],df.loc[119228,'P_codeState'])
 
 # %%
 print(df.loc[119231,'P_codeState']) # Run.test
@@ -1449,7 +1357,7 @@ print(df.loc[119231,'P_codeState']) # Run.test
 df_of_column_test[df_of_column_test['original_index'] == 119231] # successful test! with a progress
 
 # %% [markdown]
-# ### functions for checking different type of actors
+# ### functions for checking different type of actors (Blocked for now!)
 
 # %%
 import difflib
@@ -1513,7 +1421,7 @@ def analyze_the_process_of_each_day(day,actor):
 
 
 # %% [markdown]
-# ### Red_test
+# ### Red_test (In proccess...)
 
 # %% [markdown]
 # Different type of students of Red test: This is not correct
@@ -1532,7 +1440,7 @@ def analyze_the_process_of_each_day(day,actor):
 # - blocked students
 
 # %%
-all_students_doing_real_test['Tp1'] # 4.19 
+all_students_doing_real_test['Tp1'] # This is created in 4.19 (before that you should run 4.13 also)
 
 
 # %% [markdown]
@@ -1658,20 +1566,22 @@ def merge_red_and_green_test(name):
 # step1 : classify Run.Test by different filename_infere
 def classify_by_filename(all_list_indices):
     
-    unique_filename_infere = df.loc[all_list_indices,'filename_infere'].unique().tolist()
-    
     # Select only the rows at the given indices
     selected_rows = df.loc[all_list_indices]
 
     # Group them by the 'filename_infere' column
     run_test_classification = selected_rows.groupby('filename_infere')
 
-    # Example: print each group
-    for filename, group in run_test_classification:
-        print(f"\nGroup: {filename}")
-        print(group)
+    all_classification_tests = []
 
-    return run_test_classification
+    for filename, group in run_test_classification:
+            classification_test = {}
+            classification_test['filename'] = filename
+            classification_test['indices'] = group.index.tolist()
+
+            all_classification_tests.append(classification_test)
+        
+    return all_classification_tests
 
 
 # %%
@@ -1679,33 +1589,65 @@ def classify_by_filename(all_list_indices):
 def find_overlab_tests(test1_index,test2_index):
 
     # extract the two tests
-    test1 = df_of_column_test[df_of_column_test['original_index'] == test1_index]
-    test2 = df_of_column_test[df_of_column_test['original_index'] == test2_index]
+    test1_df = df_of_column_test[df_of_column_test['original_index'] == test1_index]
+    test2_df = df_of_column_test[df_of_column_test['original_index'] == test2_index]
+    
+    columns_to_check = ['filename', 'lineno', 'tested_line', 'expected_result', 'details', 'verdict', 'name', 'status', 'color_test']
 
     # check if they have overlab by merging them
-    overlap = test1.merge(test2, how='inner')
+    overlap = test1_df[columns_to_check].merge(test2_df[columns_to_check], how='inner')
 
     if not overlap.empty: # they have overlab
         print("There is overlap!")
-        print(overlap)
+
+        # check their lengths
+        if len(test1_df) == len(test2_df):
+            
+            print("same length")
+            
+            if (test1_df[columns_to_check].reset_index(drop=True) == test2_df[columns_to_check].reset_index(drop=True)).all().all():
+                print("They are exactly same test!")
+            
+            else:
+                print("same test but modified")
+
+        elif len(test1_df) < len(test2_df):
+            print("test added")
+
+        elif len(test1_df) > len(test2_df):
+            print("test deleted")
     else:
         print("No overlap.")
 
 
-
-# %%
-different_filenames
-
-# %%
-for filename, group in different_filenames:
-        print(f"\nGroup: {filename}")
-        print(type(group))
-
 # %%
 # main
 all_indices = merge_red_and_green_test('massil.kichi.etu') # step 0
-different_filenames = classify_by_filename(all_indices) # step 1
+all_classification_tests = classify_by_filename(all_indices) # step 1
 
+if len(all_classification_tests) == 1:
+    print("There is only one classification because there was only one filename")
+
+else:
+    print("There are different filenames")
+
+for classifcation in all_classification_tests:
+    for index in classifcation['indices']:
+        print(index)
+        find_overlab_tests(index,index+1)
+
+# %%
+test1 = df_of_column_test[df_of_column_test['original_index'] == 180778]
+test1
+
+# %%
+
+# %%
+test2 = df_of_column_test[df_of_column_test['original_index'] == 180779]
+len(test2)
+
+# %%
+test1.compare(test2)
 
 # %%
 list1 = df_test_TP2[df_test_TP2['name'] == 'massil.kichi.etu']['indices_red_test'].loc[0] 
@@ -1878,7 +1820,6 @@ for index, row in df_filtered.iterrows():
 # %%
 print(df.loc[41643,'tests'])
 
-
 # %% [markdown]
 # Extract all unique tests and count the number of try for each unique test, then find :
 # - if there is any failed and given up try
@@ -1887,61 +1828,7 @@ print(df.loc[41643,'tests'])
 # Before starts, check if there is any duplicated tests in all Run.Test (exactly the same)
 
 # %% [markdown]
-# ### 4.21 Create a dataframe of column 'tests'
-
-# %%
-def convert_column_tests_to_df(df):
-    
-    df_test_not_empty = df['tests']
-
-    df_all_tests = None
-    frames = []
-    
-    for index, test_value in df_test_not_empty.items():
-        
-        if (test_value != '') and (test_value != '[]'):
-            lst = ast.literal_eval(test_value) # extract the list inside the string
-            df_one_test = pd.DataFrame(lst)
-            # add the column of actor and filename_infere and verb and P_codeState
-            df_one_test.insert(0, 'original_index', index)
-            frames.append(df_one_test)        
-
-    df_all_tests = pd.concat(frames, ignore_index=True)
-    return df_all_tests
-    
-df_of_column_test = convert_column_tests_to_df(df)  
-df_of_column_test 
-
-# %%
-df_of_column_test['verdict'].unique()
-
-# %% [markdown]
-# Different values in verdict columns : 
-#
-# - **PassedVerdict** : The code is passed with the correct output (as excepted)
-# - **ExceptionVerdict** : It didn’t reach the end of the test due to an error.
-# - **FailedVerdict** : The code ran successfully, but the output was incorrect.
-# - **PassedSetupVerdict** : The code passed a setup check, not the actual test.
-
-# %% [markdown]
-# ### 4.22 Add Red or Green column for Run.Test
-
-# %% [markdown]
-# How write boolean for test green or red for Run.Test : This column should be added by the values in 'status' column?
-#
-# - False : Red
-# - True : Green
-#
-# check this function df_tests = tests_utils.construct_DataFrame_from_all_tests(run_test_copy) in script_initialisation.py in thomas version
-
-# %%
-# add column color_test
-df_of_column_test['color_test'] = np.where(df_of_column_test['status'] == True, 'Green', 'Red')
-
-df_of_column_test[['color_test','status']] 
-
-# %% [markdown]
-# ## Keep research data only
+# ## 4.22 Keep research data only
 
 # %%
 df['research_usage'].unique()
@@ -1984,7 +1871,7 @@ df[(df['seance'] == 'semaine_1') & ( (df['binome'] == 'hichame.haddou.etu'))][['
 # - In each TP_GAME, look for each student, in the newest file of Run.Test, how many their column tests is empty and isn't : DONE but need to check 
 # - check this https://gitlab.univ-lille.fr/L1-programmation/analyse-des-traces/-/blob/amadou_analyse/notebooks/PJI_amadou_2024.py 
 # - add how many students in ech TP , TP_prog, did the run test and from doing this run.test, how many of them are doing only empty ones and the percentage of doing run.test - empty run.test = a value / total students who did the TP : DONE!
-# - add table in phase2, to explain better in markdown
+# - add table in phase2, to explain better in markdown : Done
 #
 # **In process:**
 #
@@ -2009,17 +1896,11 @@ df[(df['seance'] == 'semaine_1') & ( (df['binome'] == 'hichame.haddou.etu'))][['
 #
 # - check the bizzar indices ( maybe the analyze should be repeated)
 #
-# - remove all try and except
-#
 # - check the file duplicated_runTest.ipynb
 #
 # - add part to find all the run.Test red and see how many students did Run.Debogguer just after this test red
 #
-#
 # ## To show : 
 # - 4.14, add a diagram on Run_test rate
 # - 4.19
-#
-
-# %% [markdown]
 #
