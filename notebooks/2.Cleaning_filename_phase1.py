@@ -75,11 +75,20 @@ for tp_name in FILES_BY_TP:
 
 pattern = pattern  + 'Irrelevant'
 
+# %%
+pattern
+
 # %% [markdown]
 # ## Load DataFrame
 
 # %%
 df_clean = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='acteur_nettoyage_2425.csv')
+
+# %%
+df_clean[df_clean['_id.$oid'] == '66ed37fabd5a98b8f9da4354'][['filename','P_codeState','verb','commandRan']]
+
+# %%
+df_clean[df_clean['_id.$oid'] == '66ed3929bd5a98b8f9da4482'][['filename','P_codeState','verb','commandRan']]
 
 # %% [markdown]
 # ## Clean DataFrame
@@ -112,6 +121,15 @@ df_clean[['filename','filename_infere']].head(10)
 
 # %% [markdown]
 # There are already some names in column filename, I extract them and put them in column filename_infere, total empty filename reduced from 306,914 to 151,183.
+
+# %%
+df_clean[df_clean['_id.$oid'] == '66ed37fabd5a98b8f9da4354'][['filename_infere','filename','P_codeState','verb','commandRan']]
+
+# %%
+df_clean[df_clean['_id.$oid'] == '66ed3929bd5a98b8f9da4482'][['filename_infere','filename','P_codeState','verb','commandRan']]
+
+# %%
+df_clean[['filename','filename_infere']].head(10)
 
 # %% [markdown]
 # ### Check empty filename_infere of **Run.Test**
@@ -244,6 +262,12 @@ print(f"Total number of empty strings in filename_infere in Run.Debugger : {tota
 # %%
 df_clean[df_clean['verb'] == 'Run.Debugger']['filename_infere'].head(10)
 
+# %%
+df_clean[df_clean['_id.$oid'] == '66ed37fabd5a98b8f9da4354'][['filename_infere','filename','P_codeState','verb','commandRan']]
+
+# %%
+df_clean[df_clean['_id.$oid'] == '66ed3929bd5a98b8f9da4482'][['filename_infere','filename','P_codeState','verb','commandRan']]
+
 # %% [markdown]
 # ### Check empty filename_infere of **Run.Command**
 
@@ -312,6 +336,122 @@ total_FcodeState_empty = (df_clean[df_clean['verb'] == 'Run.Command']['F_codeSta
 print(f"Total number of empty strings in P_codeState in Run.command : {total_PcodeState_empty}")
 print(f"Total number of empty strings in F_codeState in Run.command : {total_FcodeState_empty}")
 
+
+# %% [markdown]
+# # Code with bug
+
+# %%
+def find_filename_by_function_name(TP_files:dict,commandRan:str) -> str:
+
+    """
+    Get the codestate of a row, and see if it can find any name of functions of all TPs
+    in it, if it finds, it extracts the corresponding filename of the function, and return it.
+
+    Args:
+        TP_files : A Dict of all files with their functions.
+        codestate : P_codestate or F_codestate of a row.
+
+    Returns:
+        filename_infere: The correct name of the file or an empty string.
+    """
+
+    for item in TP_files.items():
+    
+        if len(item[1]) > 1:
+            pattern = '|'.join(item[1])
+
+        else: 
+            pattern = item[1][0]
+
+        match = re.search(pattern, commandRan)
+        
+        if match: 
+            print(match)
+            filename_infere = item[0]
+            return filename_infere
+            
+    return '' # no match found!
+
+
+# %%
+all_TP_functions_name
+
+
+# %%
+def add_space(functions_name):
+    dico = {}
+    for key in functions_name:
+        liste = functions_name[key]
+        new_liste = []
+        for name in liste:
+            res_split = name.split('(')
+            name_sans_parenthese = res_split[0]
+            if len(res_split) == 1: # no (
+                new_name = name_sans_parenthese
+            else:
+                new_name = name_sans_parenthese + '[ \t]*\('
+            new_liste.append(new_name)
+        dico[key] = new_liste
+    return dico
+
+
+# %%
+new_all_TP_functions = add_space(all_TP_functions_name)
+
+# %%
+new_all_TP_functions 
+
+# %%
+from src.data.variable_constant_2425 import SORTED_SEANCE, all_TP_functions_name 
+
+
+# %%
+
+def find_filename_by_commandRan(pattern: str, commandRan: str) -> str:
+
+    """
+    It gets a pattern : all filenames, and the codestate, it checks if it can find
+    the name of the file in the codestate like the name between <trace></trace>
+    if not if check the name of the function in codestate by calling find_filename_by_function_name.
+
+    Args:
+        pattern : All filesname.
+        codestate : P_codeState or F_codeState of a row.
+
+    Returns:
+        filename_infere: The correct name of the file or an empty string.
+    """
+
+    match_state = re.search(pattern, commandRan)
+
+    if match_state: # if the name is in the P_codeState
+        matched_filename = match_state.group()  # Extract the name
+        return matched_filename
+
+    else: # if the exact name is not in P_codeState and student might removed the name part, we check the match with the content
+        filename_infere = find_filename_by_function_name(new_all_TP_functions,commandRan)
+        
+        # Remove to test
+        #if filename_infere == '':
+            #print("Filename not found!")
+        return filename_infere
+
+
+# %%
+new_all_TP_functions
+
+# %%
+df_clean[df_clean['_id.$oid'] == '66ed37fabd5a98b8f9da4354'][['filename_infere','filename','P_codeState','verb','commandRan']]
+
+# %%
+find_filename_by_commandRan(pattern,"est_non_vide ('kl')\n")
+
+# %%
+df_clean[df_clean['_id.$oid'] == '66ed3929bd5a98b8f9da4482'][['filename_infere','filename','P_codeState','verb','commandRan']]
+
+# %%
+find_filename_by_commandRan(pattern,"est_non_vide('')\n")
+
 # %% [markdown]
 # **Interpretation**
 #
@@ -362,6 +502,12 @@ df_clean[df_clean['verb'] == 'Docstring.Generate']['function']
 
 # %% [markdown]
 # ## Save new clean dataframe
+
+# %%
+df_clean[df_clean['_id.$oid'] == '66ed37fabd5a98b8f9da4354'][['filename_infere','filename','P_codeState','verb','commandRan']]
+
+# %%
+df_clean[df_clean['_id.$oid'] == '66ed3929bd5a98b8f9da4482'][['filename_infere','filename','P_codeState','verb','commandRan']]
 
 # %%
 io_utils.write_csv(df_clean,INTERIM_DATA_DIR,None)
