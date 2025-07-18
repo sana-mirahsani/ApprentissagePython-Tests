@@ -64,8 +64,8 @@ def find_tests_in_codestate(source:str) -> dict:
     except (ValueError, SyntaxError, SpaceMissingAfterPromptException) as e:
         dico = None
     return dico
- 
-    
+
+
 # -
 
 df['codeState'] = df['P_codeState'] + df['F_codeState']
@@ -144,6 +144,8 @@ df.loc[266891][['actor','verb', 'filename_infere', 'codeState', 'commandRan']]
 
 df.loc[266853][['TP', 'timestamp.$date','actor','verb', 'filename_infere', 'codeState', 'commandRan']]
 
+df.loc[266889:266892][['TP', 'timestamp.$date','actor','verb', 'filename_infere', 'codeState', 'commandRan', 'stderr']]
+
 df.loc[266854:266900][['TP', 'timestamp.$date','actor','verb', 'filename_infere', 'codeState', 'commandRan']]
 
 df.loc[266901:266950][['TP',  'timestamp.$date', 'actor','verb', 'filename_infere', 'codeState', 'commandRan']]
@@ -187,5 +189,54 @@ for tp in ['Tp2', 'Tp3', 'Tp4', 'Tp5', 'Tp6', 'Tp7', 'Tp8', 'Tp9']:
             most_recent_codeState = df_name_tp.loc[most_recent_index_codestate]['codeState']
             res = find_test_in_codestate_for_functions(most_recent_codeState, FUNCTIONS_PROG_BY_TP[tp])
 
+
+df.loc[266891]
+
+df_hamza = df[(df['TP'] == 'Tp3') & ((df['Type_TP'] == 'TP_prog') & (df['actor'] == 'hamza.chebbah.etu') | (df['binome'] == 'hamza.chebbah.etu'))]
+df_hamza[['verb', 'filename_infere', 'commandRan']]
+
+df.loc[105140:105156][['verb', 'filename_infere', 'commandRan', 'codeState']]
+
+
+
+print(df.loc[105147]['codeState'])
+
+df.loc[105156:105160][['verb', 'filename_infere', 'commandRan', 'codeState']]
+
+df.loc[105159]['codeState']
+
+df_hamza = df[(df['TP'] == 'Tp3') & ((df['Type_TP'] == 'TP_prog') & (df['actor'] == 'hamza.chebbah.etu') | (df['binome'] == 'hamza.chebbah.etu'))]
+df_hamza[['verb', 'filename_infere', 'commandRan']]
+
+df_ismail = df[(df['TP'] == 'Tp4') & ((df['Type_TP'] == 'TP_prog') & (df['actor'] == 'ismail.nejjar.etu') | (df['binome'] == 'ismail.nejjar.etu'))]
+df_ismail[['verb', 'filename_infere', 'commandRan']]
+
+
+df.loc[26410:26424][['verb', 'filename_infere', 'commandRan']]
+
+df.loc[26424:26430][['verb', 'filename_infere', 'commandRan']]
+
+print(df.loc[26426]['codeState'])
+
+df.loc[26427]['filename']
+
+df_mounir = df[(df['TP'] == 'Tp5') & ((df['Type_TP'] == 'TP_prog') & (df['actor'] == 'mounir.achbad.etu') | (df['binome'] == 'mounir.achbad.etu'))]
+df_mounir[['verb', 'filename_infere', 'commandRan']]
+
+
+df.loc[211660:211670][['verb', 'filename_infere', 'commandRan']]
+
+df.loc[211663]['commandRan']
+
+df.loc[211664]['codeState']
+
+import re
+match = re.search("est_non_vide\(", "est_non_vide('')")
+print(match)
+
+match = re.search("est_non_vide\(", "est_non_vide('ki')")
+print(match)
+
+match.group()
 
 
