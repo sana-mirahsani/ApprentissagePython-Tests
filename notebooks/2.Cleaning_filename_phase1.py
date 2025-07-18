@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.1
+#       jupytext_version: 1.17.2
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: venv_jupyter_l1test
 #     language: python
-#     name: python3
+#     name: venv_jupyter_l1test
 # ---
 
 # %% [markdown]
@@ -336,9 +336,29 @@ total_FcodeState_empty = (df_clean[df_clean['verb'] == 'Run.Command']['F_codeSta
 print(f"Total number of empty strings in P_codeState in Run.command : {total_PcodeState_empty}")
 print(f"Total number of empty strings in F_codeState in Run.command : {total_FcodeState_empty}")
 
-
 # %% [markdown]
 # # Code with bug
+
+# %% [markdown]
+# Pour l'ajout d'espaces avant la parenthèse ouvrante dans les valeurs de all_TP_functions_name :
+#
+# - c'est l'antislash devant la parenthèse ouvrante dans all_TP_functions_name qui pose problème
+# - mais je ne comprends pas où find_filename_by_function_name est appelée, donc je n'ai pas modifié. Comme on a 0 tests, j'ai peur de tout casser.
+#
+# Ci-dessous des exemples.
+
+# %% [markdown]
+# Le code de cette fonction est inutilement compliqué pour le join, mais on peut laisser comme ça.
+
+# %%
+'|'.join(['q'])
+
+# %%
+'|'.join(['a', 'q'])
+
+# %%
+'|'.join([])
+
 
 # %%
 def find_filename_by_function_name(TP_files:dict,commandRan:str) -> str:
@@ -366,7 +386,7 @@ def find_filename_by_function_name(TP_files:dict,commandRan:str) -> str:
         match = re.search(pattern, commandRan)
         
         if match: 
-            print(match)
+            #print(match)
             filename_infere = item[0]
             return filename_infere
             
@@ -374,40 +394,371 @@ def find_filename_by_function_name(TP_files:dict,commandRan:str) -> str:
 
 
 # %%
+from src.data.variable_constant_2425 import SORTED_SEANCE, all_TP_functions_name 
+
+# %%
 all_TP_functions_name
+
+# %% [markdown]
+# Je redéfinis les listes de noms  de fonctions par TP en virant le '\'
+
+# %%
+# Added by Sana
+
+# TP2
+FUNCTIONS_TP2_Prog = [
+    "repetition(",
+    "moyenne_entiere(",
+    "moyenne_entiere_ponderee(",
+    "heure2minute(",
+    "jour2heure(",
+    "en_minutes(",
+    "message(",
+    "bonbons_par_enfant("
+]
+
+FUNCTIONS_TP2_Manip = [
+    "imperial2metrique(",
+    "poly1(",
+    "poly2(",
+    "perimetre_triangle(",
+    "concatenation(",
+    "nieme_chiffre(",
+    "nb_secondes_par_jour(",
+    "nb_secondes_moyen_par_an(",
+    "nb_secondes_moyen_par_mois(",
+    "date2secondes(",
+    "secondes_depuis_date_reference(",
+    "age_a_date(", 
+]
+
+# TP3
+FUNCTIONS_TP3_Prog = [
+    "est_non_vide(",
+    "est_reponse(",
+    "est_beneficiaire(",
+    "est_reponse_correcte(",
+    "est_en_ete(",
+    "est_nombre_mystere(",
+    "ont_intersection_vide(",
+    "intervalle1_contient_intervalle2(",
+    "sont_intervalles_recouvrants(",
+    "est_gagnant(",
+    "est_strict_anterieure_a(",
+    "est_mineur_a_date(",
+    "est_senior_a_date(",
+    "a_tarif_reduit_a_date(",
+]
+
+FUNCTIONS_TP3_Manip = [
+    "fonction2(",
+    "fonction3(",
+    "fonction4(",
+    "fonction5(",
+    "fonction1(",
+    "pred1(",
+    "pred2(",
+    "pred3(",
+    "pred4(",
+    "pred5(",
+    "pred9(",
+    "est_special(",
+    "sont_proches("
+]
+
+# TP4 
+FUNCTIONS_TP4_Prog = [
+    "numero_jour(",
+    "nom_jour(",
+    "est_date_valide(",
+    "est_jour_valide(",
+    "nombre_jours(",
+    "est_mois_valide(",
+    "calcul_gain(",
+    "montant_facture(",
+    "nombre_exemplaires(",
+    "conseil_voiture(",
+    "argminimum(",
+    "cout_location(",
+    "minimum3(",
+    "compare(",
+    "maximum(", 
+    "est_bissextile("
+]
+
+FUNCTIONS_TP4_Manip = [
+    "categorie_tir_arc_v1(",
+    "categorie_tir_arc_v2(",
+    "categorie_tir_arc_v3(",
+    "categorie_tir_arc_v4(",
+    "mon_abs(",
+    "signe1(",
+    "signe2(",
+    "en_tete1(",
+    "int2str(",
+    "pile_ou_face1(",
+    "pile_ou_face2(",
+    "parite(",
+    "mediane(",
+    "grade(",
+    "myown_not(",
+    "myown_or(",
+    "myown_and("
+    
+]
+
+# TP5
+FUNCTIONS_TP5_Prog = [
+    "<trace>imprimerie.py</trace>",
+    "<trace>jeu_421.py</trace>",
+    "representation_lancer(",
+    "de(",
+    "est_42(",
+    "est_421(",
+]
+
+FUNCTIONS_TP5_Manip = [
+    'print("coucou")',
+    'chaine',
+    "mystere(",
+    "exercices de manipulation : print", # It's not a function
+    "saison(",
+    "affiche_saison(",
+    "rouleau",
+    "representation_rouleaux",
+    "representation_differentiel"
+    
+]
+
+# TP6
+FUNCTIONS_TP6_Prog = [
+    "carres(",
+    "nombre_occurrences(",
+    "nombre_occurrences2(",
+    "moyenne(",
+    "sans_elt(",
+    "positive(",
+    "chiffres(",
+    "miroir(",
+    "compte_car("
+]
+
+FUNCTIONS_TP6_Manip = [
+    "mystere(",
+    "mystere2(",
+    "affiche_range(",
+    "compte_iterations(",
+    "saisie_caracteres(",
+    "compte_positifs(",
+    "variance(",
+    "incremente(",
+    "nombre_ponctuation_dans_chaine(",
+    "nombre_ponctuation_dans_liste(",
+    "puissance(",
+    "prefixes(",
+    "generer_point(",
+    "est_dans_cercle(",
+    "generer_liste_points(",
+    "calcul_pi(",
+
+]
+
+# TP7
+FUNCTIONS_TP7_Prog = [
+    "echantillonne(",
+    "elements_indices_impairs(",
+    "miroir(",
+    "minimum(",
+    "decoupage(",
+    "premieres_occurrences(",
+    "matchs(",
+    "nom_domaines(",
+    "max_identiques(",
+    "suffixes(",
+    "resume(",
+    "ajout_separateur(",
+    "construit_mots("
+    
+]
+
+FUNCTIONS_TP7_Manip = [
+    "calcule_produit_cartesien1(",
+    "calcule_produit_cartesien2(",
+    "se_suivent("
+]
+
+# TP8
+FUNCTIONS_TP8_Prog = [
+    "# Jeu de Nim",
+    "compte_motif(",
+    "indice_maximum(",
+    "moyenne_ponderee(",
+    "addition_digit(",
+    "addition(",
+    "determine(",
+    "supprime(",
+    "filtre(",
+    "nb_jours_avant_1m_blob(",
+    "somme_chiffres(",
+    "saisie_pseudo_avec_verification(" 
+]
+
+FUNCTIONS_TP8_Manip = [
+    "multiplication(",
+    "saisie_reponse(",
+    "duree_atteinte_seuil(",
+    "compte_elements_identiques(",
+    "racine_entiere(",
+    "saisie_entier_intervalle(",
+    "compare(",
+    "deviner_un_nombre(",
+]
+
+# TP9
+FUNCTIONS_TP9_Prog = [
+    "toutes_longueurs_impaires_while(",
+    "toutes_longueurs_impaires_for(",
+    "contient_chiffre_ou_minuscule_while(",
+    "indice_positif_while(",
+    "indice_positif_for(",
+    "contient_nb_occurrences_ou_plus_while(",
+    "contient_nb_occurrences_ou_plus_for(",
+    "est_palindrome_while(",
+    "est_palindrome_for(",
+    "est_croissante_while(",
+    "est_croissante_for(",
+    "tous_differents_while(",
+    "tous_differents_for(",
+    "produit_vaut_n_while(",
+    "produit_vaut_n_for(",
+    "suffixe_somme_while(",
+    "suffixe_somme_for(",
+    "hexa_decimal(",
+    "decimal_hexa(",
+    "est_hexa(",
+    "hexa_binaire(",
+    "binaire_hexa(",
+    "genere_hexa(",
+    "genere_hexa_sans_begaiement(",
+
+]
+
+FUNCTIONS_TP9_Manip = [
+    "contient_longue_chaine(",
+    "tous_entier_intervalle(",
+    "au_moins_2_oui(",
+    "contiennent_car("
+]
+
+# TP10
+FUNCTIONS_TP10_Manip = [
+    "carre_1_au_centre(",
+    "affecte("  
+]
+
+# TP11
+FUNCTIONS_TP11_Manip = [
+    "open(",
+    "f1.write(",
+    "f1.close(",
+    "f2.write(",  
+    "f2.writelines(",
+    "f3.write(",
+    "f3.close(",
+    "f1.readlines(",
+    "lentier(",
+    "help(str.rstrip)",
+    "rstrip("
+]
+
+
+# %% [markdown]
+# Je redéfinis all_TP_functions_name.
+
+# %% [markdown]
+# lui ne change pas
+
+# %%
+FUNCTIONS_GAME = [
+    "<trace>tictactoe.py</trace>",
+    "<trace>puissance4.py</trace>",
+    "<trace>jeu_2048.py</trace>",
+    "<trace>binairo.py</trace>",
+    "<trace>tectonic.py</trace>",
+    "<trace>galaxies.py</trace>",
+]
+
+# %%
+# All TP
+all_TP_functions_name = {
+    'note_UE.py' : ['# TP PROG semaine 1'] , 'pour_debogueur.py' : ['# TP PROG semaine 1'] , 'calcul_interets.py' : ['# TP PROG semaine 1'] , # TP1
+    'fonctions.py': FUNCTIONS_TP2_Prog, 'mesure.py': [FUNCTIONS_TP2_Manip[0]], 'polynomes.py': FUNCTIONS_TP2_Manip[1:], # TP2
+    'booleens.py' : FUNCTIONS_TP3_Prog, 'erreurs_multiples.py': FUNCTIONS_TP3_Manip[:4], 'manipulations.py' : FUNCTIONS_TP3_Manip[4:], # TP3
+    'conditionnelles.py' : FUNCTIONS_TP4_Prog, 'categories.py' : FUNCTIONS_TP4_Manip[:4] , 'erreurs_cond.py' : FUNCTIONS_TP4_Manip[4:], # TP4
+    'imprimerie.py' : [FUNCTIONS_TP5_Prog[0]], 'jeu_421.py' : FUNCTIONS_TP5_Prog[1:], "affichage.py" : [FUNCTIONS_TP5_Manip[0]], "echappement.py" : [FUNCTIONS_TP5_Manip[1]], "interactions_mystere.py" : [FUNCTIONS_TP5_Manip[2]], "saisies_diverses.py" : [FUNCTIONS_TP5_Manip[3]], "saison.py" : FUNCTIONS_TP5_Manip[4:], "saison_main.py" : FUNCTIONS_TP5_Manip[4:], # TP5
+    "iterables_for.py" : FUNCTIONS_TP6_Prog , "debogueur-for.py" : FUNCTIONS_TP6_Manip[0:2], "activite_range.py": FUNCTIONS_TP6_Manip[2:], # TP6
+    "iterable_indexation.py": FUNCTIONS_TP7_Prog, 'imbriquees.py':FUNCTIONS_TP7_Manip[:2], "elements_consecutifs.py": [FUNCTIONS_TP7_Manip[2]], "configurations_init_jeu_vie.py": ['configurations initiales pour jeu de la vie'], # TP7
+    "while.py" : FUNCTIONS_TP8_Prog[1:], "jeu_nim.py" : [FUNCTIONS_TP8_Prog[0]], "erreurs_boucles_while.py" : FUNCTIONS_TP8_Manip[:5], "devinette.py" : FUNCTIONS_TP8_Manip[5:], # TP8
+    "parcours_interrompu.py" : FUNCTIONS_TP9_Prog, "erreurs_boucles_while_suite.py" : FUNCTIONS_TP9_Manip, # TP9
+    "erreurs_aliasing.py" : FUNCTIONS_TP10_Manip, # TP10
+    "tictactoe.py" : [FUNCTIONS_GAME[0]], "puissance4.py" : [FUNCTIONS_GAME[1]], "jeu_2048.py" : [FUNCTIONS_GAME[2]], "binairo.py" : [FUNCTIONS_GAME[3]], "tectonic.py" : [FUNCTIONS_GAME[4]], "galaxies.py" : [FUNCTIONS_GAME[5]], "experimentations_fichiers.py" : FUNCTIONS_TP11_Manip # TP_GAME
+    }
 
 
 # %%
-def add_space(functions_name):
+all_TP_functions_name
+
+# %% [markdown]
+# J'ai refait la fonction add_space.
+
+# %%
+all_TP_functions_name_sans_par = {'booleens.py': ['est_non_vide(',
+  'est_reponse(',
+  'est_beneficiaire(',
+  'est_reponse_correcte(',
+  'est_en_ete(',
+  'est_nombre_mystere(',
+  'ont_intersection_vide(',
+  'intervalle1_contient_intervalle2(',
+  'sont_intervalles_recouvrants']}
+
+
+# %%
+
+# %%
+def add_possible_space_before_brace(functions_name:dict) -> dict:
+    '''
+    functions_name is a dictionary whose keys are filenames and values are list of function names of the kind 'repetition('
+
+    Adds a regexpr that allows spaces or tabs before the '('. 
+    '''
     dico = {}
     for key in functions_name:
-        liste = functions_name[key]
-        new_liste = []
-        for name in liste:
+        function_list = functions_name[key]
+        new_list = []
+        for name in function_list:
             res_split = name.split('(')
-            name_sans_parenthese = res_split[0]
+            name_without_brace = res_split[0]
             if len(res_split) == 1: # no (
-                new_name = name_sans_parenthese
+                new_name = name_without_brace
             else:
-                new_name = name_sans_parenthese + '[ \t]*\('
-            new_liste.append(new_name)
-        dico[key] = new_liste
+                new_name = re.escape(name_without_brace) + r'[ \t]*\('
+            new_list.append(new_name)
+        dico[key] = new_list
     return dico
 
 
 # %%
-new_all_TP_functions = add_space(all_TP_functions_name)
+all_TP_functions_name_without_brace = add_possible_space_before_brace(all_TP_functions_name)
+all_TP_functions_name_without_brace
+
+
+# %% [markdown]
+# J'ai ajouté un paramètre pour all_TP_functions_name_without_brace à la function. Attention la doc et les commentaires
+# sont à revoir.
 
 # %%
-new_all_TP_functions 
-
-# %%
-from src.data.variable_constant_2425 import SORTED_SEANCE, all_TP_functions_name 
-
-
-# %%
-
-def find_filename_by_commandRan(pattern: str, commandRan: str) -> str:
+def find_filename_by_commandRan(all_TP_functions : dict, pattern: str, commandRan: str) -> str:
 
     """
     It gets a pattern : all filenames, and the codestate, it checks if it can find
@@ -429,7 +780,7 @@ def find_filename_by_commandRan(pattern: str, commandRan: str) -> str:
         return matched_filename
 
     else: # if the exact name is not in P_codeState and student might removed the name part, we check the match with the content
-        filename_infere = find_filename_by_function_name(new_all_TP_functions,commandRan)
+        filename_infere = find_filename_by_function_name(all_TP_functions,commandRan)
         
         # Remove to test
         #if filename_infere == '':
@@ -437,20 +788,36 @@ def find_filename_by_commandRan(pattern: str, commandRan: str) -> str:
         return filename_infere
 
 
-# %%
-new_all_TP_functions
+# %% [markdown]
+# Je vérifie sur les appels qui nous embêtaient.
 
 # %%
-df_clean[df_clean['_id.$oid'] == '66ed37fabd5a98b8f9da4354'][['filename_infere','filename','P_codeState','verb','commandRan']]
+find_filename_by_commandRan(all_TP_functions_name_without_brace, pattern,"est_non_vide ('kl')\n")
 
 # %%
-find_filename_by_commandRan(pattern,"est_non_vide ('kl')\n")
+find_filename_by_commandRan(all_TP_functions_name_without_brace, pattern,"est_non_vide ('')\n")
+
+# %% [markdown]
+# Je vérifie sur un codeState.
 
 # %%
-df_clean[df_clean['_id.$oid'] == '66ed3929bd5a98b8f9da4482'][['filename_infere','filename','P_codeState','verb','commandRan']]
+codeState_est_vide = '#exos de programation\ndef est_non_vide ( a:str )-> bool:\n    """ à_remplacer_par_ce_que_fait_la_fonction\n\n    Précondition : \n    Exemple(s) :\n    $$$ \n    """\n    a==(\'\')\n       '
+
 
 # %%
-find_filename_by_commandRan(pattern,"est_non_vide('')\n")
+find_filename_by_commandRan(all_TP_functions_name_without_brace, pattern, codeState_est_vide)
+
+# %% [markdown]
+# Je suppose que ce sont les lignes qui posaient souci.
+
+# %%
+df_clean[df_clean['_id.$oid'] == '66ed37fabd5a98b8f9da4354'][['filename','P_codeState','verb','commandRan']]
+
+# %%
+find_filename_by_commandRan(all_TP_functions_name_without_brace, pattern,"est_non_vide ('kl')\n")
+
+# %%
+df_clean[df_clean['_id.$oid'] == '66ed3929bd5a98b8f9da4482'][['filename','P_codeState','verb','commandRan']]
 
 # %% [markdown]
 # **Interpretation**

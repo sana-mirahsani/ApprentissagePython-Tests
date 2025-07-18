@@ -137,8 +137,8 @@ for name in all_students_tp2:
         most_recent_index_codestate = df_codestate_nonempty['timestamp.$date'].idxmax()
         most_recent_codeState = df_name_tp2.loc[most_recent_index_codestate]['codeState']
         res = find_test_in_codestate_for_functions(most_recent_codeState, FUNCTIONS_TP2_Prog)
-    if res is None:
-        print(name)
+#    if res is None:
+#        print(name)
 
 df.loc[266891][['actor','verb', 'filename_infere', 'codeState', 'commandRan']]
 
@@ -197,7 +197,7 @@ df_hamza[['verb', 'filename_infere', 'commandRan']]
 
 df.loc[105140:105156][['verb', 'filename_infere', 'commandRan', 'codeState']]
 
-
+df.loc[105147]['codeState']
 
 print(df.loc[105147]['codeState'])
 
