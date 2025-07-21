@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.17.1
 #   kernelspec:
 #     display_name: venv_jupyter_l1test
 #     language: python
@@ -273,7 +273,10 @@ def find_tests_for_tp_tpprog_name(name:str, df:pd.DataFrame, tp:str) -> tuple[pd
                 for key, value in dict_tests.items():
                     col_functions.append(key)
                     col_tests_number.append(value)
+                
                 nb_rows = len(dict_tests)
+                if col_tests_number == [None]*nb_rows:
+                     print(f'aucune fonction réalisée par {name}, indice {index}')
                 col_actors = [name] * nb_rows
                 col_tp = [tp] * nb_rows
                 col_index = [index] * nb_rows

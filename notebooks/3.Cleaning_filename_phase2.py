@@ -100,7 +100,15 @@ pattern = pattern  + 'Irrelevant'
 # ## Load DataFrame
 
 # %%
+
+# %%
 df_clean = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='phase1_nettoyage_fichiere.csv')
+
+# %%
+df_clean[df_clean['_id.$oid'] == '66ed37fabd5a98b8f9da4354'][['filename','filename_infere','P_codeState','verb','commandRan']]
+
+# %%
+df_clean[df_clean['_id.$oid'] == '66ed3929bd5a98b8f9da4482'][['filename','filename_infere','P_codeState','verb','commandRan']]
 
 
 # %% [markdown]
@@ -152,7 +160,7 @@ def find_filename_by_sandwich(df_index,df):
 def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
 
     print(f"------------------ Start process in : {week} ------------------")
-
+   
     # Test total for the current semaine
     data_testing.test_filename_infere_each_week(week,df,pattern)
     print('----------------------------------------')
@@ -170,8 +178,6 @@ def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
     # save too_short_sessions in another dataframe before removing them
     print('saving too_short_sessions...')
     io_utils.write_too_short_indices_to_csv(df_indices,INTERIM_DATA_DIR, week, filename='too_short_sessions')
-
-    df_too_short = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='too_short_sessions.csv')
     
     # test the total empty strings in the current week for each verb
     print('Get total number of empty strings...')
@@ -240,11 +246,17 @@ def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
 # %%
 data_testing.test_filename_infere_total(df_clean,pattern) 
 
+# %%
+df_clean.loc[105148]
+
 # %% [markdown]
 # ### 3.1 **DF[seance] == semaine_1**
 
 # %%
 df_clean, df_empty_string_semaine_1 = main_process('semaine_1',df_clean,pattern)
+
+# %%
+df_clean.loc[105148]
 
 # %% [markdown]
 # ### 3.2 **DF[seance] == semaine_2**
@@ -257,6 +269,12 @@ df_clean, df_empty_string_semaine_2 = main_process('semaine_2',df_clean,pattern)
 
 # %%
 df_clean, df_empty_string_semaine_3 = main_process('semaine_3',df_clean,pattern)
+
+# %%
+df_clean.loc[105148]
+
+# %%
+df_clean[(df_clean['seance'] == 'semaine_9') & (df_clean['actor'] == 'hamza.chebbah.etu')][['filename_infere']]
 
 # %% [markdown]
 # ### 3.4 **DF[seance] == semaine_4**
@@ -298,7 +316,13 @@ df_clean, df_empty_string_semaine_9 = main_process('semaine_9',df_clean,pattern)
 # ### 3.10 **DF[seance] == semaine_10**
 
 # %%
+df_clean[df_clean['_id.$oid'] == '673db140bd5a98b8f9dd1f13'][['filename_infere','filename','P_codeState','verb','commandRan']]
+
+# %%
 df_clean, df_empty_string_semaine_10 = main_process('semaine_10',df_clean,pattern)
+
+# %%
+df_clean[df_clean['_id.$oid'] == '673db140bd5a98b8f9dd1f13'][['filename_infere','filename','P_codeState','verb','commandRan']]
 
 # %% [markdown]
 # ### **3.11 DF[seance] == DSi**
@@ -510,6 +534,9 @@ df_clean['Type_TP'] = df_clean['Type_TP'].fillna('')
 tota_empty = (df_clean['Type_TP'] == '').sum()
 print(f"Total empty : {tota_empty}")
 df_clean['Type_TP']
+
+# %%
+df_clean[df_clean['_id.$oid'] == '673db140bd5a98b8f9dd1f13'][['filename_infere','filename','P_codeState','verb','commandRan','TP','Type_TP']]
 
 # %% [markdown]
 # ## 6.Save the final dataframe

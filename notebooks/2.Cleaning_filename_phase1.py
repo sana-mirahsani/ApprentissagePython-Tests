@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.17.1
 #   kernelspec:
-#     display_name: venv_jupyter_l1test
+#     display_name: Python 3
 #     language: python
-#     name: venv_jupyter_l1test
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -131,6 +131,9 @@ df_clean[df_clean['_id.$oid'] == '66ed3929bd5a98b8f9da4482'][['filename_infere',
 # %%
 df_clean[['filename','filename_infere']].head(10)
 
+# %%
+df_clean[df_clean['_id.$oid'] == '673db140bd5a98b8f9dd1f13'][['filename_infere','filename','P_codeState','verb','commandRan']]
+
 # %% [markdown]
 # ### Check empty filename_infere of **Run.Test**
 
@@ -180,6 +183,9 @@ mask = (df_clean['verb'] == 'Run.Program') & (df_clean['filename_infere'] == '')
 df_clean.loc[mask, 'filename_infere'] = df_clean.loc[mask, 'P_codeState'].map(data_cleaning.extract_short_filename_from_P_codestate_Run_Program)
 
 # %%
+df_clean[df_clean['_id.$oid'] == '673db140bd5a98b8f9dd1f13'][['filename_infere','filename','P_codeState','verb','commandRan']]
+
+# %%
 # After
 total_Run_Program_empty = (df_clean[df_clean['verb'] =='Run.Program']['filename_infere'] == '').sum()
 print(f"Total rows of empty strings in Run.Program : {total_Run_Program_empty}")
@@ -202,6 +208,9 @@ print(f"Total rows of commandRan starts with %Run in Run.Program : {total_comman
 # Apply
 mask = (df_clean['verb'] == 'Run.Program') & (df_clean['filename_infere'] == '') # use commandRan ONLY for empty filename_infere
 df_clean.loc[mask, 'filename_infere'] = data_cleaning.extract_short_filename_from_commandRan_Run_Program(df_clean.loc[mask, 'commandRan'])
+
+# %%
+df_clean[df_clean['_id.$oid'] == '673db140bd5a98b8f9dd1f13'][['filename_infere','filename','P_codeState','verb','commandRan']]
 
 # %%
 # After
@@ -722,8 +731,9 @@ all_TP_functions_name_sans_par = {'booleens.py': ['est_non_vide(',
   'intervalle1_contient_intervalle2(',
   'sont_intervalles_recouvrants']}
 
-
 # %%
+import re
+
 
 # %%
 def add_possible_space_before_brace(functions_name:dict) -> dict:
@@ -761,13 +771,14 @@ all_TP_functions_name_without_brace
 def find_filename_by_commandRan(all_TP_functions : dict, pattern: str, commandRan: str) -> str:
 
     """
-    It gets a pattern : all filenames, and the codestate, it checks if it can find
-    the name of the file in the codestate like the name between <trace></trace>
-    if not if check the name of the function in codestate by calling find_filename_by_function_name.
+    It gets a pattern : all filenames, and the commandRan, it checks if it can find
+    the name of the file in the commandRan or not if it can't, it checks 
+    the name of the function in commandRan by calling find_filename_by_function_name.
 
     Args:
-        pattern : All filesname.
-        codestate : P_codeState or F_codeState of a row.
+        all_TP_functions : Dict of filenames with their functions name
+        pattern : All filenames.
+        commandRan : commandRan column.
 
     Returns:
         filename_infere: The correct name of the file or an empty string.
