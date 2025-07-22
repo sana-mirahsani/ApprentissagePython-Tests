@@ -386,8 +386,83 @@ def check_all_TP_functions_withfind_filename_by_etc(TP_files):
 
 check_all_TP_functions_withfind_filename_by_etc(all_TP_functions_name_prog)
 
+
 # Il faut enlever "miroir" des 2 TPs ds lesquels cette fonction apparaît.
 
+# ## Recherche d'une def de fonction dans un codeState
 
+# Pour le moment j'ai laissé la recherche d'au moins une def de fonction de TP_files dans le codeState.
+#
+# Si on veut en chercher plus d'une il faut faire autrement.
+#
+
+def find_filename_by_searching_function_def(TP_files:dict, codeState:str) -> str:
+
+    """
+    Searchs if the codeState contains a def of a function of TP_files, and if any returns the associated filename.
+    Else returns the empty string.
+
+    Args:
+        TP_files : A Dict of all files with their functions.
+        codeState : codeState of a raw
+
+    Returns:
+        filename_infere: The correct name of the file or an empty string.
+    """
+    for filename, function_names in TP_files.items():
+        pattern = '|'.join(function_names)
+        match = re.search(pattern, codeState)
+        
+        if match: 
+            return filename
+            
+    return '' # no match found!
+
+
+def get_regexp_for_function_def(functions_name:dict) -> dict:
+    '''
+    functions_name is a dictionary whose keys are filenames and values are list of function names of the kind 'repetition'
+
+    Adds a regexpr that allows spaces or tabs before the '('. 
+    '''
+    dico = {}
+    for key in functions_name:
+        function_list = functions_name[key]
+        new_list = []
+        for name in function_list:
+            new_name = rf'def[ \t]*{name}[ \t]*\('
+            new_list.append(new_name)
+        dico[key] = new_list
+    return dico
+
+
+def find_filename_by_codeState(all_TP_functions : dict, pattern_files_name: str, codeState: str) -> str:
+
+    """
+    Searchs if the codeState contains a def of a function in TP_files, and if any returns the associated filename.
+    Else returns the empty string.
+
+    Args:
+        TP_files : A Dict of all files with their functions, ex {'fonctions.py' : ['repetition'] ...]
+        codeState : codeState of a raw
+        pattern_files_name : a regexpr that captures all file names
+
+    Returns:
+        filename_infere: The correct name of the file or an empty string.
+    """
+    match_state = re.search(pattern, codeState)
+
+    if match_state: # if the name is in the P_codeState
+        matched_filename = match_state.group()  # Extract the name
+        return matched_filename
+
+    else: # if the exact name is not in P_codeState and student might removed the name part, we check the match with the content
+        dico_regexpr = get_regexp_for_function_def(all_TP_functions)
+        filename_infere = find_filename_by_searching_function_def(dico_regexpr, codeState)
+        
+        # Remove to test
+        #if filename_infere == '':
+            #print("Filename not found!")
+        return filename_infere
 
 
