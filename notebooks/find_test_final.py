@@ -270,9 +270,8 @@ def find_tests_in_codestate_for_functions(codeState:str, functions_tp:list[str])
     return res
 
 
-# Cette fonction est partie du principe que les timestamps étaient triés en ordre croissant, ce qui est faux.
 #
-# Elle cherche le codestate le plus récent, et s'il n'est pas analysable, en cherche un analysable dans les précédents. Ce faisant on risque de rater un autre codestate qui aurait pu être analysable, mais tant pis.
+#
 
 def find_tests_for_tp_tpprog_name(name:str, df:pd.DataFrame, tp:str, functions_names:dict) -> tuple[pd.DataFrame, bool, bool]:
     """
@@ -296,6 +295,12 @@ def find_tests_for_tp_tpprog_name(name:str, df:pd.DataFrame, tp:str, functions_n
         df, False, False: if some codeState could be parsed and contains 
     
     """
+    # Les timestamps ne sont pas triés par ordre croissant.
+    #La fonction recherche les codeState comme suit : 
+    #- elle cherche le codestate le plus récent,
+    #- s'il est analysable, elle vérifie qu'il y a au moins une des fonctions cherchées dedans
+    #- s'il n'est pas analysable ou si aucune fonction n'est trouvée, elle cherche à nouveau le codestate le plus récent, moins le précédent.
+    #Et ce tant qu'il y a des codestate à traiter.
     df_name_tp = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog') & ((df['actor'] == name) | (df['binome'] == name))]
     df_codestate_nonempty = df_name_tp[df_name_tp['codeState'] != '']
     if len(df_codestate_nonempty) == 0:
