@@ -75,7 +75,7 @@
 # The goal is validate the filename_infere and find a correct name for those which were impossible to find in phase one. At the end, the columns : **TP** and **Type_TP** are added to the dataframe to shows the numbr of TP and the type : programmation or manipulation by looking at the name of the filename_infere. 
 
 # %% [markdown]
-# ## Import Libraries
+# ## 1. Import Libraries
 
 # %%
 import sys
@@ -97,9 +97,7 @@ for tp_name in FILES_BY_TP:
 pattern = pattern  + 'Irrelevant'
 
 # %% [markdown]
-# ## Load DataFrame
-
-# %%
+# ## 2. Load DataFrame
 
 # %%
 df_clean = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='phase1_nettoyage_fichiere.csv')
@@ -240,6 +238,7 @@ def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
     
     print(f'The total number of empty string with no solution : {len(df_empty_string)}')
 
+    print(df_clean[df_clean['_id.$oid'] == '673db140bd5a98b8f9dd1f13'][['filename_infere','filename','P_codeState','verb','commandRan']])
     return df, df_empty_string
 
 
@@ -255,9 +254,6 @@ df_clean.loc[105148]
 # %%
 df_clean, df_empty_string_semaine_1 = main_process('semaine_1',df_clean,pattern)
 
-# %%
-df_clean.loc[105148]
-
 # %% [markdown]
 # ### 3.2 **DF[seance] == semaine_2**
 
@@ -271,9 +267,11 @@ df_clean, df_empty_string_semaine_2 = main_process('semaine_2',df_clean,pattern)
 df_clean, df_empty_string_semaine_3 = main_process('semaine_3',df_clean,pattern)
 
 # %%
+# test
 df_clean.loc[105148]
 
 # %%
+# test
 df_clean[(df_clean['seance'] == 'semaine_9') & (df_clean['actor'] == 'hamza.chebbah.etu')][['filename_infere']]
 
 # %% [markdown]
@@ -316,12 +314,14 @@ df_clean, df_empty_string_semaine_9 = main_process('semaine_9',df_clean,pattern)
 # ### 3.10 **DF[seance] == semaine_10**
 
 # %%
+# test
 df_clean[df_clean['_id.$oid'] == '673db140bd5a98b8f9dd1f13'][['filename_infere','filename','P_codeState','verb','commandRan']]
 
 # %%
 df_clean, df_empty_string_semaine_10 = main_process('semaine_10',df_clean,pattern)
 
 # %%
+# test
 df_clean[df_clean['_id.$oid'] == '673db140bd5a98b8f9dd1f13'][['filename_infere','filename','P_codeState','verb','commandRan']]
 
 # %% [markdown]
@@ -504,6 +504,9 @@ print("Testing...")
 if tota_empty == totan_empty_filename + totan_Irr_filename :
     print("Yes, all Nan values in TP are wether empty or Irrelevant filename_infere")
     print(df_clean[['filename_infere', 'TP']].head(10))
+
+else:
+    print('No there are still Nan values...')
 
 
 # %% [markdown]
