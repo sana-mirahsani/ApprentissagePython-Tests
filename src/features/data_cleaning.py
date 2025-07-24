@@ -349,6 +349,7 @@ def extract_short_filename_from_commandRan_Run_Command(commandRan_Run_Command: p
     # Return a Series with only the cleaned values, aligned with original index
     return cleaned
 
+################# Mirabelle's code!!!!!!
 # Function to add space before parantes in dictionary 
 def get_regexp_for_function_call(functions_name:dict) -> dict:
     '''
@@ -366,6 +367,7 @@ def get_regexp_for_function_call(functions_name:dict) -> dict:
         dico[key] = new_list
     return dico
 
+################# Mirabelle's code!!!!!!
 # Find filename by looking the content of commandRan column
 def find_filename_by_commandRan(all_TP_functions : dict, pattern_files_name: str, commandRan: str) -> str:
 
@@ -394,7 +396,8 @@ def find_filename_by_commandRan(all_TP_functions : dict, pattern_files_name: str
         #if filename_infere == '':
             #print("Filename not found!")
         return filename_infere
-
+    
+################# Mirabelle's code!!!!!!
 def find_filename_by_searching_function_call(TP_files:dict, commandRan:str) -> str:
 
     """
@@ -483,10 +486,52 @@ def find_similarity(TP_Files_name: list,filename_infere:str) -> str:
         
     return '' # Wasn't similar!
 
-# find filename by checking the name of the file in codestate
-def find_filename_by_codestate(pattern: str, codestate: str) -> str:
+################# Mirabelle's code!!!!!!
+def find_filename_by_searching_function_def(TP_files:dict, codeState:str) -> str:
 
     """
+    Searchs if the codeState contains a def of a function of TP_files, and if any returns the associated filename.
+    Else returns the empty string.
+
+    Args:
+        TP_files : A Dict of all files with their functions.
+        codeState : codeState of a raw
+
+    Returns:
+        filename_infere: The correct name of the file or an empty string.
+    """
+    for filename, function_names in TP_files.items():
+        pattern = '|'.join(function_names)
+        match = re.search(pattern, codeState)
+        
+        if match: 
+            return filename
+            
+    return '' # no match found!
+
+################# Mirabelle's code!!!!!!
+def get_regexp_for_function_def(functions_name:dict) -> dict:
+    '''
+    functions_name is a dictionary whose keys are filenames and values are list of function names of the kind 'repetition'
+
+    Adds a regexpr that allows spaces or tabs before the '('. 
+    '''
+    dico = {}
+    for key in functions_name:
+        function_list = functions_name[key]
+        new_list = []
+        for name in function_list:
+            new_name = rf'def[ \t]*{name}[ \t]*\('
+            new_list.append(new_name)
+        dico[key] = new_list
+    return dico
+
+################# Mirabelle's code!!!!!!
+# find filename by checking the name of the file in codestate
+def find_filename_by_codestate(all_TP_functions : dict, codeState: str) -> str:
+
+    """
+    This function is change to Mirabelle's code!!!
     It gets a pattern : all filenames, and the codestate, it checks if it can find
     the name of the file in the codestate like the name between <trace></trace>
     if not if check the name of the function in codestate by calling find_filename_by_function_name.
@@ -499,18 +544,16 @@ def find_filename_by_codestate(pattern: str, codestate: str) -> str:
         filename_infere: The correct name of the file or an empty string.
     """
 
-    match_state = re.search(pattern, codestate)
+    # search for <trace></trace> in string (instead of searching the name)
+    match = re.search(r"<trace>(.*?)</trace>", str(codeState))
 
-    if match_state: # if the name is in the P_codeState
-        matched_filename = match_state.group()  # Extract the name
-        return matched_filename
+    if match: # extract the filename between <trace></trace>
+        return match.group(1)
 
-    else: # if the exact name is not in P_codeState and student might removed the name part, we check the match with the content
-        filename_infere = find_filename_by_function_name(all_TP_functions_name,codestate)
+    else: # if student deleted <trace></trace> then try to find the name by functions name in codestate
+        dico_regexpr    = get_regexp_for_function_def(all_TP_functions)
+        filename_infere = find_filename_by_searching_function_def(dico_regexpr, codeState)
         
-        # Remove to test
-        #if filename_infere == '':
-            #print("Filename not found!")
         return filename_infere
     
 # check and correct the filename_infere between each session.Start and session.End
@@ -550,7 +593,8 @@ def correct_filename_infere_in_subset(subset: pd.DataFrame,df: pd.DataFrame,patt
         if filename_infere == '':
 
                 if (row['verb'] ==  'Run.Program') and (row['P_codeState'] != ''): # P_codeState has a content
-                    new_filename_infere = find_filename_by_codestate(pattern,row['P_codeState'])          
+                    
+                    new_filename_infere = find_filename_by_codestate(all_TP_functions_name,row['P_codeState'])          
 
         # filename_infere non vide
         else:
@@ -564,7 +608,7 @@ def correct_filename_infere_in_subset(subset: pd.DataFrame,df: pd.DataFrame,patt
                     if row['verb'] == 'File.Save':
                         
                         if row['F_codeState'] != '': # F_codeState has a content
-                            new_filename_infere = find_filename_by_codestate(pattern,row['F_codeState'])
+                            new_filename_infere = find_filename_by_codestate(all_TP_functions_name,row['F_codeState'])
                             
                             # if  it can't find the name in codestate, it checks the old filename_infere with similarity
                             if new_filename_infere == '':
@@ -573,7 +617,7 @@ def correct_filename_infere_in_subset(subset: pd.DataFrame,df: pd.DataFrame,patt
                     elif row['verb'] in ['Run.Test', 'Run.Command', 'Run.Program', 'Run.Debugger']:
 
                         if row['P_codeState'] != '': # P_codeState has a content
-                            new_filename_infere = find_filename_by_codestate(pattern,row['P_codeState'])
+                            new_filename_infere = find_filename_by_codestate(all_TP_functions_name,row['P_codeState'])
                             
                             # if  it can't find the name in codestate, it checks the old filename_infere with similarity
                             if new_filename_infere == '':
@@ -581,6 +625,9 @@ def correct_filename_infere_in_subset(subset: pd.DataFrame,df: pd.DataFrame,patt
 
         # change filename_infere of df with the correct name
         df.at[index, 'filename_infere'] = new_filename_infere 
+
+"""
+I dont know where I used this function!!
 
 def correct_filename_infere_in_subset2(subset: pd.DataFrame,df: pd.DataFrame,pattern:str) -> None:
 
@@ -627,6 +674,7 @@ def correct_filename_infere_in_subset2(subset: pd.DataFrame,df: pd.DataFrame,pat
 
         # change filename_infere of df with the correct name
         df.at[index, 'filename_infere'] = new_filename_infere 
+        """
 
 # Fill empty string by using sandwich method
 def sandwich(subset:pd.DataFrame,df: pd.DataFrame) -> None:

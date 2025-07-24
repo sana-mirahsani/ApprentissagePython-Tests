@@ -14,11 +14,11 @@
 # ---
 
 # %% [markdown]
-# # Analyze Workflow Overview:
+# # Phase3 Workflow Overview:
 # 1. Import Libraries
 # 2. Load DataFrame : phase2_nettoyage_fichiere.csv 
 # 3. Bizzar indices
-#
+# 4. Save final dataframe
 
 # %% [markdown]
 # ## Import Libraries
@@ -27,28 +27,16 @@
 import sys
 sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
 import pandas as pd
-from src.features import io_utils, data_testing
+from src.features import io_utils
 from src.data.constants import INTERIM_DATA_DIR
 from src.data.variable_constant_2425 import TP_NAME
 import matplotlib.pyplot as plt
-import numpy as np
 import difflib
 
 # just for test
 from src.data.variable_constant_2425 import all_TP_functions_name 
 import re
-from src.data.variable_constant_2425 import FILES_BY_TP
 from src.features import data_cleaning
-
-# just for test
-# Global variable pattern
-pattern = ''
-for tp_name in FILES_BY_TP:
-
-    file_name = '|'.join(tp_name)
-    pattern = pattern +  file_name + '|'
-
-pattern = pattern  + 'Irrelevant' 
 
 # %% [markdown]
 # ## Load DataFrame
@@ -266,7 +254,7 @@ for tp in TP_NAME:
 len(df)
 
 # %% [markdown]
-# ## Save the final dataframe
+# ## Save final dataframe
 
 # %%
 io_utils.write_csv(df,INTERIM_DATA_DIR,'phase3_nettoyage_fichiere')

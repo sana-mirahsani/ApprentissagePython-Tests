@@ -59,9 +59,6 @@
 # %%
 import sys
 sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
-import pandas as pd
-import re
-import numpy as np
 from src.features import io_utils, data_cleaning
 from src.data.constants import INTERIM_DATA_DIR
 from src.data.variable_constant_2425 import FILES_BY_TP, all_TP_functions_name_except_TP1_and_TPGAME

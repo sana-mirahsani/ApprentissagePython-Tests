@@ -81,20 +81,18 @@
 import sys
 sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
 import pandas as pd
-import re
-import numpy as np
 from src.features import io_utils, data_cleaning, data_testing
 from src.data.constants import INTERIM_DATA_DIR
 from src.data.variable_constant_2425 import FILES_BY_TP, TP_name, Type_TP
  
 # Global variable pattern
-pattern = ''
+pattern_files_name = ''
 for tp_name in FILES_BY_TP:
 
     file_name = '|'.join(tp_name)
-    pattern = pattern +  file_name + '|'
+    pattern_files_name = pattern_files_name +  file_name + '|'
 
-pattern = pattern  + 'Irrelevant'
+pattern_files_name = pattern_files_name  + 'Irrelevant'
 
 # %% [markdown]
 # ## 2. Load DataFrame
@@ -103,9 +101,11 @@ pattern = pattern  + 'Irrelevant'
 df_clean = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='phase1_nettoyage_fichiere.csv')
 
 # %%
+# This is for test and can be deleted later
 df_clean[df_clean['_id.$oid'] == '66ed37fabd5a98b8f9da4354'][['filename','filename_infere','P_codeState','verb','commandRan']]
 
 # %%
+# This is for test and can be deleted later
 df_clean[df_clean['_id.$oid'] == '66ed3929bd5a98b8f9da4482'][['filename','filename_infere','P_codeState','verb','commandRan']]
 
 
@@ -243,7 +243,7 @@ def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
 
 
 # %%
-data_testing.test_filename_infere_total(df_clean,pattern) 
+data_testing.test_filename_infere_total(df_clean,pattern_files_name) 
 
 # %%
 df_clean.loc[105148]
@@ -252,19 +252,19 @@ df_clean.loc[105148]
 # ### 3.1 **DF[seance] == semaine_1**
 
 # %%
-df_clean, df_empty_string_semaine_1 = main_process('semaine_1',df_clean,pattern)
+df_clean, df_empty_string_semaine_1 = main_process('semaine_1',df_clean,pattern_files_name)
 
 # %% [markdown]
 # ### 3.2 **DF[seance] == semaine_2**
 
 # %%
-df_clean, df_empty_string_semaine_2 = main_process('semaine_2',df_clean,pattern)
+df_clean, df_empty_string_semaine_2 = main_process('semaine_2',df_clean,pattern_files_name)
 
 # %% [markdown]
 # ### 3.3 **DF[seance] == semaine_3**
 
 # %%
-df_clean, df_empty_string_semaine_3 = main_process('semaine_3',df_clean,pattern)
+df_clean, df_empty_string_semaine_3 = main_process('semaine_3',df_clean,pattern_files_name)
 
 # %%
 # test
@@ -278,37 +278,37 @@ df_clean[(df_clean['seance'] == 'semaine_9') & (df_clean['actor'] == 'hamza.cheb
 # ### 3.4 **DF[seance] == semaine_4**
 
 # %%
-df_clean, df_empty_string_semaine_4 = main_process('semaine_4',df_clean,pattern)
+df_clean, df_empty_string_semaine_4 = main_process('semaine_4',df_clean,pattern_files_name)
 
 # %% [markdown]
 # ### 3.5 **DF[seance] == semaine_5**
 
 # %%
-df_clean, df_empty_string_semaine_5 = main_process('semaine_5',df_clean,pattern)
+df_clean, df_empty_string_semaine_5 = main_process('semaine_5',df_clean,pattern_files_name)
 
 # %% [markdown]
 # ### 3.6 **DF[seance] == semaine_6**
 
 # %%
-df_clean, df_empty_string_semaine_6 = main_process('semaine_6',df_clean,pattern)
+df_clean, df_empty_string_semaine_6 = main_process('semaine_6',df_clean,pattern_files_name)
 
 # %% [markdown]
 # ### 3.7 **DF[seance] == semaine_7**
 
 # %%
-df_clean, df_empty_string_semaine_7 = main_process('semaine_7',df_clean,pattern)
+df_clean, df_empty_string_semaine_7 = main_process('semaine_7',df_clean,pattern_files_name)
 
 # %% [markdown]
 # ### 3.8 **DF[seance] == semaine_8**
 
 # %%
-df_clean, df_empty_string_semaine_8 = main_process('semaine_8',df_clean,pattern)
+df_clean, df_empty_string_semaine_8 = main_process('semaine_8',df_clean,pattern_files_name)
 
 # %% [markdown]
 # ### 3.9 **DF[seance] == semaine_9**
 
 # %%
-df_clean, df_empty_string_semaine_9 = main_process('semaine_9',df_clean,pattern)
+df_clean, df_empty_string_semaine_9 = main_process('semaine_9',df_clean,pattern_files_name)
 
 # %% [markdown]
 # ### 3.10 **DF[seance] == semaine_10**
@@ -318,7 +318,7 @@ df_clean, df_empty_string_semaine_9 = main_process('semaine_9',df_clean,pattern)
 df_clean[df_clean['_id.$oid'] == '673db140bd5a98b8f9dd1f13'][['filename_infere','filename','P_codeState','verb','commandRan']]
 
 # %%
-df_clean, df_empty_string_semaine_10 = main_process('semaine_10',df_clean,pattern)
+df_clean, df_empty_string_semaine_10 = main_process('semaine_10',df_clean,pattern_files_name)
 
 # %%
 # test
@@ -328,25 +328,25 @@ df_clean[df_clean['_id.$oid'] == '673db140bd5a98b8f9dd1f13'][['filename_infere',
 # ### **3.11 DF[seance] == DSi**
 
 # %%
-df_clean, df_empty_string_semaine_DSi = main_process('DSi',df_clean,pattern)
+df_clean, df_empty_string_semaine_DSi = main_process('DSi',df_clean,pattern_files_name)
 
 # %% [markdown]
 # ### **3.12 DF[seance] == semaine_11**
 
 # %%
-df_clean, df_empty_string_semaine_11 = main_process('semaine_11',df_clean,pattern)
+df_clean, df_empty_string_semaine_11 = main_process('semaine_11',df_clean,pattern_files_name)
 
 # %% [markdown]
 # ### **3.13 DF[seance] == semaine_12**
 
 # %%
-df_clean, df_empty_string_semaine_12 = main_process('semaine_12',df_clean,pattern)
+df_clean, df_empty_string_semaine_12 = main_process('semaine_12',df_clean,pattern_files_name)
 
 # %% [markdown]
 # ### **3.14 DF[seance] == CTP**
 
 # %%
-df_clean, df_empty_string_CTP= main_process('CTP',df_clean,pattern)
+df_clean, df_empty_string_CTP= main_process('CTP',df_clean,pattern_files_name)
 
 # %% [markdown]
 # ### **3.15 DF[seance] == ''**
@@ -368,12 +368,12 @@ df_clean[df_clean['seance'] == '']
 # ## Final test
 
 # %%
-data_testing.test_filename_infere_total(df_clean,pattern)
+data_testing.test_filename_infere_total(df_clean,pattern_files_name)
 
 # %%
 subset = df_clean[df_clean['filename_infere'] != '']
 
-subset[~ subset['filename_infere'].str.contains(pattern, na = False)]['seance'].unique()
+subset[~ subset['filename_infere'].str.contains(pattern_files_name, na = False)]['seance'].unique()
 
 # %% [markdown]
 # **Interpretation**

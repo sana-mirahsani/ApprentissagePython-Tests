@@ -1686,6 +1686,13 @@ df[(df['seance'] == 'semaine_1') & ( (df['binome'] == 'hichame.haddou.etu'))][['
 # - check how in nettoyage decides for the situation when there are different names of functions of both tp_mani and tp_prog 
 # - check how it decides for tp name when there are different names of functions of different tps
 # - read assert and test automatisé
+#
+# - new:
+# - add trace in variable_constant
+# - add checking the name extracted of traces with pattern (all fileanem)
+# - add third condition which is going to check the text in tp after not finding filename_infere by def
+# - add another dictionar only include the text of tp not the functions
+#
 # ## To show : 
 # - 4.14, add a diagram on Run_test rate
 # - 4.19
