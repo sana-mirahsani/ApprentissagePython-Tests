@@ -35,16 +35,22 @@ from src.features import data_cleaning
 
 # -
 
-# import spécifiques à L1test
+# # import spécifiques à L1test
 
 from thonnycontrib.backend.test_finder import L1TestFinder
 from thonnycontrib.exceptions import SpaceMissingAfterPromptException
 
+# # Dataframe
+
 df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='phase2_nettoyage_fichiere.csv')
+
+# Inutile mais j'en avais besoin avant...
 
 df['codeState'] = df['P_codeState'] + df['F_codeState']
 
-# À mettre dans src.data.variable_constants_2425. Ce sont les noms des fonctions par TP, noms de fonctions uniquement.
+# # Analyse des TPs Tp_Prog de 'Tp2' à 'Tp9'
+
+# Normalement ce qui suit est déjà dans dans src.data.variable_constants_2425. Ce sont les noms des fonctions par TP, noms de fonctions uniquement. 
 
 # +
 # Added by Sana
@@ -197,6 +203,8 @@ FUNCTIONS_TP9_Prog = [
 # -
 
 
+# Peut-être pas déjà dans src.data.variable_constants_2425. Il faudra peut-être renommer les valeurs de cette constante en fonction de ce qui existe déjà dans src.data.variable_constants_2425. Attention les clés sont les TP, pas les filename.
+
 PROG_FUNCTIONS_NAME_BY_TP = {
     'Tp2' : FUNCTIONS_TP2_Prog,
     'Tp3' : FUNCTIONS_TP3_Prog,
@@ -208,9 +216,12 @@ PROG_FUNCTIONS_NAME_BY_TP = {
     'Tp9' : FUNCTIONS_TP9_Prog,
 }
 
-# +
-from thonnycontrib.backend.test_finder import L1TestFinder
-from thonnycontrib.exceptions import SpaceMissingAfterPromptException
+
+# Mettre ces fonctions dans src. Elles comptent le nombre de tests écrits par fonction (les $$$) sans du tout analyser les Run.Test (qui eux exécutent les tests). On utilise une fonctionnalité interne de l1test (le L1TestFinder) pour analyser le contenu des codeState. Le L1TestFinder provoquera une erreur si le contenu du codeState n'est pas syntaxiquement correct (par ex parce qu'il y a une erreur de syntaxe Python ou une erreur de syntaxe dans les tests).
+#
+# Pour un TP donné et un actor donné il y a plein de codeState dans les traces, il faut en choisir un. Le principe adopté ici est de prendre le codeState qui a le timestamp le plus récent et qu'on peut imaginer être le travail le plus abouti. Si on peut en extraire des tests, on le fait. Si on ne peut pas en extraire des tests (erreur de syntaxe), alors on cherche le codeState qui a le timestamp le plus récent à l'exclusion du précédent, et on répète tant qu'il y a des codeState à examiner.
+#
+# Si tous les codeStates sont vides ou si on n'a pas pu les analyser, on renvoie None.
 
 def find_tests_in_codestate(source:str) -> dict:
     '''
@@ -235,8 +246,6 @@ def find_tests_in_codestate(source:str) -> dict:
         dico = None
     return dico
 
-
-# -
 
 def find_tests_in_codestate_for_functions(codeState:str, functions_tp:list[str]) -> dict:
     '''
@@ -296,11 +305,11 @@ def find_tests_for_tp_tpprog_name(name:str, df:pd.DataFrame, tp:str, functions_n
     
     """
     # Les timestamps ne sont pas triés par ordre croissant.
-    #La fonction recherche les codeState comme suit : 
-    #- elle cherche le codestate le plus récent,
-    #- s'il est analysable, elle vérifie qu'il y a au moins une des fonctions cherchées dedans
-    #- s'il n'est pas analysable ou si aucune fonction n'est trouvée, elle cherche à nouveau le codestate le plus récent, moins le précédent.
-    #Et ce tant qu'il y a des codestate à traiter.
+    # La fonction recherche les codeState comme suit : 
+    # - elle cherche le codestate le plus récent,
+    # - s'il est analysable, elle vérifie qu'il y a au moins une des fonctions cherchées dedans
+    # - s'il n'est pas analysable ou si aucune fonction n'est trouvée, elle cherche à nouveau le codestate le plus récent, moins le précédent.
+    # Et ce tant qu'il y a des codestate à traiter.
     df_name_tp = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog') & ((df['actor'] == name) | (df['binome'] == name))]
     df_codestate_nonempty = df_name_tp[df_name_tp['codeState'] != '']
     if len(df_codestate_nonempty) == 0:
@@ -381,27 +390,6 @@ def find_tests_for_tp_tpprog(df:pd.DataFrame, tp:str, functions_names:dict) -> t
     return df_result, cannot_analyze_codestate_students, empty_codestate_students   
 
 
-# Exemple d'utilisation
-
-df_tests_tp2, cannot_analyze_codestate_students_tp2, empty_codestate_students_tp2  = find_tests_for_tp_tpprog(df, 'Tp2', PROG_FUNCTIONS_NAME_BY_TP)
-
-print(f'Cannot analyze codestate in Tp2 for : {cannot_analyze_codestate_students_tp2}')
-print(f'only empty codestates in Tp2 for : {empty_codestate_students_tp2}')
-
-df_tests_tp2[0:50]
-
-len(df_tests_tp2) 
-
-# Not relevant for Tp5 (print week - only 3 functions without print and 2 provided files)
-
-df_tests_tp5, cannot_analyze_codestate_students_tp5, empty_codestate_students_tp5  = find_tests_for_tp_tpprog(df, 'Tp5', PROG_FUNCTIONS_NAME_BY_TP)
-
-df_tests_tp5
-
-print(f'Cannot analyze codestate in Tp5 for : {cannot_analyze_codestate_students_tp5}')
-print(f'only empty codestates in Tp5 for : {empty_codestate_students_tp5}')
-
-
 def find_tests_for_all_tp_tpprog(df:pd.DataFrame, functions_names:dict) -> tuple[pd.DataFrame, dict, dict]:
     """
     Looks for codeStates related  to 'TP_prog' (df['Type_TP'] == 'TP_prog') for all students of all tp, then looks repeatedly for the most recent codeState that can be parsed and contains at least one function of functions_names, then returns:
@@ -437,12 +425,302 @@ def find_tests_for_all_tp_tpprog(df:pd.DataFrame, functions_names:dict) -> tuple
     return df_tests, cannot_analyze_codestate_students, empty_codestate_students
 
 
+# ## Exemple d'utilisation pour le Tp2.
+
+df_tests_tp2, cannot_analyze_codestate_students_tp2, empty_codestate_students_tp2  = find_tests_for_tp_tpprog(df, 'Tp2', PROG_FUNCTIONS_NAME_BY_TP)
+
+print(f'Cannot analyze codestate in Tp2 for : {cannot_analyze_codestate_students_tp2}')
+print(f'only empty codestates in Tp2 for : {empty_codestate_students_tp2}')
+
+# Explication des colonnes (voir les docstrings des fonctions aussi) :
+#
+# - l'index correspond à l'index du codeState qui a été analysé
+# - test_number peut prendre 2 types de valeur
+#   
+#       - None : la fonction (fonction_name) n'est pas codée dans le codeState
+#       - int : la fonction est codée avec test_number tests
+#
+
+df_tests_tp2[0:50]
+
+df_tests_tp2[df_tests_tp2['tests_number']==0]
+
+len(df_tests_tp2[df_tests_tp2['tests_number']==0]) 
+
+# ## Exemple d'utilisation pour le TP5
+
+# Not relevant for Tp5 ("print week") 
+#
+# - only 4 functions with tests (all others were not testable)
+# -  2 provided files for TP_Prog: not easy to analyze.
+#
+# As we can see below : codeStates could not be analyzed for a lot of actors. Maybe because data was analyzed before executing Sana's changes in cleaning phase1 and 2 + modifications in variable_constants_2425.  I saved these actors in cannot_analyze_codestate_students_tp5_saved.
+
+df_tests_tp5, cannot_analyze_codestate_students_tp5, empty_codestate_students_tp5  = find_tests_for_tp_tpprog(df, 'Tp5', PROG_FUNCTIONS_NAME_BY_TP)
+
+df_tests_tp5
+
+print(f'Cannot analyze codestate in Tp5 for : {cannot_analyze_codestate_students_tp5}')
+
+
+cannot_analyze_codestate_students_tp5_saved = ['anaelle.case.etu', 'boubacar.barry.etu', 'komivi.akpata.etu', 'sami.boumiz.etu', 'valentin.faust.etu', 'pedro-luis.lock-benites.etu', 'david.kahak.etu', 'nhungocanh.nguyen.etu', 'jacques-lazare.diatta.etu', 'florian.heyte.etu', 'edohson-arnaud.guedou.etu', 'abdoulaye.nguere.etu', 'enzo.dewez.etu', 'nassim.abbad.etu', 'hugo.vandewalle2.etu', 'faustine.descatoire.etu', 'yanis.kharchi.etu', 'louis.warembourg.etu', 'elyas.rabhiu.etu', 'dania.baroud.etu', 'lea.claire.etu', 'walid.farrash.etu', 'alpha-mahmoudou.diallo.etu', 'ruben.cassin.etu', 'mamadou.manga.etu', 'marion.le-guen.etu', 'yanis.nabet.etu', 'aurelien.bithorel.etu', 'ben-magloire.hoessi.etu', 'luc.duriez.etu', 'rosche-rostell.batchi-vouala.etu', 'elyes.guedria.etu', 'noe.le-van-canh-dit-ban.etu', 'bilel.taieb.etu', 'assia.mousselmal.etu', 'igor.belyaev.etu', 'thomas.desbuissons.etu', 'fawaaz.oyedotun.etu', 'ayao-landry-jeremie.dzossou-afanlete.etu', 'romane.deleau.etu', 'nadjib.zoubir.etu', 'shema.mugambira.etu', 'chaima.chakroun.etu', 'safa-khawthar.draouche.etu', 'kotchi-ange-gedeon.kama.etu', 'elliot.launay.etu', 'yanis.gannar.etu', 'sadia.muhammad.etu', 'aymeric.amblanc.etu', 'maodo.niang.etu', 'serigne.cisse.etu', 'mugisha.nzakamwita.etu', 'antoine.hotin.etu', 'nayad.senaici.etu', 'kilian.graye.etu', 'amine.khadri.etu', 'guillaume.depelchin.etu', 'nolan.chevalier.etu', 'adame.chairi.etu', 'ibrahim.yahia.etu', 'koffi-john.evon.etu', 'dantoire-lalle.namoni.etu', 'ahmedzeidane.mohamedelmoctar.etu', 'momar.niang.etu', 'raphael.tafani.etu', 'kamal-deen-oloumide.savi.etu', 'alicia.zouadi.etu', 'nourou.diouf.etu', 'ivan.mbonjo.etu', 'samy.yahia-cherif.etu', 'jean-mayes.zitouni.etu', 'noa.gobaut.etu', 'mohamed-nazim.ait-kaci.etu', 'adam.oukzedou.etu', 'el-hadji-malick.gueye.etu', 'hadja-maimouna.balde.etu', 'abdelrahmane.bendjeladjel.etu', 'eya.yahyaoui.etu', 'imad.berhoum.etu']
+
+print(f'only empty codestates in Tp5 for : {empty_codestate_students_tp5}')
+
+# ## Ex d'utilisation pour l'ens des TPs
+
+# Cette fonction prend du temps, j'ai mis des print pour suivre l'avancement.
+
+# À noter :
+#
+# - un message bizarre dans le TP4 : ':235: SyntaxWarning: invalid decimal literal'
+# - des messages indiquant qu'il doit y avoir un df vide dans pd.concat, mais je ne vois pas d'où ça viendrait.
+
 df_tests, cannot_analyze_codestate_students, empty_codestate_students  = find_tests_for_all_tp_tpprog(df, PROG_FUNCTIONS_NAME_BY_TP)
 
+# ## Sauvegarde des données
+
+print(empty_codestate_students)
+
+obtained_empty_codestate_students = {'Tp2': ['sami.boumiz.etu'], 'Tp3': ['hamza.chebbah.etu'], 'Tp4': ['ismail.nejjar.etu'], 'Tp5': ['ibrahima.sylla2.etu', 'julien.choquet.etu', 'imrane.mehenni.etu', 'mounir.achbad.etu', 'anaba.hilary-williams.etu'], 'Tp6': ['yasser.jad.etu', 'hugo.leleu.etu'], 'Tp7': ['louis.warembourg.etu', 'mohamed.trougouty.etu', 'thomas.desbuissons.etu'], 'Tp8': [], 'Tp9': ['mohamed.trougouty.etu']}
+
+print(cannot_analyze_codestate_students)
+
+obtained_cannot_analyze_codestate_students = {'Tp2': ['wail.ghouila.etu', 'kotchi-ange-gedeon.kama.etu', 'said.dahmani.etu', 'malick-ndiaye.kone.etu', 'clara.kombe.etu', 'oyawa.liza.etu'], 'Tp3': ['komi.dogbe.etu', 'wail.ghouila.etu', 'yves.djegnon.etu', 'abaly.oura.etu', 'massama.keita.etu', 'oyawa.liza.etu', 'eya.yahyaoui.etu'], 'Tp4': ['bilel.taieb.etu'], 'Tp5': ['anaelle.case.etu', 'boubacar.barry.etu', 'komivi.akpata.etu', 'sami.boumiz.etu', 'valentin.faust.etu', 'pedro-luis.lock-benites.etu', 'david.kahak.etu', 'nhungocanh.nguyen.etu', 'jacques-lazare.diatta.etu', 'florian.heyte.etu', 'edohson-arnaud.guedou.etu', 'abdoulaye.nguere.etu', 'enzo.dewez.etu', 'nassim.abbad.etu', 'hugo.vandewalle2.etu', 'faustine.descatoire.etu', 'yanis.kharchi.etu', 'louis.warembourg.etu', 'elyas.rabhiu.etu', 'dania.baroud.etu', 'lea.claire.etu', 'walid.farrash.etu', 'alpha-mahmoudou.diallo.etu', 'ruben.cassin.etu', 'mamadou.manga.etu', 'marion.le-guen.etu', 'yanis.nabet.etu', 'aurelien.bithorel.etu', 'ben-magloire.hoessi.etu', 'luc.duriez.etu', 'rosche-rostell.batchi-vouala.etu', 'elyes.guedria.etu', 'noe.le-van-canh-dit-ban.etu', 'bilel.taieb.etu', 'assia.mousselmal.etu', 'igor.belyaev.etu', 'thomas.desbuissons.etu', 'fawaaz.oyedotun.etu', 'ayao-landry-jeremie.dzossou-afanlete.etu', 'romane.deleau.etu', 'nadjib.zoubir.etu', 'shema.mugambira.etu', 'chaima.chakroun.etu', 'safa-khawthar.draouche.etu', 'kotchi-ange-gedeon.kama.etu', 'elliot.launay.etu', 'yanis.gannar.etu', 'sadia.muhammad.etu', 'aymeric.amblanc.etu', 'maodo.niang.etu', 'serigne.cisse.etu', 'mugisha.nzakamwita.etu', 'antoine.hotin.etu', 'nayad.senaici.etu', 'kilian.graye.etu', 'amine.khadri.etu', 'guillaume.depelchin.etu', 'nolan.chevalier.etu', 'adame.chairi.etu', 'ibrahim.yahia.etu', 'koffi-john.evon.etu', 'dantoire-lalle.namoni.etu', 'ahmedzeidane.mohamedelmoctar.etu', 'momar.niang.etu', 'raphael.tafani.etu', 'kamal-deen-oloumide.savi.etu', 'alicia.zouadi.etu', 'nourou.diouf.etu', 'ivan.mbonjo.etu', 'samy.yahia-cherif.etu', 'jean-mayes.zitouni.etu', 'noa.gobaut.etu', 'mohamed-nazim.ait-kaci.etu', 'adam.oukzedou.etu', 'el-hadji-malick.gueye.etu', 'hadja-maimouna.balde.etu', 'abdelrahmane.bendjeladjel.etu', 'eya.yahyaoui.etu', 'imad.berhoum.etu'], 'Tp6': ['serigne.cisse.etu'], 'Tp7': ['michael.tankeu-bigna.etu', 'mamadou-bachir.barry.etu', 'maodo.niang.etu', 'massama.keita.etu'], 'Tp8': ['naim.abdellaoui.etu', 'amadou.balde.etu', 'fadil.sani-labo.etu', 'ibrahima.sylla2.etu', 'grace-rochelde.louhanana.etu', 'igor.belyaev.etu', 'abaly.oura.etu', 'nadjib.zoubir.etu', 'matthieu.misiak.etu', 'sadia.muhammad.etu', 'tarik.amirat.etu', 'amine.khadri.etu', 'bilel.doggui.etu', 'lino.mallevaey.etu', 'adam.oukzedou.etu'], 'Tp9': ['abaly.oura.etu', 'amine.khadri.etu', 'ahmedzeidane.mohamedelmoctar.etu', 'hajar.zeaiter.etu']}
+
+print(df_tests)
+
+io_utils.write_csv(df_tests,INTERIM_DATA_DIR, 'test_number_old_phase2')
+
+# ## Analyses intéressantes à faire
+
+# Faire les plus facile en premier, je ne me rends pas compte de la difficulté. Tout est bon à prendre. Je ne sais pas s'il faut faire les analyses par TP ou sur tout le semestre.
+
+# Possible regarder 
+#
+# - l'ens des actors qui n'ont écrit aucun test (sur un TP / sur tous les TPs) :  pour eux la somme des tests_number vaut 0
+# - l'ens actors qui ont des tests pour chaque fonction (sur un TP / sur tous les TPs) : pour eux il n'y a aucun tests_number à 0
+# - en théorie ceux qui restent écrivent parfois des tests, parfois non.
+
+# Pour ceux qui écrivent parfois des tests, intéressant de voir si chronologiquement :
+#
+# - ils écrivaient des tests dans les premiers TP et ils ont arrêté
+# - ou au contraire ils n'en écrivaient pas et ils s'y sont mis
+#
+# Mais ça doit être compliqué à calculer, dc laisser tomber au début.
+
+# La corrélation avec le fait d'exécuter ou non des Run.Test est intéressante aussi.
+#
+# - si un actor écrit des tests, le comportement attendu est qu'il les exécute : pour chaque fonction avec des tests il devrait y avoir au moins un Run.Test avec la valeur `tests` contenant cette fonction. Si tu peux calculer ça, ça a de la valeur. Ça montre que les étudiants ont compris qu'un test, ça s'exécute.
+# -  si un actor n'écrit aucun test, il ne devrait pas faire de Run.Test non plus. La présence de Run.Test avec la valeur `tests` vide indique un comportemet bizarre (ou que le nettoyage a encore des lacunes...). 
+
+# # Analyse des TP_Game
+
+# Cette fois on compte les tests dans l'ensemble du module/codeState, on ne compte pas les tests par fonction (mélange de fonctions testables et non testables).
+#
+
+# Pour chaque étudiant on regarde les différents jeux sur lesquels il a travaillé, au travers des différents filename_infere. 
+#
+
+# Pour trouver le codeState on procède comme pour les TP2 à 9 en cherchant le codeState qui a le timestamp le plus récent, et on continue tant qu'on n'a pas trouvé un codeState analysable et contenant des tests. Si aucun codeState n'est analysable, on renvoie None. Par contre : si aucune codeState ne contient de tests, on indique bien qu'il y a 0 tests. 
+
+# En cours de route je n'ai eu ni le temps ni l'envie de gérer les cannot_analyze_codestate et empty_codestate. 
+
+# Cette constante est dans variable_constantes_2425 mais je n'ai aps redémarré le serveur...
+
+FILENAME_TP_GAME = ["tictactoe.py", "puissance4.py", "jeu_2048.py", "binairo.py", "tectonic.py", "galaxies.py"]
 
 
+def count_tests_in_codestate(source:str) -> int:
+    '''
+    Returns the number of tests found in `source`, or None. 
+
+    Args:
+        source is some codestate
+
+    Returns:
+        the number of tests in source or None if `source` couldn't be parsed.
+    '''
+    counter = 0
+    finder = L1TestFinder(source=source)
+    try:
+        res = finder.find_l1doctests()
+        for ex_func in res:
+            counter = counter + len(ex_func.get_examples())
+    except (ValueError, SyntaxError, SpaceMissingAfterPromptException, AttributeError) as e: 
+        # AttributeError levé par thonnycontrib/utils.py
+        # AttributeError: 'Attribute' object has no attribute 'id'
+        counter = None
+    return counter
 
 
+def find_tests_for_tp_tpgame_name_filename(name:str, df:pd.DataFrame, filename_tpgame:str) -> tuple[pd.DataFrame, bool, bool]:
+    """
+    Looks for codeStates related  to 'TP_prog' (df['Type_TP'] == 'TP_prog') for `name` and `filename_tpgame`, then looks repeatedly for the most recent codeState that can be parsed and contains at least one function of functions_names, then returns:
 
+    - a DataFrame with columns 'actor', 'tp', 'filename_infere', 'tests_number' (int or None if not present in codestates), 'index' (index in df of the analyzed codeState)
+    - a first bool, True if for that student the codeStates cannot be analyzed (Python or l1test syntax error) 
+    - a second bool, True if for that student and that filename no codeState was found, or only empty codeStates
+
+    codeStates are considered from the most recent to the least recent, so it does not matter if timestamps are not sorted in increaded order.
+    
+    Args:
+        name: some actor (ex : 'truc.machin.etu')
+        df: some DataFrame
+        filename_tpgame: some filename (for a game ex : 'binairo.py')
+        
+    Returns:
+        None, False, True: if no codeState was found, or only empty codeStates
+        None, True, False: if no codeState could be parsed
+        df, False, False: if some codeState could be parsed
+    
+    """
+    # Les timestamps ne sont pas triés par ordre croissant.
+    # La fonction recherche les codeState comme suit : 
+    # - elle cherche le codestate le plus récent,
+    # - s'il est analysable, on regarde s'il y a des tests, ou 0
+    # - s'il n'est pas analysable ou si 0 test est trouvé, elle cherche à nouveau le codestate le plus récent, moins le précédent, mais
+    # on garde en mémoire qu'on avait trouvé 0 test.
+    # Et ce tant qu'il y a des codestate à traiter.
+    df_name_tp = df[(df['TP'] == 'Tp_GAME') & (df['Type_TP'] == 'TP_prog') & (df['filename_infere'] == filename_tpgame)& ((df['actor'] == name) | (df['binome'] == name))]
+    df_codestate_nonempty = df_name_tp[df_name_tp['codeState'] != '']
+    if len(df_codestate_nonempty) == 0:
+            return None, False, True
+    else:
+        # look for most recent parsable codeState
+        timestamps = df_codestate_nonempty['timestamp.$date'].copy() # pour être sûre de ne pas modifier le df initial
+        found = False # found codeState with functions not all unfoundable
+        found_0_test = False
+        while not timestamps.empty and not found: 
+            index_of_timestamp_max = timestamps.idxmax()
+            most_recent_codeState = df_name_tp.loc[index_of_timestamp_max]['codeState']
+            nb_tests = count_tests_in_codestate(most_recent_codeState)
+            if nb_tests != None: # parseable
+                if nb_tests > 0: # tests in codeState
+                    found = True
+                    #print(f'actor {name} filename_infere {filename_tpgame} tests_number {nb_tests} index {index_of_timestamp_max}')
+                    df_result = pd.DataFrame({'actor': [name], 'tp': ['Tp_GAME'], 'filename_infere': [filename_tpgame], \
+                                          'tests_number': [nb_tests], 'index':  [index_of_timestamp_max]})
+                else: # look for some tests in another codeState, but remember we found 0 test
+                    found_0_test = True
+                    df_result = pd.DataFrame({'actor': [name], 'tp': ['Tp_GAME'], 'filename_infere': [filename_tpgame], \
+                                          'tests_number': [0], 'index':  [index_of_timestamp_max]})
+                    timestamps = timestamps.drop(index=[index_of_timestamp_max])
+            else: # codestate not parsable : drop this index and continue
+                timestamps = timestamps.drop(index=[index_of_timestamp_max])
+        if found or found_0_test:
+            return df_result, False, False
+        else:
+            return None, True, False
+
+
+def find_tests_for_tp_tpgame_name(name:str, df:pd.DataFrame) -> pd.DataFrame:
+    """
+    Looks for codeStates related  to 'TP_prog' (df['Type_TP'] == 'TP_prog') for `name` and all filename_infere we can find for `name`, then looks repeatedly for the most recent codeState that can be parsed and contains at least one function of functions_names, then returns:
+
+    - a DataFrame with columns 'actor', 'tp', 'filename_infere', 'tests_number' (int or None if not present in codestates), 'index' (index in df of the analyzed codeState)
+ 
+    codeStates are considered from the most recent to the least recent, so it does not matter if timestamps are not sorted in increaded order.
+    
+    Args:
+        name: some actor (ex : 'truc.machin.etu')
+        df: some DataFrame        
+    Returns:
+        None if no tp_game & tp_prog codestate could be found or analyzed.
+    
+    """
+    df_name_tp = df[(df['TP'] == 'Tp_GAME') & (df['Type_TP'] == 'TP_prog') & ((df['actor'] == name) | (df['binome'] == name))]
+    df_codestate_nonempty = df_name_tp[df_name_tp['codeState'] != '']
+    if len(df_codestate_nonempty) == 0:
+            return None
+    else:
+        df_result = pd.DataFrame(columns=['actor', 	'tp', 	'filename_infere', 	'tests_number', 	'index'])
+        tpgame_filenames_infere_all = df_codestate_nonempty['filename_infere'].unique()
+        tpgame_filenames = list(f for f in tpgame_filenames_infere_all if f in FILENAME_TP_GAME)
+        if len(tpgame_filenames) == 0:
+            return None
+        for filename in tpgame_filenames:
+            df_filename, cannot_analyze_codestate, empty_codestate =  find_tests_for_tp_tpgame_name_filename(name, df, filename)
+            if df_filename is not None:
+                df_result = pd.concat([df_result, df_filename], ignore_index=True)
+        return df_result
+
+
+def find_tests_for_tp_tpgame(df:pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+    """
+    Looks for codeStates related  to 'TP_prog' (df['Type_TP'] == 'TP_prog') for all students and all filename_infere we can find for `name`, then looks repeatedly for the most recent codeState that can be parsed and contains at least one function of functions_names, then returns:
+
+     - a DataFrame with columns 'actor', 'tp', 'filename_infere', 'tests_number' (int or None if not present in codestates), 'index' (index in df of the analyzed codeState)
+     - a list of actors for which no data could be collected - they do not appear in the returned dataframe
+     
+    codeStates are considered from the most recent to the least recent, so it does not matter if timestamps are not sorted in increaded order.
+    
+    Args:
+        df: some DataFrame
+    """
+    cannot_find_or_analyze_tpgame = []
+    df_result = pd.DataFrame(columns=['actor', 	'tp', 	'filename_infere', 	'tests_number', 	'index'])
+    actor_column_game  = df[(df['TP'] == 'Tp_GAME') & (df['Type_TP'] == 'TP_prog')]['actor']
+    column_binome_game = df[(df['TP'] == 'Tp_GAME') & (df['Type_TP'] == 'TP_prog')]['binome']
+    all_students_game  = set(actor_column_game).union(set(column_binome_game))
+    if '' in all_students_game:
+        all_students_game.remove('')
+    for name in all_students_game:
+        df_name = find_tests_for_tp_tpgame_name(name, df)
+        if df_name is None:
+            cannot_find_or_analyze_tpgame.append(name)
+        else:
+            df_result = pd.concat([df_result, df_name], ignore_index=True)
+    return df_result, cannot_find_or_analyze_tpgame
+
+
+# ## Ex d'utilisation
+
+df_count_tests_yanko_tictactoe, cannot_analyze_codestate_yanko, empty_codestate_yanko =  find_tests_for_tp_tpgame_name_filename('yanko.lemoine.etu', df, 'tictactoe.py')
+
+df_count_tests_yanko_tictactoe
+
+df_count_tests_yanko_all_games = find_tests_for_tp_tpgame_name('yanko.lemoine.etu', df)
+
+df_count_tests_yanko_all_games
+
+# Long mais pas d'affichage.
+
+df_tests_tpgame_all, cannot_find_or_analyze_tpgame = find_tests_for_tp_tpgame(df)
+
+cannot_find_or_analyze_tpgame
+
+df_tests_tpgame_all
+
+# ## Analyses intéressantes à faire
+
+# Possible regarder
+#
+#     l'ens des actors qui n'ont écrit aucun test (sur un jeu / sur tous les jeux) : pour eux la somme des tests_number vaut 0
+#     l'ens actors qui ont des tests (sur un jeu / sur tous les jeux) : pour eux il n'y a aucun tests_number à 0
+#     en théorie ceux qui restent écrivent parfois des tests, parfois non.
+#
+# Mais je me rappelle que yanko a juste ouvert le fichier pour les galaxies, et il n'a pas codé ce jeu car il commençait à en avoir marre. Quand je compte les tests d'un codeState je renvoie None si le codeState n'est pas analysable, j'aurais plutôt dû lever une exception, et lever une autre exception quand il n'y a pas de fonctions ds le codeState. Si cet étudiant est le seul à avoir avoir des traces sur "galaxies.py", peut-être enlever ce jeu de l'analyse ?
+
+df_tests_tpgame_all[df_tests_tpgame_all['filename_infere'] == 'galaxies.py']
+
+# -> enlever 'galaxies.py' de FILENAME_TP_GAME
+
+# Ensuite : 
+#
+# - pour les étudiants qui ont fait 0 tests, regarder s'ils faisaient des tests sur les TP2 à TP9 ou s'ils n'en faisaient déjà pas.
+# - pour les étudiants qui ont fait des tests sur les TP2 à TP9, regarder si on trouve au moins un jeu avec tests
+# - (je viens de dire 2 fois la même chose, à faire ds le sens que tu préfères)
+#
+# Ça me permettra d'évaluer si les étudiants qui testent ont pris l'habitude de le faire (ils testent quand on leur demande de le faire mais ils oublient ou n'y arrivent pas ensuite, ds le jeu libre).
+
+# De même corrélation possible avec les Run.Test, sauf si ça n'apporte rien par rapport aux TP2 à 9.
+#
+# Je me rappelle qu'il y avait un grand nombre (21) d'étudiants avec des `tests` de Run.Test vides pour les Tp_Game. Si c'est tjs le cas avec le nouveau nettoyage il faut essayer de comprendre pourquoi.
+
+# # Pb de nettoyage à vérifier ?
+
+df_name_tp = df[(df['TP'] == 'Tp_GAME') & (df['Type_TP'] == 'TP_prog') & ((df['actor'] == 'm-bah-ange-pascal.tanoh.etu') | (df['binome'] == 'm-bah-ange-pascal.tanoh.etu'))]
+df_name_tp[['verb', 'filename','filename_infere']]
 
 

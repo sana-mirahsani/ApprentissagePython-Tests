@@ -28,7 +28,7 @@ import difflib
 # just for test
 from src.data.variable_constant_2425 import SORTED_SEANCE
 import re
-from src.data.variable_constant_2425 import FILES_BY_TP, TP_NAME
+from src.data.variable_constant_2425 import FILES_BY_TP, TP_NAME, FILENAME_TP_GAME
 from src.features import data_cleaning
 
 # just for test
@@ -549,6 +549,7 @@ print(f'Cannot analyze codestate for : {cannot_analyze_codestate_students_bis}')
 
 print(f'only empty codestates in for : {empty_codestate_students_bis}')
 
+
 # # Recherche du nb de tests par tp_game
 
 # Cette fois on compte les tests dans l'ensemble du module.
@@ -556,6 +557,208 @@ print(f'only empty codestates in for : {empty_codestate_students_bis}')
 # Pour chaque étudiant on regarde quels tp game il a fait. 
 #
 # Pour chaque tp_game on regarde le nb de tests.
+
+def count_tests_in_codestate(source:str) -> int:
+    '''
+    Returns the number of tests found in `source`, or None. 
+
+    Args:
+        source is some codestate
+
+    Returns:
+        the number of tests in source or None if `source` couldn't be parsed.
+    '''
+    counter = 0
+    finder = L1TestFinder(source=source)
+    try:
+        res = finder.find_l1doctests()
+        for ex_func in res:
+            counter = counter + len(ex_func.get_examples())
+    except (ValueError, SyntaxError, SpaceMissingAfterPromptException, AttributeError) as e: 
+        # AttributeError levé par thonnycontrib/utils.py
+        # AttributeError: 'Attribute' object has no attribute 'id'
+        counter = None
+    return counter
+
+
+count_tests_in_codestate(most_recent_codeState_yanko)
+
+df_yanko_tpgame = df[(df['TP'] == 'Tp_GAME') & (df['Type_TP'] == 'TP_prog') & ((df['actor'] == 'yanko.lemoine.etu') | (df['binome'] == 'yanko.lemoine.etu'))]
+
+yanko_tpgame_filename_infere_all = df_yanko_tpgame['filename_infere'].unique()
+yanko_tpgame_filename_infere_all
+
+FILENAME_TP_GAME = ["tictactoe.py", "puissance4.py", "jeu_2048.py", "binairo.py", "tectonic.py", "galaxies.py"]
+
+yanko_tpgame_filename_infere = list(f for f in  yanko_tpgame_filename_infere_all if f in FILENAME_TP_GAME)
+yanko_tpgame_filename_infere
+
+
+def find_tests_for_tp_tpgame_name_filename(name:str, df:pd.DataFrame, filename_tpgame:str) -> tuple[pd.DataFrame, bool, bool]:
+    """
+    Looks for codeStates related  to 'TP_prog' (df['Type_TP'] == 'TP_prog') for `name` and `filename_tpgame`, then looks repeatedly for the most recent codeState that can be parsed and contains at least one function of functions_names, then returns:
+
+    - a DataFrame with columns 'actor', 'tp', 'filename_infere', 'tests_number' (int or None if not present in codestates), 'index' (index in df of the analyzed codeState)
+    - a first bool, True if for that student the codeStates cannot be analyzed (Python or l1test syntax error) 
+    - a second bool, True if for that student and that filename no codeState was found, or only empty codeStates
+
+    codeStates are considered from the most recent to the least recent, so it does not matter if timestamps are not sorted in increaded order.
+    
+    Args:
+        name: some actor (ex : 'truc.machin.etu')
+        df: some DataFrame
+        filename_tpgame: some filename identifier (fit a game ex : 'binairo.py')
+        
+    Returns:
+        None, False, True: if no codeState was found, or only empty codeStates
+        None, True, False: if no codeState could be parsed
+        df, False, False: if some codeState could be parsed
+    
+    """
+    # Les timestamps ne sont pas triés par ordre croissant.
+    # La fonction recherche les codeState comme suit : 
+    # - elle cherche le codestate le plus récent,
+    # - s'il est analysable, on regarde s'il y a des tests, ou 0
+    # - s'il n'est pas analysable ou si 0 test est trouvé, elle cherche à nouveau le codestate le plus récent, moins le précédent, mais
+    # on garde en mémoire qu'on avait trouvé 0 test.
+    # Et ce tant qu'il y a des codestate à traiter.
+    df_name_tp = df[(df['TP'] == 'Tp_GAME') & (df['Type_TP'] == 'TP_prog') & (df['filename_infere'] == filename_tpgame)& ((df['actor'] == name) | (df['binome'] == name))]
+    df_codestate_nonempty = df_name_tp[df_name_tp['codeState'] != '']
+    if len(df_codestate_nonempty) == 0:
+            return None, False, True
+    else:
+        # look for most recent parsable codeState
+        timestamps = df_codestate_nonempty['timestamp.$date'].copy() # pour être sûre de ne pas modifier le df initial
+        found = False # found codeState with functions not all unfoundable
+        found_0_test = False
+        while not timestamps.empty and not found: 
+            index_of_timestamp_max = timestamps.idxmax()
+            most_recent_codeState = df_name_tp.loc[index_of_timestamp_max]['codeState']
+            nb_tests = count_tests_in_codestate(most_recent_codeState)
+            if nb_tests != None: # parseable
+                if nb_tests > 0: # tests in codeState
+                    found = True
+                    #print(f'actor {name} filename_infere {filename_tpgame} tests_number {nb_tests} index {index_of_timestamp_max}')
+                    df_result = pd.DataFrame({'actor': [name], 'tp': ['Tp_GAME'], 'filename_infere': [filename_tpgame], \
+                                          'tests_number': [nb_tests], 'index':  [index_of_timestamp_max]})
+                else: # look for some tests in another codeState, but remember we found 0 test
+                    found_0_test = True
+                    df_result = pd.DataFrame({'actor': [name], 'tp': ['Tp_GAME'], 'filename_infere': [filename_tpgame], \
+                                          'tests_number': [0], 'index':  [index_of_timestamp_max]})
+                    timestamps = timestamps.drop(index=[index_of_timestamp_max])
+            else: # codestate not parsable : drop this index and continue
+                timestamps = timestamps.drop(index=[index_of_timestamp_max])
+        if found or found_0_test:
+            return df_result, False, False
+        else:
+            return None, True, False
+
+
+df_count_tests_yanko, cannot_analyze_codestate_yanko, empty_codestate_yanko =  find_tests_for_tp_tpgame_name_filename('yanko.lemoine.etu', df, 'tictactoe.py')
+
+df_count_tests_yanko
+
+cannot_analyze_codestate_yanko
+
+empty_codestate_yanko
+
+df_count_tests_yanko, cannot_analyze_codestate_yanko, empty_codestate_yanko =  find_tests_for_tp_tpgame_name_filename('yanko.lemoine.etu', df, 'binairo.py')
+
+df_count_tests_yanko
+
+df_count_tests_yanko, cannot_analyze_codestate_yanko, empty_codestate_yanko =  find_tests_for_tp_tpgame_name_filename('yanko.lemoine.etu', df, 'galaxies.py')
+
+df_count_tests_yanko
+
+
+def find_tests_for_tp_tpgame_name(name:str, df:pd.DataFrame) -> pd.DataFrame:
+    """
+    Looks for codeStates related  to 'TP_prog' (df['Type_TP'] == 'TP_prog') for `name` and all filename_infere we can find for `name`, then looks repeatedly for the most recent codeState that can be parsed and contains at least one function of functions_names, then returns:
+
+    - a DataFrame with columns 'actor', 'tp', 'filename_infere', 'tests_number' (int or None if not present in codestates), 'index' (index in df of the analyzed codeState)
+ 
+    codeStates are considered from the most recent to the least recent, so it does not matter if timestamps are not sorted in increaded order.
+    
+    Args:
+        name: some actor (ex : 'truc.machin.etu')
+        df: some DataFrame        
+    Returns:
+        None if no tp_game & tp_prog codestate could be found or analyzed.
+    
+    """
+    df_name_tp = df[(df['TP'] == 'Tp_GAME') & (df['Type_TP'] == 'TP_prog') & ((df['actor'] == name) | (df['binome'] == name))]
+    df_codestate_nonempty = df_name_tp[df_name_tp['codeState'] != '']
+    if len(df_codestate_nonempty) == 0:
+            return None
+    else:
+        df_result = pd.DataFrame(columns=['actor', 	'tp', 	'filename_infere', 	'tests_number', 	'index'])
+        tpgame_filenames_infere_all = df_codestate_nonempty['filename_infere'].unique()
+        tpgame_filenames = list(f for f in tpgame_filenames_infere_all if f in FILENAME_TP_GAME)
+        if len(tpgame_filenames) == 0:
+            return None
+        for filename in tpgame_filenames:
+            df_filename, cannot_analyze_codestate, empty_codestate =  find_tests_for_tp_tpgame_name_filename(name, df, filename)
+            if df_filename is not None:
+                df_result = pd.concat([df_result, df_filename], ignore_index=True)
+        return df_result
+
+
+df_count_tests_yanko = find_tests_for_tp_tpgame_name('yanko.lemoine.etu', df)
+
+df_count_tests_yanko
+
+df_count_tests_rostell = find_tests_for_tp_tpgame_name('rosche-rostell.batchi-vouala.etu', df)
+
+df_count_tests_rostell
+
+df_count_tests_ange = find_tests_for_tp_tpgame_name('m-bah-ange-pascal.tanoh.etu', df)
+
+df_count_tests_ange
+
+df_name_tp = df[(df['TP'] == 'Tp_GAME') & (df['Type_TP'] == 'TP_prog') & ((df['actor'] == 'm-bah-ange-pascal.tanoh.etu') | (df['binome'] == 'm-bah-ange-pascal.tanoh.etu'))]
+df_name_tp[['verb', 'filename','filename_infere']]
+
+df.loc[169534]['codeState']
+
+
+def find_tests_for_tp_tpgame(df:pd.DataFrame) -> tuple[pd.DataFrame, str]:
+    """
+    Looks for codeStates related  to 'TP_prog' (df['Type_TP'] == 'TP_prog') for all students and all filename_infere we can find for `name`, then looks repeatedly for the most recent codeState that can be parsed and contains at least one function of functions_names, then returns:
+
+    - a DataFrame with columns 'actor', 'tp', 'filename_infere', 'tests_number' (int or None if not present in codestates), 'index' (index in df of the analyzed codeState)
+ 
+    codeStates are considered from the most recent to the least recent, so it does not matter if timestamps are not sorted in increaded order.
+    
+    Args:
+        df: some DataFrame
+        
+    Returns:
+        None if no tp_game & tp_prog codestate could be found or analyzed.
+    
+    """
+    cannot_find_or_analyze_tpgame = []
+    df_result = pd.DataFrame(columns=['actor', 	'tp', 	'filename_infere', 	'tests_number', 	'index'])
+    actor_column_game  = df[(df['TP'] == 'Tp_GAME') & (df['Type_TP'] == 'TP_prog')]['actor']
+    column_binome_game = df[(df['TP'] == 'Tp_GAME') & (df['Type_TP'] == 'TP_prog')]['binome']
+    all_students_game  = set(actor_column_game).union(set(column_binome_game))
+    if '' in all_students_game:
+        all_students_game.remove('')
+    for name in all_students_game:
+        df_name = find_tests_for_tp_tpgame_name(name, df)
+        if df_name is None:
+            cannot_find_or_analyze_tpgame.append(name)
+        else:
+            df_result = pd.concat([df_result, df_name], ignore_index=True)
+    return df_result, cannot_find_or_analyze_tpgame
+
+
+df_tests_tpgame_all, cannot_find_or_analyze_tpgame = find_tests_for_tp_tpgame(df)
+
+df_tests_tpgame_all
+
+df_tests_tpgame_all[df_tests_tpgame_all['actor']=='']
+
+df.loc[114978]
 
 # # Exemples pour vieille version calcul nb tests TP2 à TP9 
 
