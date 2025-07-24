@@ -712,15 +712,10 @@ df_tests_tpgame_all[df_tests_tpgame_all['filename_infere'] == 'galaxies.py']
 # - pour les étudiants qui ont fait des tests sur les TP2 à TP9, regarder si on trouve au moins un jeu avec tests
 # - (je viens de dire 2 fois la même chose, à faire ds le sens que tu préfères)
 #
-# Ça me permettra d'évaluer si les étudiants qui testent ont pris l'habitude de le faire (ils testent quand on leur demande de le faire mais ils oublient ou n'y arrivent pas ensuite, ds le jeu libre).
+# Ça me permettra d'évaluer si les étudiants qui testent ont pris l'habitude de le faire (ils testent quand on leur demande de le faire pdt les TP2 à 9 mais ils oublient ou n'y arrivent pas ensuite, ds le jeu libre).
 
 # De même corrélation possible avec les Run.Test, sauf si ça n'apporte rien par rapport aux TP2 à 9.
 #
 # Je me rappelle qu'il y avait un grand nombre (21) d'étudiants avec des `tests` de Run.Test vides pour les Tp_Game. Si c'est tjs le cas avec le nouveau nettoyage il faut essayer de comprendre pourquoi.
-
-# # Pb de nettoyage à vérifier ?
-
-df_name_tp = df[(df['TP'] == 'Tp_GAME') & (df['Type_TP'] == 'TP_prog') & ((df['actor'] == 'm-bah-ange-pascal.tanoh.etu') | (df['binome'] == 'm-bah-ange-pascal.tanoh.etu'))]
-df_name_tp[['verb', 'filename','filename_infere']]
 
 
