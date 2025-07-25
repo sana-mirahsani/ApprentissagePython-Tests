@@ -61,35 +61,7 @@ import sys
 sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
 from src.features import io_utils, data_cleaning
 from src.data.constants import INTERIM_DATA_DIR
-from src.data.variable_constant_2425 import FILES_BY_TP, all_TP_functions_name_except_TP1_and_TPGAME
-
-# Global variable pattern
-pattern_files_name = ''
-for tp_name in FILES_BY_TP:
-
-    file_name = '|'.join(tp_name)
-    pattern_files_name = pattern_files_name +  file_name + '|'
-
-pattern_files_name = pattern_files_name  + 'Irrelevant'
-
-
-# %%
-def get_regexp_for_function_call(functions_name:dict) -> dict:
-    '''
-    functions_name is a dictionary whose keys are filenames and values are list of function names of the kind 'repetition'
-
-    Adds a regexpr that allows spaces or tabs before the '('. 
-    '''
-    dico = {}
-    for key in functions_name:
-        function_list = functions_name[key]
-        new_list = []
-        for name in function_list:
-            new_name = rf'(\W|\A){name}[ \t]*\('#r'(\W|\A)' + re.escape(name) + r'[ \t]*\('
-            new_list.append(new_name)
-        dico[key] = new_list
-    return dico
-
+from src.data.variable_constant_2425 import pattern_files_name, all_TP_functions_name_except_TP1_and_TPGAME
 
 # %% [markdown]
 # ## Load DataFrame

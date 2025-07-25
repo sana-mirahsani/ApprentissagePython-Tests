@@ -83,16 +83,7 @@ sys.path.append('../') # these two lines allow the notebook to find the path to 
 import pandas as pd
 from src.features import io_utils, data_cleaning, data_testing
 from src.data.constants import INTERIM_DATA_DIR
-from src.data.variable_constant_2425 import FILES_BY_TP, TP_name, Type_TP
- 
-# Global variable pattern
-pattern_files_name = ''
-for tp_name in FILES_BY_TP:
-
-    file_name = '|'.join(tp_name)
-    pattern_files_name = pattern_files_name +  file_name + '|'
-
-pattern_files_name = pattern_files_name  + 'Irrelevant'
+from src.data.variable_constant_2425 import TP_name, Type_TP, pattern_files_name
 
 # %% [markdown]
 # ## 2. Load DataFrame
@@ -124,9 +115,12 @@ def validate_process_of_filename(df_index,df,pattern):
         for activity in row['indices']:
             start = activity[0]
             end   = activity[1]
-            
-            subset_df = df.loc[start:end]
-
+            try:
+                subset_df = df.loc[start:end]
+                
+            except:
+                print("here1")
+                raise
             data_cleaning.correct_filename_infere_in_subset(subset_df,df,pattern)
 
     print('successful!!')   
@@ -246,16 +240,22 @@ def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
 data_testing.test_filename_infere_total(df_clean,pattern_files_name) 
 
 # %%
-df_clean.loc[105148]
+# new
+data_testing.test_filename_infere_total(df_clean,pattern_files_name) 
 
 # %% [markdown]
 # ### 3.1 **DF[seance] == semaine_1**
+#
+# Now it is removed, because it is difficult to find the filename for this week.
 
 # %%
-df_clean, df_empty_string_semaine_1 = main_process('semaine_1',df_clean,pattern_files_name)
+#df_clean, df_empty_string_semaine_1 = main_process('semaine_1',df_clean,pattern_files_name)
 
 # %% [markdown]
 # ### 3.2 **DF[seance] == semaine_2**
+
+# %%
+df_clean, df_empty_string_semaine_2 = main_process('semaine_2',df_clean,pattern_files_name)
 
 # %%
 df_clean, df_empty_string_semaine_2 = main_process('semaine_2',df_clean,pattern_files_name)
@@ -265,14 +265,6 @@ df_clean, df_empty_string_semaine_2 = main_process('semaine_2',df_clean,pattern_
 
 # %%
 df_clean, df_empty_string_semaine_3 = main_process('semaine_3',df_clean,pattern_files_name)
-
-# %%
-# test
-df_clean.loc[105148]
-
-# %%
-# test
-df_clean[(df_clean['seance'] == 'semaine_9') & (df_clean['actor'] == 'hamza.chebbah.etu')][['filename_infere']]
 
 # %% [markdown]
 # ### 3.4 **DF[seance] == semaine_4**

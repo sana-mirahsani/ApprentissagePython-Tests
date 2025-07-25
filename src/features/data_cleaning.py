@@ -1,6 +1,13 @@
-# All function for cleaning data 
-
-
+# All function which are called directly or inside another function for cleaning data
+"""
+Explanation:
+This file contains all functions for cleaning data.
+Above of each function is mentioned wether the function 
+is called directly in a notebook, or inside another function in this file.
+Also all functions from each notebook are sorted next to each other and above them is written they belong to which notebook.
+If there is a function which is used in different notebooks, I mentioned above it.
+Hope it helps you :)
+"""
 #------------------------------------------------
 #                  Library
 #------------------------------------------------
@@ -9,17 +16,16 @@ import sys
 sys.path.append('../')
 from pandas import to_datetime, to_timedelta
 import re
-import numpy 
 import difflib
-from src.data.variable_constant_2425 import SORTED_SEANCE
-from src.data.variable_constant_2425 import SORTED_SEANCE , all_TP_functions_name
+from src.data.variable_constant_2425 import pattern_files_name , all_TP_functions_name_except_TP1_and_TPGAME
+
 #------------------------------------------------
-#                  Functions
+#      Functions of 1.Cleaning_actor.ipynb
 #------------------------------------------------
 
 
-# ---------------- Time cleaning --------------
-# Change time format
+# ---------------- part 1 : Time cleaning --------------
+# Change time format : called directly
 def clean_time(df: pd.DataFrame) -> pd.DataFrame:
     """
     Consider type of 'session.id' as str.
@@ -48,8 +54,8 @@ def clean_time(df: pd.DataFrame) -> pd.DataFrame:
     df.reset_index(drop=True, inplace=True)
     return df
 
-# ---------------- Actor cleaning -------------
-# Find not matching values
+# ---------------- part 2: Actor cleaning -------------
+# Find not matching values : called directly
 def not_a_correct_identifier(df: pd.DataFrame, column : str) -> list:
 
     """
@@ -76,7 +82,7 @@ def not_a_correct_identifier(df: pd.DataFrame, column : str) -> list:
 
     return invalid_actors
 
-# Remove @ from the end
+# Remove @ from the end : called directly
 def delete_end_email(df: pd.DataFrame) -> pd.DataFrame:
 
     """
@@ -98,7 +104,7 @@ def delete_end_email(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-# Remove all lines of an actor
+# Remove all lines of an actor : called directly
 def delete_actor_lines(df: pd.DataFrame,name: str) -> pd.DataFrame:
     """
     Remove all traces of the name of actor which we don't need to keep like nebut.
@@ -113,7 +119,7 @@ def delete_actor_lines(df: pd.DataFrame,name: str) -> pd.DataFrame:
     df_cleaned = df[df['actor'] != name]
     return df_cleaned
 
-# Split actor and binome
+# Split actor and binome : called directly
 def split_actor_binome(df: pd.DataFrame) -> pd.DataFrame:
 
     """
@@ -139,7 +145,7 @@ def split_actor_binome(df: pd.DataFrame) -> pd.DataFrame:
 
     return df    
 
-# Delete specific name of actor or binome
+# Delete specific name of actor or binome : called directly
 def delete_name_actor_binome(df: pd.DataFrame, column : str, name : str) -> pd.DataFrame:
     
     """
@@ -158,7 +164,7 @@ def delete_name_actor_binome(df: pd.DataFrame, column : str, name : str) -> pd.D
 
     return df
 
-# Replace jokers by real names
+# Replace jokers by real names : called directly
 def replace_jokers(df: pd.DataFrame, columns : list, jokers_real_name : dict) -> pd.DataFrame:
 
     """
@@ -177,7 +183,7 @@ def replace_jokers(df: pd.DataFrame, columns : list, jokers_real_name : dict) ->
 
     return df  
 
-# Manually cleaning
+# Manually cleaning : called directly
 def cleaning_manual_actors_2425(df: pd.DataFrame, name: str) -> pd.DataFrame:
 
     """
@@ -196,61 +202,11 @@ def cleaning_manual_actors_2425(df: pd.DataFrame, name: str) -> pd.DataFrame:
     
     return df_cleaned
 
-#------------------------------------------------
-#                  filename cleaning
-#------------------------------------------------
-# Cut datafram into small parts
-def cut_df_by_seance(df: pd.DataFrame, week: str, student_name: str) -> list:
-    '''
-    Extract indices of all session.start and session.end of a week for a specific student.
+#------------------------------------------------------------
+#      Functions of 2.Cleaning_filename_phase1.ipynb
+#-----------------------------------------------------------
 
-    Args:
-        df : A clean_actor dataframe.
-        week : The name of the week.
-        student_name : The name fo the student.
-
-    Returns:
-        indices : All indices of the session.start and session.end from dataframe.
-    '''
-
-    pairs = []
-    empty_trace_pairs = []
-
-    # Filter dataframe for the week and student
-    df_filtered = df[(df['seance'] == week) & (df['actor'] == student_name)]
-
-    if len(df_filtered) == 0 :
-        df_filtered = df[(df['seance'] == week) & (df['binome'] == student_name)]
-        if len(df_filtered) == 0 :
-            print(f"No trace with this name in semaine : {student_name}")
-    
-    indices = df_filtered.index[df_filtered['verb'].isin(['Session.Start', 'Session.End'])].tolist()
-    values  = df_filtered.loc[indices, 'verb'].tolist()
-
-    i = 0
-    while i < len(values) - 1:
-        
-        if values[i] == 'Session.Start' and values[i+1] == 'Session.End':
-        
-            start_idx = indices[i]
-            end_idx   = indices[i+1]
-
-            if abs(start_idx - end_idx) > 2: # put useful indices in pairs
-                
-                pairs.append([start_idx,end_idx])
-            
-            else: # put useless indices in empty_trace_pairs to remove them later
-                empty_trace_pairs.append([start_idx,end_idx])
-            
-            i += 2  # move past the 1 and 2
-        else:
-            print(f"invalid pair {indices[i]}")
-            i += 1  # skip if it's not a valid pair
-
-    # return all indices
-    return pairs, empty_trace_pairs
-
-# Extract filename for not None value
+# Extract filename for not None value : called directly
 def extract_short_filename(series: pd.Series) -> pd.Series:
     '''
     Extract filename by split / and get the last value for row which has a filename.
@@ -263,7 +219,7 @@ def extract_short_filename(series: pd.Series) -> pd.Series:
     '''
     return series.str.split('/').str[-1]
 
-# Fill empty values of filename with clean commandRan column
+# Fill empty values of filename with clean commandRan column : called directly
 def extract_short_filename_from_commandRan_Run_Program(commandRan_Run_Program: pd.Series) -> pd.Series:
     '''
     Get a Dataframe and fill filename column of Run.Program by
@@ -287,7 +243,7 @@ def extract_short_filename_from_commandRan_Run_Program(commandRan_Run_Program: p
 
     return cleaned
 
-# Fill empty values by P_codeState
+# Fill empty values by P_codeState : called directly
 def extract_short_filename_from_P_codestate_Run_Program(codestate_Run_Program: str) -> str:
     '''
     Get a Dataframe and fill filename column of Run.Program by
@@ -303,7 +259,7 @@ def extract_short_filename_from_P_codestate_Run_Program(codestate_Run_Program: s
     match = re.search(r"<trace>(.*?)</trace>", str(codestate_Run_Program))
     return match.group(1) if match else ''
     
-# Fill empty values of filename with clean commandRan column
+# Fill empty values of filename with clean commandRan column : called directly
 def extract_short_filename_from_commandRan_Run_Debugger(commandRan_Run_Debugger: pd.Series) -> pd.Series:
     '''
     Get a Dataframe and fill filename column of Run.Debugger by
@@ -324,7 +280,7 @@ def extract_short_filename_from_commandRan_Run_Debugger(commandRan_Run_Debugger:
 
     return cleaned
 
-# Fill empty values of filename with clean commandRan column
+# Fill empty values of filename with clean commandRan column : called directly
 def extract_short_filename_from_commandRan_Run_Command(commandRan_Run_Command: pd.Series) -> pd.Series:
 
     """
@@ -349,8 +305,7 @@ def extract_short_filename_from_commandRan_Run_Command(commandRan_Run_Command: p
     # Return a Series with only the cleaned values, aligned with original index
     return cleaned
 
-################# Mirabelle's code!!!!!!
-# Function to add space before parantes in dictionary 
+# Function to add space before parantes in dictionary : called inside find_filename_by_commandRan
 def get_regexp_for_function_call(functions_name:dict) -> dict:
     '''
     functions_name is a dictionary whose keys are filenames and values are list of function names of the kind 'repetition'
@@ -367,8 +322,31 @@ def get_regexp_for_function_call(functions_name:dict) -> dict:
         dico[key] = new_list
     return dico
 
-################# Mirabelle's code!!!!!!
-# Find filename by looking the content of commandRan column
+# Function to find the corresponding filename: called inside find_filename_by_commandRan
+def find_filename_by_searching_function_call(TP_files:dict, commandRan:str) -> str:
+
+    """
+    Searchs if the commandRan contains a call to a function in TP_files, and if any returns the associated filename.
+    Else returns the empty string.
+
+    Args:
+        TP_files : A Dict of all files with their functions.
+        commandRan : commandRan of a raw
+
+    Returns:
+        filename_infere: The correct name of the file or an empty string.
+    """
+
+    for filename, function_names in TP_files.items():
+        pattern = '|'.join(function_names)
+        match = re.search(pattern, commandRan)
+        
+        if match: 
+            return filename
+            
+    return '' # no match found!
+
+# Find filename by looking the content of commandRan column : called directly
 def find_filename_by_commandRan(all_TP_functions : dict, pattern_files_name: str, commandRan: str) -> str:
 
     """
@@ -396,67 +374,11 @@ def find_filename_by_commandRan(all_TP_functions : dict, pattern_files_name: str
         #if filename_infere == '':
             #print("Filename not found!")
         return filename_infere
-    
-################# Mirabelle's code!!!!!!
-def find_filename_by_searching_function_call(TP_files:dict, commandRan:str) -> str:
 
-    """
-    Searchs if the commandRan contains a call to a function in TP_files, and if any returns the associated filename.
-    Else returns the empty string.
-
-    Args:
-        TP_files : A Dict of all files with their functions.
-        commandRan : commandRan of a raw
-
-    Returns:
-        filename_infere: The correct name of the file or an empty string.
-    """
-
-    for filename, function_names in TP_files.items():
-        pattern = '|'.join(function_names)
-        match = re.search(pattern, commandRan)
-        
-        if match: 
-            return filename
-            
-    return '' # no match found!
-
-# Find filename_infere by checking the name of functions in codestate
-def find_filename_by_function_name(TP_files:dict,codestate:str) -> str:
-
-    """
-    !!THIS IS SAME AS THE FUNCTION ABOVE: find_filename_by_searching_function_call
-    KEEP IT FOR NOW JUST IN CASE BUT LATER THIS FUNCTION SHOULD BE REMOVED !!!
-
-    Get the codestate of a row, and see if it can find any name of functions of all TPs
-    in it, if it finds, it extracts the corresponding filename of the function, and return it.
-
-    Args:
-        TP_files : A Dict of all files with their functions.
-        codestate : P_codestate or F_codestate of a row.
-
-    Returns:
-        filename_infere: The correct name of the file or an empty string.
-    """
-
-    for item in TP_files.items():
-    
-        if len(item[1]) > 1:
-            pattern = '|'.join(item[1])
-
-        else: 
-            pattern = item[1][0]
-
-        match = re.search(pattern, codestate)
-
-        if match: 
-            
-            filename_infere = item[0]
-            return filename_infere
-            
-    return '' # no match found!
-
-# Find the correct filename by checking the similarity
+#------------------------------------------------------------
+#      Functions of 3.Cleaning_filename_phase3.ipynb
+#-----------------------------------------------------------
+# Find the correct filename by checking the similarity : called inside correct_filename_infere_in_subset
 def find_similarity(TP_Files_name: list,filename_infere:str) -> str: 
 
     """
@@ -486,77 +408,109 @@ def find_similarity(TP_Files_name: list,filename_infere:str) -> str:
         
     return '' # Wasn't similar!
 
-################# Mirabelle's code!!!!!!
-def find_filename_by_searching_function_def(TP_files:dict, codeState:str) -> str:
+# Function to choose the most appeared corresponding filename: called inside find_filename_by_codestate
+def desicion_for_filename(extracted_function_names_list : list ,all_TP_functions:dict):
 
     """
-    Searchs if the codeState contains a def of a function of TP_files, and if any returns the associated filename.
-    Else returns the empty string.
+    This function choose the most corresponding filename between all the filename correspond, and return it as the correct filename.
+    Attention : This function choose the most appeared filename, so it there are more than one filename which apeared most and their frequency is same,
+    it chooses by alphabet.
 
     Args:
-        TP_files : A Dict of all files with their functions.
-        codeState : codeState of a raw
-
-    Returns:
-        filename_infere: The correct name of the file or an empty string.
-    """
-    for filename, function_names in TP_files.items():
-        pattern = '|'.join(function_names)
-        match = re.search(pattern, codeState)
+        extracted_function_names_list : all functions found after word 'def' by find_filename_by_codestate()
         
-        if match: 
-            return filename
-            
-    return '' # no match found!
-
-################# Mirabelle's code!!!!!!
-def get_regexp_for_function_def(functions_name:dict) -> dict:
-    '''
-    functions_name is a dictionary whose keys are filenames and values are list of function names of the kind 'repetition'
-
-    Adds a regexpr that allows spaces or tabs before the '('. 
-    '''
-    dico = {}
-    for key in functions_name:
-        function_list = functions_name[key]
-        new_list = []
-        for name in function_list:
-            new_name = rf'def[ \t]*{name}[ \t]*\('
-            new_list.append(new_name)
-        dico[key] = new_list
-    return dico
-
-################# Mirabelle's code!!!!!!
-# find filename by checking the name of the file in codestate
-def find_filename_by_codestate(all_TP_functions : dict, codeState: str) -> str:
-
-    """
-    This function is change to Mirabelle's code!!!
-    It gets a pattern : all filenames, and the codestate, it checks if it can find
-    the name of the file in the codestate like the name between <trace></trace>
-    if not if check the name of the function in codestate by calling find_filename_by_function_name.
-
-    Args:
-        pattern : All filesname.
-        codestate : P_codeState or F_codeState of a row.
+        all_TP_functions : all_TP_functions_name_except_TP1_and_TPGAME from variable_constant_2425.py
 
     Returns:
-        filename_infere: The correct name of the file or an empty string.
+        filename_infere: The correct name of the row or an empty string.
     """
 
-    # search for <trace></trace> in string (instead of searching the name)
-    match = re.search(r"<trace>(.*?)</trace>", str(codeState))
+    all_extracted_filename = []
+
+    # step1: find all corresponding filenames
+    for extracted_function in extracted_function_names_list:
+        
+        for filename, function_names in all_TP_functions.items():
+            set_function_names = set(function_names) # convert to set, to increase the speed : O(n)
+
+            if extracted_function in set_function_names: # if function name is in the list
+                all_extracted_filename.append(filename) # append the corrsponding filename
+            
+    # step2: find the most appeared filename
+    if len(all_extracted_filename) != 0: # if it is not empty
+        all_extracted_filename_series = pd.Series(all_extracted_filename) # convert to pandas to find faster
+    #print('-----------------------------------------------------------------')
+    #print(extracted_function_names_list)
+    #print(all_extracted_filename_series)
+        most_common_filename = all_extracted_filename_series.mode()[0] 
+        return most_common_filename
+    
+    else:
+        # return empty string as filename
+        return ''
+
+# find filename by checking the name of the file in codestate : called inside correct_filename_infere_in_subset
+def find_filename_by_codestate(all_TP_functions : dict, pattern_files_name : str, codeState: str) -> str:
+
+    """
+    This function finds the corresponding filename by looking the codeState's content
+    It has two steps:
+    step 1 : It searches for <trace></trace> in the codestate and if there is, it extracts the name between <trace></trace>.
+             Then it checks if the extracted name is correct, meaning if it is equal to one of the file's name in the pattern_files_name.
+
+    step 2 : If step 1 didn't work, meaning neither there was any <trace></trace> nor the extracted name was correct, 
+             It extracted all function's names that are defined (by searching 'def' in codeState) then it finds
+             the most filename appeared by calling desicion_for_filename.
+             If student has used different functions from different TP, it choose the most appeared TP.
+             This is a basic idea and it is good for TP which have same functions. It can be better!
+
+    Args:
+        all_TP_functions : all_TP_functions_name_except_TP1_and_TPGAME from variable_constant_2425.py
+        pattern_files_name : pattern_files_name from variable_constant_2425.py
+        codeState : The codeState (P_codeState or F_codeState) of the current row.
+
+    Returns:
+        filename_infere: The correct name of the row or an empty string.
+    """
+
+    # initialize filename_infere
+    filename_infere = ''
+
+    # step 1 : search for <trace></trace> in string (instead of searching the name)
+    match = re.search(r"<trace>(.*?)</trace>", codeState)
 
     if match: # extract the filename between <trace></trace>
-        return match.group(1)
-
-    else: # if student deleted <trace></trace> then try to find the name by functions name in codestate
-        dico_regexpr    = get_regexp_for_function_def(all_TP_functions)
-        filename_infere = find_filename_by_searching_function_def(dico_regexpr, codeState)
         
-        return filename_infere
+        # check if the extracted name is correct:
+        filename_infere = match.group(1)
+
+        # convert files name to set, to check faster
+        file_set = set(pattern_files_name.split('|'))
+
+        if filename_infere in file_set: # extracted name is correct
+            return filename_infere
+        
+        else : # extracted name is NOT correct
+            filename_infere = '' # make empty filename again
+
+    # step 2 : search for 'def' in codestate
+    if (not match) or (filename_infere == ''):
+        
+        # extract all functions name after 'def' in codestate
+        extracted_function_names = re.findall(r'\bdef\s+([a-zA-Z_][a-zA-Z_0-9]*)\s*\(', codeState)
+        try:
+            # if there is atleast one defined function:
+            if len(extracted_function_names) != 0 : 
+                # find the most appeared filename
+                
+                filename_infere = desicion_for_filename(extracted_function_names,all_TP_functions)
+
+        except :
+            raise
+        
+    return filename_infere
     
-# check and correct the filename_infere between each session.Start and session.End
+# check and correct the filename_infere between each session.Start and session.End : called directly
 def correct_filename_infere_in_subset(subset: pd.DataFrame,df: pd.DataFrame,pattern:str) -> None:
 
     """
@@ -593,8 +547,7 @@ def correct_filename_infere_in_subset(subset: pd.DataFrame,df: pd.DataFrame,patt
         if filename_infere == '':
 
                 if (row['verb'] ==  'Run.Program') and (row['P_codeState'] != ''): # P_codeState has a content
-                    
-                    new_filename_infere = find_filename_by_codestate(all_TP_functions_name,row['P_codeState'])          
+                    new_filename_infere = find_filename_by_codestate(all_TP_functions_name_except_TP1_and_TPGAME,pattern_files_name,row['P_codeState'])          
 
         # filename_infere non vide
         else:
@@ -608,7 +561,7 @@ def correct_filename_infere_in_subset(subset: pd.DataFrame,df: pd.DataFrame,patt
                     if row['verb'] == 'File.Save':
                         
                         if row['F_codeState'] != '': # F_codeState has a content
-                            new_filename_infere = find_filename_by_codestate(all_TP_functions_name,row['F_codeState'])
+                            new_filename_infere = find_filename_by_codestate(all_TP_functions_name_except_TP1_and_TPGAME,pattern_files_name,row['F_codeState'])
                             
                             # if  it can't find the name in codestate, it checks the old filename_infere with similarity
                             if new_filename_infere == '':
@@ -617,7 +570,7 @@ def correct_filename_infere_in_subset(subset: pd.DataFrame,df: pd.DataFrame,patt
                     elif row['verb'] in ['Run.Test', 'Run.Command', 'Run.Program', 'Run.Debugger']:
 
                         if row['P_codeState'] != '': # P_codeState has a content
-                            new_filename_infere = find_filename_by_codestate(all_TP_functions_name,row['P_codeState'])
+                            new_filename_infere = find_filename_by_codestate(all_TP_functions_name_except_TP1_and_TPGAME,pattern_files_name,row['P_codeState'])
                             
                             # if  it can't find the name in codestate, it checks the old filename_infere with similarity
                             if new_filename_infere == '':
@@ -676,7 +629,7 @@ def correct_filename_infere_in_subset2(subset: pd.DataFrame,df: pd.DataFrame,pat
         df.at[index, 'filename_infere'] = new_filename_infere 
         """
 
-# Fill empty string by using sandwich method
+# Fill empty string by using sandwich method : : called directly
 def sandwich(subset:pd.DataFrame,df: pd.DataFrame) -> None:
 
     """
@@ -726,7 +679,58 @@ def sandwich(subset:pd.DataFrame,df: pd.DataFrame) -> None:
     #if empty_filename_indices:
         #df.loc[empty_filename_indices, 'filename_infere'] = last_filename_infere
 
-# Creat indices of each Session.Start and Session.End
+# Cut datafram into small parts : called inside create_df_indices
+def cut_df_by_seance(df: pd.DataFrame, week: str, student_name: str) -> list:
+    '''
+    Extract indices of all session.start and session.end of a week for a specific student.
+
+    Args:
+        df : A clean_actor dataframe.
+        week : The name of the week.
+        student_name : The name fo the student.
+
+    Returns:
+        indices : All indices of the session.start and session.end from dataframe.
+    '''
+
+    pairs = []
+    empty_trace_pairs = []
+
+    # Filter dataframe for the week and student
+    df_filtered = df[(df['seance'] == week) & (df['actor'] == student_name)]
+
+    if len(df_filtered) == 0 :
+        df_filtered = df[(df['seance'] == week) & (df['binome'] == student_name)]
+        if len(df_filtered) == 0 :
+            print(f"No trace with this name in semaine : {student_name}")
+    
+    indices = df_filtered.index[df_filtered['verb'].isin(['Session.Start', 'Session.End'])].tolist()
+    values  = df_filtered.loc[indices, 'verb'].tolist()
+
+    i = 0
+    while i < len(values) - 1:
+        
+        if values[i] == 'Session.Start' and values[i+1] == 'Session.End':
+        
+            start_idx = indices[i]
+            end_idx   = indices[i+1]
+
+            if abs(start_idx - end_idx) > 2: # put useful indices in pairs
+                
+                pairs.append([start_idx,end_idx])
+            
+            else: # put useless indices in empty_trace_pairs to remove them later
+                empty_trace_pairs.append([start_idx,end_idx])
+            
+            i += 2  # move past the 1 and 2
+        else:
+            print(f"invalid pair {indices[i]}")
+            i += 1  # skip if it's not a valid pair
+
+    # return all indices
+    return pairs, empty_trace_pairs
+
+# Creat indices of each Session.Start and Session.End : called directly
 def create_df_indices(list_students: list, df: pd.DataFrame,week: str) -> pd.DataFrame:
 
     """
@@ -756,7 +760,7 @@ def create_df_indices(list_students: list, df: pd.DataFrame,week: str) -> pd.Dat
 
     return df_indices
 
-# Remove indices which has only one or two traces
+# Remove indices which has only one or two traces : called inside check_invalid_names
 def remove_too_short_traces(df: pd.DataFrame,df_indices: pd.DataFrame) -> pd.DataFrame:
     
     """
@@ -783,7 +787,7 @@ def remove_too_short_traces(df: pd.DataFrame,df_indices: pd.DataFrame) -> pd.Dat
                 
     return df
 
-# Clean traces with one or two verbs
+# Clean traces with one or two verbs : called directly
 def check_invalid_names(df:pd.DataFrame,df_indices:pd.DataFrame): 
 
     """
