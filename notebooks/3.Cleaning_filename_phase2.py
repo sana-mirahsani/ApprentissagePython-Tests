@@ -64,9 +64,13 @@
 #     3.14 DF[seance] == CTP
 #     <br>
 #
-# 4. Add column TP
-# 5. Add column TP_Type
-# 6. Save the final dataframe : phase2_nettoyage_fichiere.csv
+# 4. Final test
+# 5. Interpretation
+# 6. Explanation
+# 7. Add column TP
+# 8. Add column TP_Type
+# 9. Save the final dataframe : phase2_nettoyage_fichiere.csv
+# 10. What are the differences after changing function **correct_filename_infere_in_subset()
 #
 #
 # _________________________________________________________
@@ -232,15 +236,10 @@ def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
     
     print(f'The total number of empty string with no solution : {len(df_empty_string)}')
 
-    print(df_clean[df_clean['_id.$oid'] == '673db140bd5a98b8f9dd1f13'][['filename_infere','filename','P_codeState','verb','commandRan']])
     return df, df_empty_string
 
 
 # %%
-data_testing.test_filename_infere_total(df_clean,pattern_files_name) 
-
-# %%
-# new
 data_testing.test_filename_infere_total(df_clean,pattern_files_name) 
 
 # %% [markdown]
@@ -253,9 +252,6 @@ data_testing.test_filename_infere_total(df_clean,pattern_files_name)
 
 # %% [markdown]
 # ### 3.2 **DF[seance] == semaine_2**
-
-# %%
-df_clean, df_empty_string_semaine_2 = main_process('semaine_2',df_clean,pattern_files_name)
 
 # %%
 df_clean, df_empty_string_semaine_2 = main_process('semaine_2',df_clean,pattern_files_name)
@@ -357,10 +353,13 @@ df_clean.drop(index_seance_empty, inplace=True)
 df_clean[df_clean['seance'] == '']
 
 # %% [markdown]
-# ## Final test
+# ## 4.Final test
 
 # %%
 data_testing.test_filename_infere_total(df_clean,pattern_files_name)
+
+# %% [markdown]
+# ### check if among all filename_infere that are filled, if exist other names than correct names in the pattern.
 
 # %%
 subset = df_clean[df_clean['filename_infere'] != '']
@@ -368,24 +367,24 @@ subset = df_clean[df_clean['filename_infere'] != '']
 subset[~ subset['filename_infere'].str.contains(pattern_files_name, na = False)]['seance'].unique()
 
 # %% [markdown]
-# **Interpretation**
+# ## 5.Interpretation
 #
-# Before starting Phase 1, I added a column called 'filename_infere', which was initially completely empty. In Phase 1, using the values from the 'filename', 'commandRan', and 'P_codeState' columns, I was able to fill in 213,995 entries in 'filename_infere'. Out of these, 158,437 were correct names and 55,558 were incorrect.
-# After this phase, 92,919 entries in 'filename_infere' remained empty. Among these, 53,239 were neither from semaine_1 nor contained the verbs Sessions.Start, Sessions.End, or Docstring.Generate—and we are not concerned with semaine_1 or these verbs.
+# Before starting Phase 1, I added a column called 'filename_infere', which was initially completely empty. In Phase 1, using the values from the 'filename', 'commandRan', and 'P_codeState' columns, I was able to fill in 222,957 entries in 'filename_infere'. Out of these, 167,403 were correct names and 55,554 were incorrect.
+# After this phase, 83,957 entries in 'filename_infere' remained empty. Among these, 44,277 were neither from semaine_1 nor contained the verbs Sessions.Start, Sessions.End, or Docstring.Generate, which we only care about these traces to fill them.
 # <br>
 #
-# In Phase 2, I performed checks and filled 'filename_infere' values for each semaine. As a result, a total of 266,925 entries were filled, which all of them are correct ! The function validate_process replaces incorrect names with empty strings. 
+# In Phase 2, I checked and filled 'filename_infere' values for each semaine. As a result, a total of 259,576 entries were filled, among these, 256,591 were correct and 2,985 are incorrect, it is normal since the semaine_1 is skiped.
 # <br>
 #
-# After both phases, 37,273 'filename_infere' entries are still empty. Among these, 18,261 correspond to traces that either do not include the specified verbs (Sessions.Start, Sessions.End, Docstring.Generate) .
+# After both phases, 45,262 'filename_infere' entries are still empty. Among these, 22,440 correspond to traces that either do not include the specified verbs (Sessions.Start, Sessions.End, Docstring.Generate) .
 # <br>
 #
-# Overall, having only 18,261 unresolved entries out of 304,851 total, and successfully inferring 266,887 correct filenames, is a strong result.
+# Overall, having only 22,440 unresolved entries out of 304,838 total, and successfully inferring 256,591 correct filenames, is a strong result.
 #
-# | Phase | Total_trace |Filled_trace | Correct_trace | Incorrect_trace | EmptyTotal_trace | OtherVerbsEmpty_trace | FilledBySandwich |
+# | Phase | Total_trace |Filled_traces | Correct_traces | Incorrect_traces | EmptyTotal_trace | OtherVerbsEmpty_trace | FilledBySandwich |
 # |----------|----------|----------|----------|----------|----------|----------|----------|
-# | Phase1   | 306,946   | 213,995  | 158,437  | 55,558  | 92,919  | 53,239 | 0 |
-# | Phase2   | 304198   |266,925  | 266,925  | 0       | 37,273  | 18,261 | 59,783 |
+# | Phase1   | 306,946   | 222,957  | 167,403  | 55,554  | 83,957  | 44,277 | 0 |
+# | Phase2   | 304,838   |259,576  | 256,591  | 2,985      | 45,262  | 22,440 | 59,783 |
 #
 # **Explanation**
 #
@@ -415,7 +414,7 @@ subset[~ subset['filename_infere'].str.contains(pattern_files_name, na = False)]
 #
 
 # %% [markdown]
-# **Explanation**
+# ## 6.Explanation
 #
 # - **Why do I see 'No trace with this name in semaine: anaba.hilary-williams.etu'?**
 #
@@ -462,7 +461,7 @@ subset[~ subset['filename_infere'].str.contains(pattern_files_name, na = False)]
 #     There is an empty seance in df, including only 13 traces of one student on 16/12/2024, it was useless, so I removed them BUT I saved them before removing in a csv file.
 
 # %% [markdown]
-# ## 4. Add column TP
+# ## 7. Add column TP
 
 # %%
 # Add column TP
@@ -502,7 +501,7 @@ else:
 
 
 # %% [markdown]
-# ## 5. Add column TP_Type
+# ## 8. Add column TP_Type
 
 # %%
 # Add column TP
@@ -534,7 +533,32 @@ df_clean['Type_TP']
 df_clean[df_clean['_id.$oid'] == '673db140bd5a98b8f9dd1f13'][['filename_infere','filename','P_codeState','verb','commandRan','TP','Type_TP']]
 
 # %% [markdown]
-# ## 6.Save the final dataframe
+# ## 9.Save the final dataframe
 
 # %%
 io_utils.write_csv(df_clean,INTERIM_DATA_DIR,'phase2_nettoyage_fichiere')
+
+# %% [markdown]
+# ## 10. What are the differences after changing function **correct_filename_infere_in_subset()**
+#
+# After seeing the result, some of the filenames were filled or not filled incorrectly, and it was bceause of the function **correct_filename_infere_in_subset()** in data_cleaning.py, more specifically in **find_filename_by_codestate()**.
+# <br>
+# The problem was that I only search the correct name of filenames inside of the P_codeState instead of searching for <trace></trace> or searching for the defination instead of just the name of the function.
+# <br>
+# This causes that some file's were choosed incorrectly to another TP, because there were functions called from that TP and the function wouldn't go and check all the functions in the codestate to be sure. therefore, I add steps, to first check this expression **<trace></trace>** and extract the name isnide of it, second if this expression doesn't exits(meaning student had removed it), then it finds ALL functions that are defined, meaning it searches for this patter `def name (`. It creates a list of all these names (all functions which were defined) and then it finds the corresponsing filename of each of these names, at the end, it chooses the most frequent filename appeared. 
+# <br>
+# after chaning this method, for sure the results are changed but slightly. I compared the result of the new method with the previous method of each week, text below:
+#
+# - **semaine_2 :** No difference!
+# - **semaine_3 :** No difference!
+# - **semaine_4 :** 3 filename_infere went from empty strings correct filenames.
+# - **semaine_5 :** 18 filename went from correct filenames to empty strings.
+# - **semaine_6 :** 744 filename went from empty string to crrect names.
+# - **semaine_7 :** 49 filename went from empty strings to correct names.
+# - **semaine_8 :** 299 filename went from empty strings to correct names.
+# - **semaine_9 :** 397 filename went from correct names to empty strings.
+# - **semaine_10 :** 98 filename went from correct name to empty string.
+# - **semaine_DSI :** 256 filename went from empty string to correct name.
+# - **semaine_11 :** 1,620 filename went from correct name to empty string.
+# - **semaine_12 :**  499 filename went from correct name to empty string.
+# - **semaine_CTP :** 9 filename went from empty string to correct name.
