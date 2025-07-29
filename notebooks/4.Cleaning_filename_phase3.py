@@ -34,7 +34,7 @@ import matplotlib.pyplot as plt
 import difflib
 
 # just for test
-from src.data.variable_constant_2425 import all_TP_functions_name 
+from src.data.variable_constant_2425 import all_TP_functions_name_except_TP1_and_TPGAME , pattern_files_name
 import re
 from src.features import data_cleaning
 
@@ -69,8 +69,8 @@ df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='phase2_nettoya
 #
 # | Phase | Total_trace |Filled_trace | Correct_trace | Incorrect_trace | EmptyTotal_trace | OtherVerbsEmpty_trace | FilledBySandwich | BizzarIndices |
 # |----------|----------|----------|----------|----------|----------|----------|----------| ----------|
-# | Phase1   | 306,946   | 213,995  | 158,437  | 55,558  | 92,919  | 53,239 | 0 | 0 |
-# | Phase2   | 304198   |266,925  | 266,925  | 0       | 37,273  | 18,261 | 59,783 | 574 |
+# | Phase1   | 306,946   | 222,957  | 167,403  | 55,554  | 83,957  | 44,277 | 0 | 0 |
+# | Phase2   | 304,838   |259,576  | 256,591  | 2,985     | 45,262  | 22,440 | 59,783 | 574 |
 #
 # **Explanation**
 #
@@ -134,7 +134,7 @@ def find_strange_filename_infere(TP,verb):
                     
         else:
             # Case2 : if <trace></trace> is removed, try to find the name by the functions 
-            filename_infere_codestate = data_cleaning.find_filename_by_function_name(all_TP_functions_name,row['P_codeState'])
+            filename_infere_codestate = data_cleaning.find_filename_by_codestate(all_TP_functions_name_except_TP1_and_TPGAME, pattern_files_name, row['P_codeState'])
 
             if filename_infere_codestate == '': 
                 # Can't find the filename by functions in P_codeState
