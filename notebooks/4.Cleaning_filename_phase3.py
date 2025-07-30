@@ -21,32 +21,30 @@
 # 4. Save final dataframe
 
 # %% [markdown]
-# ## Import Libraries
+# ## 1.Import Libraries
 
 # %%
-import sys
-sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
 import pandas as pd
-from src.features import io_utils
-from src.data.constants import INTERIM_DATA_DIR
-from src.data.variable_constant_2425 import TP_NAME
 import matplotlib.pyplot as plt
 import difflib
-
-# just for test
-from src.data.variable_constant_2425 import all_TP_functions_name_except_TP1_and_TPGAME , pattern_files_name
 import re
-from src.features import data_cleaning
+
+import sys
+sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
+
+from src.features import io_utils, data_cleaning
+from src.data.constants import INTERIM_DATA_DIR
+from src.data.variable_constant_2425 import TP_NAME, all_TP_functions_name_except_TP1_and_TPGAME , pattern_files_name
 
 # %% [markdown]
-# ## Load DataFrame
+# ## 2.Load DataFrame
 
 # %%
 df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='phase2_nettoyage_fichiere.csv')
 
 
 # %% [markdown]
-# ## Bizzar indices
+# ## 3.Bizzar indices
 
 # %% [markdown]
 # **What are these Bizzar indices?**
@@ -227,7 +225,7 @@ plt.show()
 # %% [markdown]
 # **Interpretation** 
 #
-# The plot above illustrates the percentage of rows that it was impossible to find a filename_infere by their P_codeState so they need to be removed to ensure accurate analysis. As shown, the highest percentage is for TP1 at 1.1%, which is relatively minor and not a major concern. Notably, TP_GAME (the most critical case) requires only 0.3% of its rows to be removed. This suggests we can proceed with the removal without worrying about a significant impact on the results.
+# The plot above illustrates the percentage of rows that it was impossible to find a filename_infere by their P_codeState so they need to be removed to ensure accurate analysis. As shown, the highest percentage is for TP1 at 2.5%, which is normal since semaine_1 was not concered in phase2. Notably, TP_GAME (the most critical case) requires only 1.2% of its rows to be removed. This suggests we can proceed with the removal without worrying about a significant impact on the results.
 
 # %% [markdown]
 # ### Remove bizzar indices from dataframe
@@ -254,7 +252,7 @@ for tp in TP_NAME:
 len(df)
 
 # %% [markdown]
-# ## Save final dataframe
+# ## 4.Save final dataframe
 
 # %%
 io_utils.write_csv(df,INTERIM_DATA_DIR,'phase3_nettoyage_fichiere')

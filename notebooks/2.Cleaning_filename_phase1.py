@@ -54,7 +54,7 @@
 # The goal is creating a new column filename_infere, and finding the correct name of files and put them into this column. Since the process is complecated, I divided this part into two phases, phase one filling column filename_infere by columns : filename, commandRan and codestate; phase two validate them and use mecanism like similarity and sandwich to find filenames which were impossible to find them during the phase one. This notebook includs only phase one, it saves the result into a csv file and shoudl read this csv file as the input in the phase two notebook which is the next step.
 
 # %% [markdown]
-# ## Import Libraries
+# ## 1.Import Libraries
 
 # %%
 import sys
@@ -64,13 +64,19 @@ from src.data.constants import INTERIM_DATA_DIR
 from src.data.variable_constant_2425 import pattern_files_name, all_TP_functions_name_except_TP1_and_TPGAME
 
 # %% [markdown]
-# ## Load DataFrame
+# ## 2.Load DataFrame
 
 # %%
 df_clean = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='acteur_nettoyage_2425.csv')
 
+# %%
+len(df_clean)
+
+# %%
+len(df_clean[df_clean['seance'] == ''].index.to_list())
+
 # %% [markdown]
-# ## Clean DataFrame
+# ## 3.Clean DataFrame
 
 # %% [markdown]
 # ### Add column **filename_infere**
@@ -367,7 +373,7 @@ df_clean[df_clean['verb'] == 'Docstring.Generate']['function']
 # Question: don't know how should I fill it.
 
 # %% [markdown]
-# ## Save new clean dataframe
+# ## 4.Save new clean dataframe
 
 # %%
 io_utils.write_csv(df_clean,INTERIM_DATA_DIR,None)

@@ -14,75 +14,42 @@
 # ---
 
 # %% [markdown]
-# # Check code of Etude_sur_les_testes.py in Thomas version
-
-# %% [markdown]
 # # Analyze Workflow Overview:
 # 1. Import Libraries
 #
-# 2. Load DataFrame : phase2_nettoyage_fichiere.csv (It should be this one Final_nettoyage_2425.csv but for now we don't work with anonymized data because it is hard)
+# 2. Load DataFrame : phase2_nettoyage_fichiere.csv 
+# <br>
+# (It should be Final_nettoyage_2425.csv but for now we don't work with anonymized data because it is hard)
 #
-# 3. Bizzar indices
+# 3. All analyzes
 #
-# 4. Analyze
-#
-# 5. ToDo
+# 4. ToDo (will be deleted later)
 
 # %% [markdown]
-# ## Import Libraries
+# ## 1.Import Libraries
 
 # %%
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+import ast
+
 import sys
 sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
-import pandas as pd
-import ast
+
 from src.features import io_utils, data_testing
 from src.data.constants import INTERIM_DATA_DIR
 from src.data.variable_constant_2425 import SORTED_SEANCE, TP_NAME
-import matplotlib.pyplot as plt
-import numpy as np
-import difflib
-
-# just for test
-from src.data.variable_constant_2425 import SORTED_SEANCE, all_TP_functions_name 
-import re
-from src.data.variable_constant_2425 import FILES_BY_TP
-from src.features import data_cleaning
-
-# just for test
-# Global variable pattern
-pattern = ''
-for tp_name in FILES_BY_TP:
-
-    file_name = '|'.join(tp_name)
-    pattern = pattern +  file_name + '|'
-
-pattern = pattern  + 'Irrelevant' 
 
 
 # %% [markdown]
-# ## Load DataFrame
+# ## 2.Load DataFrame
 
 # %%
 df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='phase3_nettoyage_fichiere.csv')
 
-# %%
-# test
-df.loc[105148]
-
-# %%
-# test
-df.loc[105156]
-
-# %%
-# test
-len(df)
-
-# %%
-df[df['_id.$oid'] == '673db140bd5a98b8f9dd1f13'][['filename_infere','filename','P_codeState','verb','commandRan','TP','Type_TP']]
-
 # %% [markdown]
-# ## Analyze
+# ## 3.Analyze
 
 # %% [markdown]
 # ### 4.1 Total number of students during semester
@@ -94,7 +61,6 @@ number_binome = set(df['binome'])
 total_students = number_actor.union(number_binome)
 
 print(f"Total number of students during the semester : {len(total_students)}")
-
 
 # %% [markdown]
 # ### 4.2 Total number of students during each seance
@@ -188,6 +154,12 @@ for tp in TP_NAME:
 df_students_per_Type_Tp
 
 # %%
+df[(df['TP'] == 'Tp_GAME') & (df['Type_TP'] == 'TP_mani')]['filename_infere'].unique()
+
+# %% [markdown]
+# **It is change :** The reason why in Tp_GAME, 60 files exist of maniplulation but in the previous method it didn't showed, is because I put wrongly 'experimentations_fichiers.py' in TP_prog. Now we can see how correcting methods is working.
+
+# %%
 df_students_per_Type_Tp.set_index('TP')[['TP_mani', 'TP_prog']].plot(kind='bar', figsize=(12, 6))
 
 plt.title("Number of Students in Each Type of TP")
@@ -220,6 +192,9 @@ current_order.insert(9, row_to_move)
 # Reindex crosstable
 count_table = count_table.reindex(current_order)
 count_table
+
+# %% [markdown]
+# **It is change :** same reason of part 4.4
 
 # %%
 count_table.plot(kind='bar', figsize=(14, 6))
@@ -477,6 +452,7 @@ def calculate_verb_in_TP(df,verb,tp):
     total_num_of_students_including_verb = len(students_including_verb)
     
     return total_num_of_students, total_num_of_students_including_verb, total_num_of_students_excluding_verb
+
 
 
 # %%
@@ -1608,7 +1584,7 @@ print(df.loc[41643,'tests'])
 # Before starts, check if there is any duplicated tests in all Run.Test (exactly the same)
 
 # %% [markdown]
-# ## 4.22 Keep research data only
+# ### 4.22 Keep research data only
 
 # %%
 df['research_usage'].unique()
@@ -1654,6 +1630,7 @@ df[(df['seance'] == 'semaine_1') & ( (df['binome'] == 'hichame.haddou.etu'))][['
 # - add table in phase2, to explain better in markdown : Done
 # - error in analyze for id df[df['_id.$oid'] == '673db140bd5a98b8f9dd1f13'][['filename_infere','filename','P_codeState','verb','commandRan','TP','Type_TP']] : DONE
 # - seperate part Bizzar indices in another notebook, phase 3 nettoyage and then give the output of this file to another notebook: DONE
+# - add trace in variable_constant : DONE!
 #
 # **In process:**
 #
@@ -1688,7 +1665,6 @@ df[(df['seance'] == 'semaine_1') & ( (df['binome'] == 'hichame.haddou.etu'))][['
 # - read assert and test automatisé
 #
 # - new:
-# - add trace in variable_constant
 # - add checking the name extracted of traces with pattern (all fileanem)
 # - add third condition which is going to check the text in tp after not finding filename_infere by def
 # - add another dictionar only include the text of tp not the functions

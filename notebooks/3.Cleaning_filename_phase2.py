@@ -70,7 +70,7 @@
 # 7. Add column TP
 # 8. Add column TP_Type
 # 9. Save the final dataframe : phase2_nettoyage_fichiere.csv
-# 10. What are the differences after changing function **correct_filename_infere_in_subset()
+# 10. What are the differences after changing function **correct_filename_infere_in_subset()**
 #
 #
 # _________________________________________________________
@@ -82,9 +82,11 @@
 # ## 1. Import Libraries
 
 # %%
+import pandas as pd
+
 import sys
 sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
-import pandas as pd
+
 from src.features import io_utils, data_cleaning, data_testing
 from src.data.constants import INTERIM_DATA_DIR
 from src.data.variable_constant_2425 import TP_name, Type_TP, pattern_files_name

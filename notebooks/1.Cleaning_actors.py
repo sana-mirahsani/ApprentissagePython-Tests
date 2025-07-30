@@ -31,20 +31,17 @@
 # The goal is cleaning name of students, divide the actors and binomes, put them in 2 different columns actor and binome. Fortunately, all actors are cleaned as the result of test at the end shows.
 
 # %% [markdown]
-# ## Import Libraries
+# ## 1.Import Libraries
 
 # %%
 import sys
 sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
-import pandas as pd
-import re
-import numpy as np
-from src.features import io_utils, data_cleaning
 
+from src.features import io_utils, data_cleaning
 from src.data.constants import INTERIM_DATA_DIR
 
 # %% [markdown]
-# ## Load DataFrame
+# ## 2.Load DataFrame
 # - Use functions in file **io_utils.py.py**
 # - The csv file is the output of process_raw_data
 
@@ -52,13 +49,13 @@ from src.data.constants import INTERIM_DATA_DIR
 df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='traces250102_clean.csv')
 
 # %% [markdown]
-# ### Print 5 rows and columns of dataframe
+# ### 1.Print 5 rows and columns of dataframe
 
 # %%
 df.head()
 
 # %% [markdown]
-# ### Create a copy of dataframe to compare later
+# ### 2.Create a copy of dataframe to compare later
 
 # %%
 df['actor']
@@ -68,10 +65,10 @@ df_clean = df.copy()
 df_clean.columns
 
 # %% [markdown]
-# ## Clean DataFrame
+# ## 3.Clean DataFrame
 
 # %% [markdown]
-# ### Convert Time Format
+# ### 1.Convert Time Format
 
 # %%
 # Before
@@ -91,7 +88,7 @@ df_clean[['session.id', 'timestamp.$date', 'time_delta', 'session.duration']]
 # I don't what exactly is cleaned or change in time.format but since Thomas did this part, I just copied, maybe there are some traces that are cleaned but since there are 300k traces is hard to find them. 
 
 # %% [markdown]
-# ### Clean **Actor** Field
+# ### 2.Clean **Actor** Field
 # Process: 
 # 1. Split actor and binome into 2 columns -> **df_clean = split_actor_binome()**
 # 2. Delete emails at the end -> **df_clean = delete_end_email()**
@@ -267,7 +264,7 @@ print(len(incorrect_actor),len(incorrect_binome))
 print("Cleaning actor successful!") if len(incorrect_actor) == 0 and len(incorrect_binome) == 0 else print("Error!") 
 
 # %% [markdown]
-# #### Save new dataframe
+# ## 4.Save new dataframe
 
 # %%
 io_utils.write_csv(df_clean,INTERIM_DATA_DIR,None) 
