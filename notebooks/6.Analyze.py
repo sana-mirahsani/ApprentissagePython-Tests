@@ -39,7 +39,11 @@ sys.path.append('../') # these two lines allow the notebook to find the path to 
 
 from src.features import io_utils, data_testing
 from src.data.constants import INTERIM_DATA_DIR
-from src.data.variable_constant_2425 import SORTED_SEANCE, TP_NAME
+from src.data.variable_constant_2425 import SORTED_SEANCE, TP_NAME, all_TP_prog_functions_name_by_tp
+
+# add for Mirabelle's code 
+from thonnycontrib.backend.test_finder import L1TestFinder
+from thonnycontrib.exceptions import SpaceMissingAfterPromptException
 
 
 # %% [markdown]
@@ -47,6 +51,12 @@ from src.data.variable_constant_2425 import SORTED_SEANCE, TP_NAME
 
 # %%
 df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='phase3_nettoyage_fichiere.csv')
+
+# %% [markdown]
+# ### Add column codeState, combined by P_codeState and F_codeState
+
+# %%
+df['codeState'] = df['P_codeState'] + df['F_codeState']
 
 # %% [markdown]
 # ## 3.Analyze
@@ -827,7 +837,7 @@ df_of_column_test['color_test'] = np.where(df_of_column_test['status'] == True, 
 df_of_column_test[['color_test','status']] 
 
 # %% [markdown]
-# ### 4.21 Extract the consecutive Run.Test of students who is doing a real test
+# ### 4.21 Extract the consecutive Run.Test (Unfinished and abundant)
 
 # %%
 df_empty_test # this dataframe is created in 4.13 part
@@ -846,341 +856,13 @@ for tp in TP_NAME:
 
 all_students_doing_real_test 
 
-
-# %%
-def extract_consecutive_run_test(df,tp):
-    """ Mirabelle code's
-    """
-    pass
-
+# %% [markdown]
+# ### 4.22 Red_test (Unfinished and abundant)
 
 # %% [markdown]
-# Idea about students classification in Run.Test
+# **Idea :** Find students who had atleast one red test during a session, and analyze what did they do after having this red test. 
 #
-# At first student, started with a code which had a bug and then he fixed the bug (he found it and fixed it) but after a while in the same day, he got stuck on a part of code, that it wasn't not correct but he couldn't find it! even when he tried with Run.Test find he couldn't because every time he ran the run.Test on the part which was correct and he forgot to change the part to test, so every time the Run.Test was PASSED but when he tried to execute the code, it raised an error! At the end he tried several ways to find the bug but he couldn't so it gave up even though the result of test is successful.
-#
-# This means that they are students with not empty test and a progress but at the end they gave up, so checking only the content of P_codeState and tests is not enough, we need a value that says when the Run.programm is there, is the result successful or it raised an error? because as we saw sometimes the reuslt of tests is True but there is a bug in the code. Also if student do the run.test and the result is not successful it is easy to find it, because in this case, we only need to check the result of test, and if in this case the content of P_codeState is still the same in each run.test and run.test is not successful, so it means the students tried just pushing the button!
-# So we can conclude there are 3 types of students from the students with a real test (not students with the empty tests)
-#
-# different types of students :
-# <br>
-#     - strong students : They started strongly and they solved all the bugs without any giving up.
-#     <br>
-#     - tried failed students : they tried and they changed but at the end they gave up because they couldn't find the bug (Whether the result of test is successful or not)
-#     <br>
-#     - tried successful students : They tried and they have a progress and at the end they understood the TP.
-#     <br>
-#     - lazy students : They don't have lot's of traces for a TP and during the TP they didn't change a specific thing. (wether the test result is passed or not)
-#     <br>
-#     - mad students : They tried lot's of Run.Test with the same code or a tiny difference during a day
-
-# %% [markdown]
-# ### analyze function (Blocked for now!)
-
-# %%
-strong_student = []
-tried_failed_students = []
-tried_successful_students = []
-lazy_students = []
-mad_students = []
-
-# %%
-std_list = all_students_doing_real_test['Tp_GAME']
-std_list
-
-# %%
-# add the correct format of time 
-df['correct_time'] = pd.to_datetime(df['timestamp.$date'], format='mixed')
-df['correct_time'] = df['correct_time'].dt.date
-
-# %%
-std_list[0]
-
-# %%
-# extract the different days in one TP for one student
-unique_days = df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'avsin.ata.etu')]['correct_time'].unique()
-unique_days
-
-# %%
-# day one
-#analyze_the_process_of_each_day(unique_days[0],'avsin.ata.etu') # lazy_student just for this day
-
-# %%
-df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'avsin.ata.etu')]['binome']
-
-# %%
-# day two
-#analyze_the_process_of_each_day(unique_days[1],'avsin.ata.etu') # tried_successful_students just for this day
-
-# %%
-std_list[1]
-
-# %%
-unique_days = df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'hugo.vandewalle2.etu')]['correct_time'].unique()
-unique_days
-
-# %%
-# day one
-#analyze_the_process_of_each_day(unique_days[0],'hugo.vandewalle2.etu') # strong_student ( because it starts strongly and most of his test.results are )
-
-# %%
-# day one
-#analyze_the_process_of_each_day(unique_days[1],'hugo.vandewalle2.etu') # strong_students
-
-# %%
-# another example
-df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'ibrahima-al-amine.diaw.etu')][['verb','P_codeState','filename_infere','tests','timestamp.$date','correct_time']] 
-
-# %%
-# extract the different days in one TP for one student
-unique_days = df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'ibrahima-al-amine.diaw.etu')]['correct_time'].unique()
-unique_days
-
-# %%
-# day one
-#analyze_the_process_of_each_day(unique_days[0],'ibrahima-al-amine.diaw.etu')
-
-# %%
-# day two
-#analyze_the_process_of_each_day(unique_days[1],'ibrahima-al-amine.diaw.etu')
-
-# %%
-# day 3
-#analyze_the_process_of_each_day(unique_days[2],'ibrahima-al-amine.diaw.etu')
-
-# %%
-# day 4
-#analyze_the_process_of_each_day(unique_days[3],'ibrahima-al-amine.diaw.etu')
-
-# %%
-# day 5
-#analyze_the_process_of_each_day(unique_days[4],'ibrahima-al-amine.diaw.etu')
-
-# %%
-# another students 
-std_list[2]
-
-# %%
-# extract the different days in one TP for one student
-unique_days = df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'richard.kpande-adzare.etu')]['correct_time'].unique()
-unique_days
-
-# %%
-# day 1
-#analyze_the_process_of_each_day(unique_days[0],'richard.kpande-adzare.etu')
-
-# %%
-# day 1
-#analyze_the_process_of_each_day(unique_days[1],'richard.kpande-adzare.etu')
-
-# %%
-# day 2
-#analyze_the_process_of_each_day(unique_days[2],'richard.kpande-adzare.etu')
-
-# %%
-print(std_list[3])
-# extract the different days in one TP for one student
-unique_days = df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'alix.carton2.etu')]['correct_time'].unique()
-unique_days
-
-# %%
-# day 1
-#analyze_the_process_of_each_day(unique_days[0],'alix.carton2.etu')
-
-# %%
-# check each different day for this student during the TP_GAME
-df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'ibrahima-al-amine.diaw.etu') & (df['correct_time'] == unique_days[0])][['verb','filename_infere','P_codeState','commandRan']]
-
-# %% [markdown]
-# Conclusion for this day : Just open and save action on one file
-
-# %%
-df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'ibrahima-al-amine.diaw.etu') & (df['correct_time'] == unique_days[1])][['verb','filename_infere','P_codeState','commandRan','tests']]
-
-# %%
-print(df.loc[118421,'P_codeState']) # Run.Test
-
-# %%
-print(df.loc[118421,'tests']) # multipie test so it should check the size of the test and check the status and verdict and line tested of each dictionary
-
-# %%
-df_of_column_test[df_of_column_test['original_index'] == 118421] # successful test
-
-# %% [markdown]
-# What is a successful test?
-#
-# A successful test, is the test that includes atleast once all the function written in the code and its verdict is PassedVerdict and the status is True.
-
-# %%
-print(df.loc[118425,'P_codeState']) # Run.Test : add some parts , P_codeState is different
-
-# %%
-df_of_column_test[df_of_column_test['original_index'] == 118425] # incomplete test!
-
-# %% [markdown]
-# What is a incomplete test?
-#
-# An incomplete test is a test that all the verdict are Passedverdict and their status are True but it doesn't include all the function's name in the P_codeState
-
-# %%
-df.loc[118427,'commandRan'] # Run.Command
-
-# %% [markdown]
-# it just ran a function in a shell and entered (since there is \n at the end)
-
-# %%
-print(df.loc[118430,'P_codeState'] )# Run.Test
-
-# %%
-df_of_column_test[df_of_column_test['original_index'] == 118430] # incomplete test! with different P_codeState
-
-# %%
-print(df.loc[118433,'P_codeState'] )# Run.Test
-
-# %%
-df_of_column_test[df_of_column_test['original_index'] == 118433] # incomplete test! without any changes but with different P_codeState
-
-# %%
-print(df.loc[118435,'P_codeState'] )# Run.Test
-
-# %%
-df_of_column_test[df_of_column_test['original_index'] == 118435] # again with same test (incomplete) but with different P_codeState
-
-# %% [markdown]
-# **conclusion** for the second day for this person:
-#
-# He tried and wrote something but after a while he didn't change the test part at all but every time before every run.test he add or change the code in the P_codeState
-
-# %%
-df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'ibrahima-al-amine.diaw.etu') & (df['correct_time'] == unique_days[2])][['verb','filename_infere','P_codeState','commandRan','tests']]
-
-# %%
-print(df.loc[118671,'P_codeState']) # Run.test
-
-# %%
-df_of_column_test[df_of_column_test['original_index'] == 118671] # Run.Test incomplete test and same test but different P_codeState
-
-# %%
-print(df.loc[118672,'P_codeState']) # Run.Program no changes 
-
-# %% [markdown]
-# **conclusion**
-#
-# For the third day, he worked on another file which is not very important but he tried Run.Test and Run.program with the same code and with the same test result as the day before.
-
-# %%
-df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'ibrahima-al-amine.diaw.etu') & (df['correct_time'] == unique_days[3])][['verb','filename_infere','P_codeState','commandRan']]
-
-# %% [markdown]
-# This day just open the file
-
-# %%
-df[(df['TP'] == 'Tp_GAME') & (df['actor'] == 'ibrahima-al-amine.diaw.etu') & (df['correct_time'] == unique_days[4])][['verb','filename_infere','P_codeState','commandRan']]
-
-# %%
-print(df.loc[119224,'P_codeState']) # Run.test
-
-# %%
-df_of_column_test[df_of_column_test['original_index'] == 119224] # complete-error test!
-
-# %% [markdown]
-# what is a complete-error test?
-#
-# It means all the functions in the code are included in the tests but there is at least one test with FailedVerdict and False status.
-
-# %%
-print(df.loc[119226,'P_codeState']) # Run.test
-
-# %%
-df_of_column_test[df_of_column_test['original_index'] == 119226] # complete-error test! with a tiny difference in test part
-
-# %%
-#check_difference_between_two_code(df.loc[119224,'P_codeState'],df.loc[119226,'P_codeState'])
-
-# %%
-print(df.loc[119228,'P_codeState']) # Run.test
-
-# %%
-df_of_column_test[df_of_column_test['original_index'] == 119228] # successful test! with a progress
-
-# %%
-#check_difference_between_two_code(df.loc[119226,'P_codeState'],df.loc[119228,'P_codeState'])
-
-# %%
-print(df.loc[119231,'P_codeState']) # Run.test
-
-# %%
-df_of_column_test[df_of_column_test['original_index'] == 119231] # successful test! with a progress
-
-# %% [markdown]
-# ### functions for checking different type of actors (Blocked for now!)
-
-# %%
-import difflib
-
-def check_difference_between_two_code(code1,code2):
-
-    diff = list(difflib.ndiff(code1.splitlines(), code2.splitlines()))
-    has_changes = any(line.startswith('- ') or line.startswith('+ ') for line in diff)
-
-    if has_changes:
-        print("Differences found:")
-        for line in diff:
-            if line.startswith('- ') or line.startswith('+ '):
-                print(line)
-    else:
-        print("No differences.")
-
-
-# %%
-def analyze_the_process_of_each_day(day,actor):
-
-    df_one_day = df[(df['TP'] == 'Tp_GAME') & (df['actor'] == actor) & (df['correct_time'] == day)][['verb','filename_infere','P_codeState','commandRan']]
-    print(f"Student : {actor}, Day : {day}")
-    last_p_code_state = None
-
-    if len(df_one_day) > 2:
-
-        for index, row in df_one_day.iterrows():
-
-            print(row['filename_infere'],row['verb'],index)
-
-            if row['verb'] == 'Run.Command':
-                print(row['commandRan'])
-
-            elif row['verb'] == 'Run.Test':
-                print("--------------------------------------------------------------------------------------------------------------")
-                print(row['P_codeState'])
-
-                if last_p_code_state:
-                    check_difference_between_two_code(last_p_code_state,row['P_codeState'])
-
-                last_p_code_state = row['P_codeState']
-
-                print(df_of_column_test[df_of_column_test['original_index'] == index])
-
-            elif row['verb'] == 'Run.Program':
-                print(row['P_codeState'])
-
-                if last_p_code_state:
-                    check_difference_between_two_code(last_p_code_state,row['P_codeState'])
-
-                last_p_code_state = row['P_codeState']
-            
-            elif row['verb'] == 'Run.Debugger':
-                print(row['P_codeState'])
-
-                if last_p_code_state:
-                    check_difference_between_two_code(last_p_code_state,row['P_codeState'])
-
-                last_p_code_state = row['P_codeState']
-
-
-# %% [markdown]
-# ### Red_test (In proccess...)
-
-# %% [markdown]
-# Different type of students of Red test: This is not correct
+# Different type of students after having a Red test: 
 #
 # - passed_after_failing_test : Students solved the problem after having a Red Test
 #
@@ -1190,14 +872,10 @@ def analyze_the_process_of_each_day(day,actor):
 #
 # Red test: At least one of the colors in tests is red
 #
-# New classification:
-#
-# - progressed students
-# - blocked students
+# **Note :** This part is unfinished and abundant due to the lack of time of sana's internship.
 
 # %%
 all_students_doing_real_test['Tp1'] # This is created in 4.19 (before that you should run 4.13 also)
-
 
 # %% [markdown]
 # - Before checking each test, I should check if there is any Run.Test in a TP or not, if there is, check if there is any red test or not,if all of them are green no need to check.
@@ -1234,6 +912,23 @@ all_students_doing_real_test['Tp1'] # This is created in 4.19 (before that you s
 #
 
 # %%
+import difflib
+def check_difference_between_two_code(code1,code2):
+
+    diff = list(difflib.ndiff(code1.splitlines(), code2.splitlines()))
+    has_changes = any(line.startswith('- ') or line.startswith('+ ') for line in diff)
+
+    if has_changes:
+        print("Differences found:")
+        for line in diff:
+            if line.startswith('- ') or line.startswith('+ '):
+                print(line)
+    else:
+        print("No differences.")
+
+
+
+# %%
 def find_red_test(name,df,tp): 
     
     tests_index_red = []
@@ -1257,7 +952,7 @@ def find_red_test(name,df,tp):
 
 
 # %% [markdown]
-# #### Analyze TP1
+# #### Analyze TP1 for testing
 
 # %%
 all_test_result_TP1 = []
@@ -1276,7 +971,7 @@ for name in all_students_doing_real_test['Tp1']:
 all_test_result_TP1
 
 # %% [markdown]
-# #### Analyze TP2
+# #### Analyze TP2 for testing
 
 # %% [markdown]
 # - First check different filename, classify by each filename_infere
@@ -1397,184 +1092,31 @@ test1 = df_of_column_test[df_of_column_test['original_index'] == 180778]
 test1
 
 # %%
-
-# %%
-test2 = df_of_column_test[df_of_column_test['original_index'] == 180779]
-len(test2)
-
-# %%
-test1.compare(test2)
-
-# %%
-list1 = df_test_TP2[df_test_TP2['name'] == 'massil.kichi.etu']['indices_red_test'].loc[0] 
-list2 = df_test_TP2[df_test_TP2['name'] == 'massil.kichi.etu']['indices_green_test'].loc[0]
-
-merged_sorted = sorted(list1 + list2)
-merged_sorted
-
-# %%
-# find unique filenames
-unique_filename_infere = df.loc[merged_sorted,'filename_infere'].unique()
-unique_filename_infere
-
-# %%
 # check tests
 df_of_column_test[df_of_column_test['original_index'] == 1659]
 
-# %%
-# check tests
-df_of_column_test[df_of_column_test['original_index'] == 1661]
 
 # %%
-# check tests
-df_of_column_test[df_of_column_test['original_index'] == 1664]
+def check_difference_between_two_code(code1,code2):
 
-# %%
-# check tests
-df_of_column_test[df_of_column_test['original_index'] == 1666]
+    diff = list(difflib.ndiff(code1.splitlines(), code2.splitlines()))
+    has_changes = any(line.startswith('- ') or line.startswith('+ ') for line in diff)
 
-# %%
-# check tests
-df_of_column_test[df_of_column_test['original_index'] == 1668]
-
-# %%
-# check tests
-df_of_column_test[df_of_column_test['original_index'] == 1670]
-
-# %%
-# check tests
-df_of_column_test[df_of_column_test['original_index'] == 1673]
-
-# %%
-# check tests
-df_of_column_test[df_of_column_test['original_index'] == 1675]
-
-# %%
-# check tests
-df_of_column_test[df_of_column_test['original_index'] == 1679]
-
-# %%
-# check tests
-df_of_column_test[df_of_column_test['original_index'] == 1681]
-
-# %%
-df_test_TP2[df_test_TP2['name'] == 'manel.cherief.etu']['indices_red_test'].loc[0] ,df_test_TP2[df_test_TP2['name'] == 'manel.cherief.etu']['indices_green_test'].loc[0]
-
-# %%
-list1 = df_test_TP2[df_test_TP2['name'] == 'manel.cherief.etu']['indices_red_test'].loc[0] 
-list2 = df_test_TP2[df_test_TP2['name'] == 'manel.cherief.etu']['indices_green_test'].loc[0]
-
-merged_sorted = sorted(list1 + list2)
-merged_sorted
-
-# %%
-# find unique filenames
-unique_filename_infere = df.loc[merged_sorted,'filename_infere'].unique()
-unique_filename_infere
-
-# %%
-# find unique days
-unique_correct_time = df.loc[merged_sorted,'correct_time'].unique()
-unique_correct_time
-
-# %%
-run_test = df.loc[merged_sorted]
-run_test[run_test['correct_time'] == unique_correct_time[0]]
-
-# %%
-df.loc[174404:174411]
-
-# %%
-if df.loc[174404,'codestate'] == df.loc[174409,'codestate']: print(True) # codestates are not equal
-
-# %%
-code1 = df.loc[174404,'codestate']
-code2 = df.loc[174409,'codestate']
-
-check_difference_between_two_code(code1,code2) # P_codestate are different
+    if has_changes:
+        print("Differences found:")
+        for line in diff:
+            if line.startswith('- ') or line.startswith('+ '):
+                print(line)
+    else:
+        print("No differences.")
 
 
 # %%
-print(code1)
+#code1 = df.loc[174404,'codestate']
+#code2 = df.loc[174409,'codestate']
 
-# %%
-print(code2)
+#check_difference_between_two_code(code1,code2) # P_codestate are different
 
-# %%
-# check tests
-df_of_column_test[df_of_column_test['original_index'] == 174404]
-
-# %%
-df_of_column_test[df_of_column_test['original_index'] == 174409]
-
-# %%
-df_of_column_test[df_of_column_test['original_index'] == 174411]
-
-# %%
-df_of_column_test[df_of_column_test['original_index'] == 174413]
-
-# %%
-df_of_column_test[df_of_column_test['original_index'] == 174416]
-
-# %%
-df_of_column_test[df_of_column_test['original_index'] == 174419]
-
-# %%
-df_of_column_test[df_of_column_test['original_index'] == 174421]
-
-# %%
-df_of_column_test[df_of_column_test['original_index'] == 174424]
-
-# %%
-df_of_column_test[df_of_column_test['original_index'] == 174427]
-
-# %%
-df_of_column_test[df_of_column_test['original_index'] == 174430]
-
-# %%
-df_of_column_test[df_of_column_test['original_index'] == 174433]
-
-# %%
-df_of_column_test[df_of_column_test['original_index'] == 174435]
-
-# %%
-df_run_test = df.loc[merged_sorted]
-run_test_day1 = df_run_test[df_run_test['correct_time'] == unique_correct_time[0]]
-#run_test_day1
-
-# %%
-df_1 = df.loc[41643:41653]
-df_filtered = df_1[df_1['verb'] == 'Run_Test']
-df_filtered.duplicated(['P_codeState'])
-
-# %%
-df.loc[41643:41653]
-
-# %%
-df_filtered = df_test_TP2[df_test_TP2['name'] == 'aurelien.bithorel.etu']
-
-# %%
-df_of_column_test.loc[100982,'name'], df_of_column_test.loc[100982,'tested_line']
-
-# %%
-df_of_column_test.loc[100999,'name'] , df_of_column_test.loc[100999,'tested_line']
-
-# %%
-df_of_column_test.loc[101016,'name'], df_of_column_test.loc[101016,'tested_line']
-
-# %%
-for index, row in df_filtered.iterrows():
-    print('----------------------------------')
-    print(row['name'])
-    k = 0
-
-    for i in row['indices_red_test']:
-        print(f'--------{k+1} runtest------------------')
-        print(df.loc[i,'filename_infere'])
-        print(df_of_column_test[df_of_column_test['original_index'] == i])
-
-# %%
-print(df.loc[41643,'tests'])
 
 # %% [markdown]
 # Extract all unique tests and count the number of try for each unique test, then find :
@@ -1584,7 +1126,7 @@ print(df.loc[41643,'tests'])
 # Before starts, check if there is any duplicated tests in all Run.Test (exactly the same)
 
 # %% [markdown]
-# ### 4.22 Keep research data only
+# ### 4.23 Keep research data only
 
 # %%
 df['research_usage'].unique()
@@ -1592,15 +1134,181 @@ df['research_usage'].unique()
 # %%
 set(df[df['research_usage'] == '1.0']['actor']).intersection(set(df[df['research_usage'] == '0.0']['actor']))
 
+
 # %% [markdown]
-# ### Example of an student who worked alone and then en binome during one seance
+# ### 4.24 Find_test_final
 
 # %%
-# Example of the error above
-df[(df['seance'] == 'semaine_1') & ( (df['actor'] == 'hichame.haddou.etu'))][['actor','binome']].head(10)
+def find_tests_in_codestate(source:str) -> dict:
+    '''
+    Renvoie un dictionnaire qui associe à chaque fonction trouvée dans `source` son nombre de tests.
+    Renvoie None si le source n'est pas analysable car SyntaxError ou erreur de syntaxe dans les tests
+    
+    source is some codestate
+    '''
+    dico = {}
+    finder = L1TestFinder(source=source)
+    try:
+        res = finder.find_l1doctests()
+        for ex_func in res:
+            name = ex_func.get_name().split('(')[0]
+            dico[name] = len(ex_func.get_examples())
+    except (ValueError, SyntaxError, SpaceMissingAfterPromptException) as e:
+        dico = None
+    return dico
+
 
 # %%
-df[(df['seance'] == 'semaine_1') & ( (df['binome'] == 'hichame.haddou.etu'))][['actor','binome']].head(10)
+def find_tests_in_codestate_for_functions(codeState:str, functions_tp:list[str]) -> dict:
+    '''
+    Returns the number of tests found in codeState, only for functions in functions_tp
+
+    dict has the shape {name_func : int (number of tests) or None (function not found)}
+    '''
+    res = {}
+    test_number =  find_tests_in_codestate(codeState)
+    if test_number is None:
+        return None
+    for func_name in  functions_tp:
+        if func_name in test_number:
+            res[func_name] = test_number[func_name]
+        else:
+            res[func_name] = None
+    return res
+
+
+# %% [markdown]
+# Cette fonction est partie du principe que les timestamps étaient triés en ordre croissant, ce qui est faux.
+#
+# Elle cherche le codestate le plus récent, et s'il n'est pas analysable, en cherche un analysable dans les précédents. Ce faisant on risque de rater un autre codestate qui aurait pu être analysable, mais tant pis.
+
+# %%
+def find_tests_for_tp_tpprog_name(name:str, df:pd.DataFrame, tp:str) -> tuple[pd.DataFrame, bool, bool]:
+    """
+    Selects in df rows of tp and Type_TP is TP_Prog, selects for name the most recent parsable codeState and returns :
+    - a DataFrame with columns actor, tp, Tp_Prog, function_name, tests_number (int or None if not present in codestates), index in df of codestate analyzed
+    - a first bool, True if for that student the codeState cannot be analyzed (Python or l1test syntax error)
+    - a second bool, True if for that student no codeState was found
+    """
+    
+    df_name_tp = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog') & ((df['actor'] == name) | (df['binome'] == name))]
+    df_codestate_nonempty = df_name_tp[df_name_tp['codeState'] != '']
+    if len(df_codestate_nonempty) == 0:
+            return None, False, True
+    else:
+        # look for most recent parsable codeState
+        list_index_timestamps = df_codestate_nonempty['timestamp.$date'].index.tolist()
+        index_of_timestamp_max = df_codestate_nonempty['timestamp.$date'].idxmax()
+        ind_of_timestamp_max_in_list = list_index_timestamps.index(index_of_timestamp_max)
+        index_to_examine = list_index_timestamps[:ind_of_timestamp_max_in_list+1]
+        for i in range(ind_of_timestamp_max_in_list, -1, -1):
+            index = index_to_examine[i]
+            #if df.loc[index]['verb'] == 'Session.Start': # parseable codestate not found
+            #    return None, True, False
+            most_recent_codeState = df_name_tp.loc[index]['codeState']
+            dict_tests = find_tests_in_codestate_for_functions(most_recent_codeState, all_TP_prog_functions_name_by_tp[tp])
+            if dict_tests != None: # parseable
+                col_functions = []
+                col_tests_number = []
+                for key, value in dict_tests.items():
+                    col_functions.append(key)
+                    col_tests_number.append(value)
+                
+                nb_rows = len(dict_tests)
+                if col_tests_number == [None]*nb_rows:
+                     print(f'aucune fonction réalisée par {name}, indice {index}')
+                col_actors = [name] * nb_rows
+                col_tp = [tp] * nb_rows
+                col_index = [index] * nb_rows
+                df_result = pd.DataFrame({'actor' : col_actors, 'tp' : col_tp, 'function_name' : col_functions, \
+                                          'tests_number' : col_tests_number, 'index' : col_index })
+                return df_result, False, False                                                      
+        # not parsable
+        return None, True, False
+
+
+# %%
+def find_tests_for_tp_tpprog(df:pd.DataFrame, tp:str) -> tuple[pd.DataFrame, list[str], list[str]]:
+    """
+    Selects in df rows of tp and Type_TP is TP_Prog, selects for each student the most recent parsable codeState and returns :
+    - a DataFrame with columns actor, tp, Tp_Prog, function_name, test_number (int or None if not present in codestates)
+    - a first list of students for which the codeState cannot be analyzed (Python or l1test syntax error)
+    - a second list of students for which no codeState was found
+    """
+    df_result = pd.DataFrame(columns=['actor', 	'tp', 	'function_name', 	'tests_number', 	'index'])
+    empty_codestate_students = []
+    cannot_analyze_codestate_students = []
+    actor_column_tp  = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')]['actor']
+    column_binome_tp = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')]['binome']
+    all_students_tp  = set(actor_column_tp).union(set(column_binome_tp))
+    if '' in all_students_tp:
+        all_students_tp.remove('')
+    for name in all_students_tp:
+        df_name, cannot_analyze_codestate, empty_codestates = find_tests_for_tp_tpprog_name(name, df, tp)
+        if cannot_analyze_codestate:
+            cannot_analyze_codestate_students.append(name)
+        if empty_codestates:
+            empty_codestate_students.append(name)
+        if df_name is not None:
+            df_result = pd.concat([df_result, df_name], ignore_index=True)
+    return df_result, cannot_analyze_codestate_students, empty_codestate_students      
+
+
+# %%
+# TP2
+df_tests_tp2, cannot_analyze_codestate_students_tp2, empty_codestate_students_tp2  = find_tests_for_tp_tpprog(df, 'Tp2')
+
+# %%
+df_tests_tp2
+
+# %%
+# TP3
+df_tests_tp3, cannot_analyze_codestate_students_tp3, empty_codestate_students_tp3  = find_tests_for_tp_tpprog(df, 'Tp3')
+
+# %%
+df_tests_tp3
+
+# %%
+# TP4
+df_tests_tp4, cannot_analyze_codestate_students_tp4, empty_codestate_students_tp4  = find_tests_for_tp_tpprog(df, 'Tp4')
+
+# %%
+df_tests_tp4
+
+# %%
+# TP5
+df_tests_tp5, cannot_analyze_codestate_students_tp5, empty_codestate_students_tp5  = find_tests_for_tp_tpprog(df, 'Tp5')
+
+# %%
+df_tests_tp5
+
+# %%
+# TP6
+df_tests_tp6, cannot_analyze_codestate_students_tp6, empty_codestate_students_tp6  = find_tests_for_tp_tpprog(df, 'Tp6')
+
+# %%
+df_tests_tp6
+
+# %%
+# TP7
+df_tests_tp7, cannot_analyze_codestate_students_tp7, empty_codestate_students_tp7  = find_tests_for_tp_tpprog(df, 'Tp7')
+
+# %%
+df_tests_tp7
+
+# %%
+# TP8
+df_tests_tp8, cannot_analyze_codestate_students_tp8, empty_codestate_students_tp8  = find_tests_for_tp_tpprog(df, 'Tp8')
+
+# %%
+df_tests_tp8
+
+# %%
+# TP9
+df_tests_tp9, cannot_analyze_codestate_students_tp9, empty_codestate_students_tp9  = find_tests_for_tp_tpprog(df, 'Tp9')
+
+# %%
+df_tests_tp9
 
 # %% [markdown]
 # # ToDo
