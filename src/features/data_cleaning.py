@@ -439,9 +439,8 @@ def desicion_for_filename(extracted_function_names_list : list ,all_TP_functions
     # step2: find the most appeared filename
     if len(all_extracted_filename) != 0: # if it is not empty
         all_extracted_filename_series = pd.Series(all_extracted_filename) # convert to pandas to find faster
-    #print('-----------------------------------------------------------------')
-    #print(extracted_function_names_list)
-    #print(all_extracted_filename_series)
+
+        # find the most appeared
         most_common_filename = all_extracted_filename_series.mode()[0] 
         return most_common_filename
     
@@ -498,15 +497,12 @@ def find_filename_by_codestate(all_TP_functions : dict, pattern_files_name : str
         
         # extract all functions name after 'def' in codestate
         extracted_function_names = re.findall(r'\bdef\s+([a-zA-Z_][a-zA-Z_0-9]*)\s*\(', codeState)
-        try:
-            # if there is atleast one defined function:
-            if len(extracted_function_names) != 0 : 
-                # find the most appeared filename
-                
-                filename_infere = desicion_for_filename(extracted_function_names,all_TP_functions)
-
-        except :
-            raise
+        
+        # if there is atleast one defined function:
+        if len(extracted_function_names) != 0 : 
+            # find the most appeared filename
+            
+            filename_infere = desicion_for_filename(extracted_function_names,all_TP_functions)
         
     return filename_infere
     
@@ -791,7 +787,8 @@ def remove_too_short_traces(df: pd.DataFrame,df_indices: pd.DataFrame) -> pd.Dat
 def check_invalid_names(df:pd.DataFrame,df_indices:pd.DataFrame): 
 
     """
-    It checks if there is any too short session, if so it removes them by calling function remove_too_short_traces.
+    It checks if there is any too short session, if so 
+    it removes them by calling function remove_too_short_traces.
 
     Args:
         df : The original dataframe.
@@ -801,7 +798,7 @@ def check_invalid_names(df:pd.DataFrame,df_indices:pd.DataFrame):
         df : The same dataframe but without any short session.
     """
 
-    # if in the test there are still incorrect filename_infere and there not deleted
+    # if in the test there are still incorrect filename_infere and they weren't deleted
     if (df_indices['too_short_indices'].apply(lambda x: len(x) == 0)).all():
         print("There is no too short trace, if there are still invalid names, check them one by one!")
         return df
