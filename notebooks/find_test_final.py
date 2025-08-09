@@ -42,13 +42,15 @@ from thonnycontrib.exceptions import SpaceMissingAfterPromptException
 
 # # Dataframe
 
-df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='phase2_nettoyage_fichiere.csv')
+df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='phase3_nettoyage_fichiere.csv')
 
 # Inutile mais j'en avais besoin avant...
 
 df['codeState'] = df['P_codeState'] + df['F_codeState']
 
-# # Analyse des TPs Tp_Prog de 'Tp2' à 'Tp9'
+# # Fonctions pour analyser les TPs Tp_Prog de 'Tp2' à 'Tp9'
+
+# ## Ajouts à faire dans src.data.variable_constants_2425
 
 # Normalement ce qui suit est déjà dans dans src.data.variable_constants_2425. Ce sont les noms des fonctions par TP, noms de fonctions uniquement. 
 
@@ -167,7 +169,7 @@ FUNCTIONS_TP8_Prog = [
     "filtre",
     "nb_jours_avant_1m_blob",
     "somme_chiffres",
-    "saisie_pseudo_avec_verification" 
+    #"saisie_pseudo_avec_verification" # non testable 
 ]
 
 
@@ -216,6 +218,8 @@ PROG_FUNCTIONS_NAME_BY_TP = {
     'Tp9' : FUNCTIONS_TP9_Prog,
 }
 
+
+# ## Fonctions
 
 # Mettre ces fonctions dans src. Elles comptent le nombre de tests écrits par fonction (les $$$) sans du tout analyser les Run.Test (qui eux exécutent les tests). On utilise une fonctionnalité interne de l1test (le L1TestFinder) pour analyser le contenu des codeState. Le L1TestFinder provoquera une erreur si le contenu du codeState n'est pas syntaxiquement correct (par ex parce qu'il y a une erreur de syntaxe Python ou une erreur de syntaxe dans les tests).
 #
@@ -282,7 +286,7 @@ def find_tests_in_codestate_for_functions(codeState:str, functions_tp:list[str])
 #
 #
 
-def find_tests_for_tp_tpprog_name(name:str, df:pd.DataFrame, tp:str, functions_names:dict) -> tuple[pd.DataFrame, bool, bool]:
+def find_tests_for_tp_tpprog_name(name:str, df:pd.DataFrame, tp:str, functions_names:dict, filename:str=None) -> tuple[pd.DataFrame, bool, bool]:
     """
     Looks for codeStates related  to 'TP_prog' (df['Type_TP'] == 'TP_prog') for `name` and `tp`, then looks repeatedly for the most recent codeState that can be parsed and contains at least one function of functions_names, then returns:
 
@@ -297,11 +301,12 @@ def find_tests_for_tp_tpprog_name(name:str, df:pd.DataFrame, tp:str, functions_n
         df: some DataFrame
         tp: some TP identifiers (ex : 'Tp2')
         functions_name: a dict which associates to each Tp identifier a list of functions name (ex : functions_names['Tp2] is ['foo1', 'foo2', 'foo3'])
+        filename: the name of a particular filename_infere to analyze. Other filename_infere of the tp are not analyzed. Useful when a TP involves multiple files
         
     Returns:
         None, False, True: if no codeState was found, or only empty codeStates
         None, True, False: if no codeState could be parsed, or no codeState contains at least one function of functions_name
-        df, False, False: if some codeState could be parsed and contains 
+        df, False, False: if some codeState could be parsed and contains the number of tests
     
     """
     # Les timestamps ne sont pas triés par ordre croissant.
@@ -310,7 +315,12 @@ def find_tests_for_tp_tpprog_name(name:str, df:pd.DataFrame, tp:str, functions_n
     # - s'il est analysable, elle vérifie qu'il y a au moins une des fonctions cherchées dedans
     # - s'il n'est pas analysable ou si aucune fonction n'est trouvée, elle cherche à nouveau le codestate le plus récent, moins le précédent.
     # Et ce tant qu'il y a des codestate à traiter.
-    df_name_tp = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog') & ((df['actor'] == name) | (df['binome'] == name))]
+    if filename == None:
+        df_name_tp = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog') & ((df['actor'] == name) | (df['binome'] == name))]
+    else:
+        df_name_tp = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog') \
+                        & ((df['actor'] == name) | (df['binome'] == name)) \
+                        & (df['filename_infere'] == filename)]
     df_codestate_nonempty = df_name_tp[df_name_tp['codeState'] != '']
     if len(df_codestate_nonempty) == 0:
             return None, False, True
@@ -347,7 +357,7 @@ def find_tests_for_tp_tpprog_name(name:str, df:pd.DataFrame, tp:str, functions_n
             return None, True, False
 
 
-def find_tests_for_tp_tpprog(df:pd.DataFrame, tp:str, functions_names:dict) -> tuple[pd.DataFrame, list[str], list[str]]:
+def find_tests_for_tp_tpprog(df:pd.DataFrame, tp:str, functions_names:dict, filename:str=None) -> tuple[pd.DataFrame, list[str], list[str]]:
     """
     Looks for codeStates related  to 'TP_prog' (df['Type_TP'] == 'TP_prog') for all students of `tp`, then looks repeatedly for the most recent codeState that can be parsed and contains at least one function of functions_names, then returns:
 
@@ -361,7 +371,8 @@ def find_tests_for_tp_tpprog(df:pd.DataFrame, tp:str, functions_names:dict) -> t
         df: some DataFrame
         tp: some TP identifiers (ex : 'Tp2')
         functions_name: a dict which associates to each Tp identifier a list of functions name (ex : functions_names['Tp2] is ['foo1', 'foo2', 'foo3'])
-        
+        filename: the name of a particular filename_infere to analyze. Other filename_infere of the tp are not analyzed. Useful when a TP involves multiple files
+
     Returns:
         a tuple of len 3 :
         >>> df_tests_tp, cannot_analyze_codestate_students_tp, empty_codestate_students_tp  = find_tests_for_tp_tpprog(df, some_tp, PROG_FUNCTIONS_NAME_BY_TP)
@@ -374,13 +385,17 @@ def find_tests_for_tp_tpprog(df:pd.DataFrame, tp:str, functions_names:dict) -> t
     df_result = pd.DataFrame(columns=['actor', 	'tp', 	'function_name', 	'tests_number', 	'index'])
     empty_codestate_students = []
     cannot_analyze_codestate_students = []
-    actor_column_tp  = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')]['actor']
-    column_binome_tp = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')]['binome']
+    if filename == None:
+        actor_column_tp  = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')]['actor']
+        column_binome_tp = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')]['binome']
+    else:
+        actor_column_tp  = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog') & (df['filename_infere'] == filename)]['actor']
+        column_binome_tp = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog') & (df['filename_infere'] == filename)]['binome']
     all_students_tp  = set(actor_column_tp).union(set(column_binome_tp))
     if '' in all_students_tp:
         all_students_tp.remove('')
     for name in all_students_tp:
-        df_name, cannot_analyze_codestate, empty_codestates = find_tests_for_tp_tpprog_name(name, df, tp, functions_names)
+        df_name, cannot_analyze_codestate, empty_codestates = find_tests_for_tp_tpprog_name(name, df, tp, functions_names, filename)
         if cannot_analyze_codestate:
             cannot_analyze_codestate_students.append(name)
         if empty_codestates:
@@ -514,7 +529,7 @@ io_utils.write_csv(df_tests,INTERIM_DATA_DIR, 'test_number_old_phase2')
 # - si un actor écrit des tests, le comportement attendu est qu'il les exécute : pour chaque fonction avec des tests il devrait y avoir au moins un Run.Test avec la valeur `tests` contenant cette fonction. Si tu peux calculer ça, ça a de la valeur. Ça montre que les étudiants ont compris qu'un test, ça s'exécute.
 # -  si un actor n'écrit aucun test, il ne devrait pas faire de Run.Test non plus. La présence de Run.Test avec la valeur `tests` vide indique un comportemet bizarre (ou que le nettoyage a encore des lacunes...). 
 
-# # Analyse des TP_Game
+# # Fonctions pour analyser les TP_Game
 
 # Cette fois on compte les tests dans l'ensemble du module/codeState, on ne compte pas les tests par fonction (mélange de fonctions testables et non testables).
 #
@@ -717,5 +732,311 @@ df_tests_tpgame_all[df_tests_tpgame_all['filename_infere'] == 'galaxies.py']
 # De même corrélation possible avec les Run.Test, sauf si ça n'apporte rien par rapport aux TP2 à 9.
 #
 # Je me rappelle qu'il y avait un grand nombre (21) d'étudiants avec des `tests` de Run.Test vides pour les Tp_Game. Si c'est tjs le cas avec le nouveau nettoyage il faut essayer de comprendre pourquoi.
+
+# # Essai analyse TP2 à TP9
+
+# ## Brouillonnage
+
+# Les étudiants qui n'ont écrit aucun test. 
+
+df_tests_tp2[df_tests_tp2['tests_number']==0]
+
+# Avec sum ça marche mais je ne suis jamais sûre du traitement des valeurs NaN.
+
+# Je n'ai pas trop compris comment faire all(fonction). J'ai donc salement rajouté des colonnes. Le rajout de colonne déclenche un warning
+# que je n'ai pas réussi à supprimer.
+
+dict_essai = {'actor' : ['tous', 'tous', 'tous', 'aucun', 'aucun', 'aucun', 'mixte', 'mixte', 'mixte', 'tous1', 'tous1', 'tous1', 'mixte1', 'mixte1', 'mixte1', 'aucun1', 'aucun1', 'aucun1'], \
+              'tests_number' : [2, 3, None, 0, None, 0, 1, None, 0, 5, 6, 2, 1, None, 0, 0, 0, 0]}
+df_essai = pd.DataFrame(dict_essai)
+
+df_essai
+
+df_essai_copy = df_essai.copy()
+df_essai_values = df_essai_copy[pd.notna(df_essai_copy['tests_number'])]
+df_essai_values
+
+
+df_essai_values['tests_number_nul'] = df_essai_values['tests_number'].map(lambda x : x == 0)
+df_essai_values['tests_number_not_nul'] = df_essai_values['tests_number'].map(lambda x : x > 0)
+df_essai_values
+
+
+df_essai_avec_0_tests_interm = df_essai_values.groupby(['actor']).tests_number_nul.all()
+df_essai_avec_0_tests = df_essai_avec_0_tests_interm[df_essai_avec_0_tests_interm==True]
+
+df_essai_avec_0_tests_interm
+
+list(df_essai_avec_0_tests.index)
+
+df_essai_avec_tous_tests_interm = df_essai_values.groupby(['actor']).tests_number_not_nul.all()
+df_essai_avec_tous_tests = df_essai_avec_tous_tests_interm[df_essai_avec_tous_tests_interm==True]
+
+list(df_essai_avec_tous_tests.index)
+
+df_essai_qq_tests_interm = df_essai_values.groupby(['actor']).tests_number_not_nul.any()
+
+df_essai_qq_tests = df_essai_qq_tests_interm[df_essai_qq_tests_interm==True]
+
+set(df_essai_qq_tests.index).difference(set(df_essai_avec_tous_tests.index))
+
+df_tests_tp2_sans_nan = df_tests_tp2.copy()
+df_tests_tp2_sans_nan = df_tests_tp2_sans_nan[pd.notna(df_tests_tp2_sans_nan['tests_number'])]
+df_tests_tp2_sans_nan
+
+df_tests_tp2_sans_nan['tests_number_nul'] = df_tests_tp2_sans_nan['tests_number'].map(lambda x : x == 0)
+df_tests_tp2_sans_nan['tests_number_not_nul'] = df_tests_tp2_sans_nan['tests_number'].map(lambda x : x > 0)
+df_tests_tp2_sans_nan
+
+df_tp2_avec_0_tests_interm = df_tests_tp2_sans_nan.groupby(['actor']).tests_number_nul.all()
+df_tp2_avec_0_tests = df_tp2_avec_0_tests_interm[df_tp2_avec_0_tests_interm==True]
+list(df_tp2_avec_0_tests.index)
+
+df_tp2_avec_tous_tests_interm = df_tests_tp2_sans_nan.groupby(['actor']).tests_number_not_nul.all()
+df_tp2_avec_tous_tests = df_tp2_avec_tous_tests_interm[df_tp2_avec_tous_tests_interm==True]
+list(df_tp2_avec_tous_tests.index)
+
+df_tests_tp2[df_tests_tp2['actor'] == 'koffi.gantchou.etu']
+
+df_tests_tp2[df_tests_tp2['actor'] == 'bilal.ouazize.etu']
+
+df.loc[48079].codeState
+
+df_tests_tp2[df_tests_tp2['actor'] == 'candice.billerait.etu']
+
+df.loc[53966][['actor', 'verb', 'codeState']]
+
+print(df.loc[53966]['codeState'])
+
+# Cet étudiant a bcp de 0, il a une seule fonction testée
+
+df.loc[79458]['codeState']
+
+
+# ## Fonctions pour analyse des TPs - nombre de tests écrits
+
+def actors_par_pratique_ecriture_tests(df_tests_number:pd.DataFrame) -> tuple[list[str], list[str], list[str]]:
+    '''
+    Renvoie 
+        - la liste des étudiants ayant testé toutes les fonctions qu'ils ont écrites
+        - la liste des étudiants n'ayant testé aucune fonction qu'ils ont écrite
+        - la liste des étudiants qui ont testé au moins une fonction mais pas toutes les fonctions 
+
+    Args:
+        df_tests_number : dataframe avec colonnes actor et tests_number issu d'un appel à find_tests_xxxx
+    '''
+    df_tests_number_sans_nan = df_tests_number.copy() # au cas où
+    df_tests_number_sans_nan = df_tests_number_sans_nan[pd.notna(df_tests_number_sans_nan['tests_number'])]
+    df_tests_number_sans_nan['tests_number_nul'] = df_tests_number_sans_nan['tests_number'].map(lambda x : x == 0)
+    df_tests_number_sans_nan['tests_number_not_nul'] = df_tests_number_sans_nan['tests_number'].map(lambda x : x > 0)
+    # etud qui testent toutes les fonctions écrites
+    df_tests_number_avec_tous_tests_interm = df_tests_number_sans_nan.groupby(['actor']).tests_number_not_nul.all()
+    df_tests_number_avec_tous_tests = df_tests_number_avec_tous_tests_interm[df_tests_number_avec_tous_tests_interm==True]
+    # etud qui ne testent aucune fonction écrite
+    df_tests_number_avec_0_test_interm = df_tests_number_sans_nan.groupby(['actor']).tests_number_nul.all()
+    df_tests_number_avec_0_test = df_tests_number_avec_0_test_interm[df_tests_number_avec_0_test_interm==True]
+    # etud qui testent qq fonctions mais pas toutes
+    df_tests_numbers_qq_tests_interm = df_tests_number_sans_nan.groupby(['actor']).tests_number_not_nul.any()
+    df_tests_numbers_qq_tests = df_tests_numbers_qq_tests_interm[df_tests_numbers_qq_tests_interm==True]
+    actors_qq_tests = set(df_tests_numbers_qq_tests.index).difference(set(df_tests_number_avec_tous_tests.index))
+    assert len(list(df_tests_number_avec_tous_tests.index)) + len(list(df_tests_number_avec_0_test.index)) + len(actors_qq_tests) == len(df_tests_number.actor.unique())
+    return list(df_tests_number_avec_tous_tests.index), list(df_tests_number_avec_0_test.index), actors_qq_tests
+
+
+etud_testant_toute_fonction_ecrite_tp2, etud_testant_aucune_fonction_ecrite_tp2, etud_qq_tests_fonction_ecrite_tp2 = actors_par_pratique_ecriture_tests(df_tests_tp2)
+
+len(etud_testant_toute_fonction_ecrite_tp2)
+
+len(etud_testant_aucune_fonction_ecrite_tp2)
+
+len(etud_qq_tests_fonction_ecrite_tp2)
+
+df_tests_tp3, cannot_analyze_codestate_students_tp3, empty_codestate_students_tp3  = find_tests_for_tp_tpprog(df, 'Tp3', PROG_FUNCTIONS_NAME_BY_TP)
+
+print(f'Cannot analyze codestate in Tp3 for : {cannot_analyze_codestate_students_tp3}')
+print(f'only empty codestates in Tp3 for : {empty_codestate_students_tp3}')
+
+etud_testant_toute_fonction_ecrite_tp3, etud_testant_aucune_fonction_ecrite_tp3, etud_qq_tests_fonction_ecrite_tp3 = actors_par_pratique_ecriture_tests(df_tests_tp3)
+
+len(etud_testant_toute_fonction_ecrite_tp3)
+
+len(etud_testant_aucune_fonction_ecrite_tp3)
+
+len(etud_qq_tests_fonction_ecrite_tp3)
+
+178 + 11 + 31
+
+df_tests_tp4, cannot_analyze_codestate_students_tp4, empty_codestate_students_tp4  = find_tests_for_tp_tpprog(df, 'Tp4', PROG_FUNCTIONS_NAME_BY_TP)
+
+print(f'Cannot analyze codestate in Tp4 for : {cannot_analyze_codestate_students_tp4}')
+print(f'only empty codestates in Tp4 for : {empty_codestate_students_tp4}')
+
+etud_testant_toute_fonction_ecrite_tp4, etud_testant_aucune_fonction_ecrite_tp4, etud_qq_tests_fonction_ecrite_tp4 = actors_par_pratique_ecriture_tests(df_tests_tp4)
+
+len(etud_testant_toute_fonction_ecrite_tp4)
+
+len(etud_testant_aucune_fonction_ecrite_tp4)
+
+len(etud_qq_tests_fonction_ecrite_tp4)
+
+len(etud_testant_toute_fonction_ecrite_tp4) + len(etud_testant_aucune_fonction_ecrite_tp4) + len(etud_qq_tests_fonction_ecrite_tp4)
+
+df_tests_tp6, cannot_analyze_codestate_students_tp6, empty_codestate_students_tp6  = find_tests_for_tp_tpprog(df, 'Tp6', PROG_FUNCTIONS_NAME_BY_TP)
+
+print(f'Cannot analyze codestate in Tp6 for : {cannot_analyze_codestate_students_tp6}')
+print(f'only empty codestates in Tp6 for : {empty_codestate_students_tp6}')
+
+etud_testant_toute_fonction_ecrite_tp6, etud_testant_aucune_fonction_ecrite_tp6, etud_qq_tests_fonction_ecrite_tp6 = actors_par_pratique_ecriture_tests(df_tests_tp6)
+
+len(etud_testant_toute_fonction_ecrite_tp6)
+
+len(etud_testant_aucune_fonction_ecrite_tp6)
+
+len(etud_qq_tests_fonction_ecrite_tp6)
+
+len(etud_testant_toute_fonction_ecrite_tp6) + len(etud_testant_aucune_fonction_ecrite_tp6) + len(etud_qq_tests_fonction_ecrite_tp6)
+
+df_tests_tp7, cannot_analyze_codestate_students_tp7, empty_codestate_students_tp7  = find_tests_for_tp_tpprog(df, 'Tp7', PROG_FUNCTIONS_NAME_BY_TP)
+
+print(f'Cannot analyze codestate in Tp7 for : {cannot_analyze_codestate_students_tp7}')
+print(f'only empty codestates in Tp7 for : {empty_codestate_students_tp7}')
+
+etud_testant_toute_fonction_ecrite_tp7, etud_testant_aucune_fonction_ecrite_tp7, etud_qq_tests_fonction_ecrite_tp7 = actors_par_pratique_ecriture_tests(df_tests_tp7)
+
+len(etud_testant_toute_fonction_ecrite_tp7)
+
+len(etud_testant_aucune_fonction_ecrite_tp7)
+
+len(etud_qq_tests_fonction_ecrite_tp7)
+
+len(etud_testant_toute_fonction_ecrite_tp7) + len(etud_testant_aucune_fonction_ecrite_tp7) + len(etud_qq_tests_fonction_ecrite_tp7)
+
+188/216*100
+
+df_tests_tp8, cannot_analyze_codestate_students_tp8, empty_codestate_students_tp8  = find_tests_for_tp_tpprog(df, 'Tp8', PROG_FUNCTIONS_NAME_BY_TP)
+
+print(f'Cannot analyze codestate in Tp8 for : {cannot_analyze_codestate_students_tp8}')
+print(f'only empty codestates in Tp8 for : {empty_codestate_students_tp8}')
+
+etud_testant_toute_fonction_ecrite_tp8, etud_testant_aucune_fonction_ecrite_tp8, etud_qq_tests_fonction_ecrite_tp8 = actors_par_pratique_ecriture_tests(df_tests_tp8)
+
+len(etud_testant_toute_fonction_ecrite_tp8)
+
+len(etud_testant_aucune_fonction_ecrite_tp8)
+
+len(etud_qq_tests_fonction_ecrite_tp8)
+
+len(etud_testant_toute_fonction_ecrite_tp8) + len(etud_testant_aucune_fonction_ecrite_tp8) + len(etud_qq_tests_fonction_ecrite_tp8)
+
+97/194*100
+
+df_tests_tp9, cannot_analyze_codestate_students_tp9, empty_codestate_students_tp9  = find_tests_for_tp_tpprog(df, 'Tp9', PROG_FUNCTIONS_NAME_BY_TP)
+
+print(f'Cannot analyze codestate in Tp9 for : {cannot_analyze_codestate_students_tp9}')
+print(f'only empty codestates in Tp9 for : {empty_codestate_students_tp9}')
+
+etud_testant_toute_fonction_ecrite_tp9, etud_testant_aucune_fonction_ecrite_tp9, etud_qq_tests_fonction_ecrite_tp9 = actors_par_pratique_ecriture_tests(df_tests_tp9)
+
+len(etud_testant_toute_fonction_ecrite_tp9)
+
+len(etud_testant_aucune_fonction_ecrite_tp9)
+
+len(etud_qq_tests_fonction_ecrite_tp9)
+
+len(etud_testant_toute_fonction_ecrite_tp9) + len(etud_testant_aucune_fonction_ecrite_tp9) + len(etud_qq_tests_fonction_ecrite_tp9)
+
+151/197*100
+
+# ### Analyse particulière du TP8 
+
+# Pour le TP8 il y avait 2 fichiers à rendre : while.py et jeu_nim.py.
+
+df[(df['TP'] == 'Tp8') & (df['Type_TP'] == 'TP_prog')].filename_infere.unique()
+
+df_tests_tp8_bis, cannot_analyze_codestate_students_tp8_bis, empty_codestate_students_tp8_bis  = find_tests_for_tp_tpprog(df, 'Tp8', PROG_FUNCTIONS_NAME_BY_TP, filename='while.py')
+
+etud_testant_toute_fonction_ecrite_tp8_bis, etud_testant_aucune_fonction_ecrite_tp8_bis, etud_qq_tests_fonction_ecrite_tp8_bis = actors_par_pratique_ecriture_tests(df_tests_tp8_bis)
+
+len(etud_testant_toute_fonction_ecrite_tp8_bis)
+
+len(etud_testant_aucune_fonction_ecrite_tp8_bis)
+
+len(etud_qq_tests_fonction_ecrite_tp8_bis)
+
+158/(158+7+28)
+
+# ## Plot
+
+TPs = ['Tp2', 'Tp3', 'Tp4', 'Tp6', 'Tp7', 'Tp8', 'Tp9']
+
+
+def genere_donnees_nombre_tests_ecrits(df:pd.DataFrame, functions_names:dict):
+    df_plot = pd.DataFrame(columns=['Tps', 'number_of_students', 'number_of_students_analysis_not_possible', 'etud_testant_toute_fonction_ecrite', 'etud_testant_aucune_fonction_ecrite', 'etud_qq_tests_fonction_ecrite'])
+    for tp in TPs:
+        if tp == 'Tp8':
+            df_tests_tp, cannot_analyze_codestate_students_tp, empty_codestate_students_tp  = find_tests_for_tp_tpprog(df, 'Tp8', functions_names, filename='while.py')
+            actor_column_tp  = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog') & (df['filename_infere'] == 'while.py')]['actor']
+            column_binome_tp = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog') & (df['filename_infere'] == 'while.py')]['binome'] 
+        else:
+            df_tests_tp, cannot_analyze_codestate_students_tp, empty_codestate_students_tp  = find_tests_for_tp_tpprog(df, tp, functions_names)
+            actor_column_tp  = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')]['actor']
+            column_binome_tp = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')]['binome']
+        all_students_tp  = set(actor_column_tp).union(set(column_binome_tp))
+        if '' in all_students_tp:
+            all_students_tp.remove('')
+        etud_testant_toute_fonction_ecrite_tp, etud_testant_aucune_fonction_ecrite_tp, etud_qq_tests_fonction_ecrite_tp = actors_par_pratique_ecriture_tests(df_tests_tp)
+        df_plot_tp = pd.DataFrame({'Tps' : [tp], \
+                                'number_of_students' : len(all_students_tp),\
+                                'number_of_students_analysis_not_possible' : len(cannot_analyze_codestate_students_tp) + len(empty_codestate_students_tp), \
+                                'etud_testant_toute_fonction_ecrite' : len(etud_testant_toute_fonction_ecrite_tp), \
+                                'etud_testant_aucune_fonction_ecrite' : len(etud_testant_aucune_fonction_ecrite_tp), \
+                                'etud_qq_tests_fonction_ecrite' : len(etud_qq_tests_fonction_ecrite_tp)})
+        df_plot = pd.concat([df_plot, df_plot_tp], ignore_index=True)
+    return df_plot
+
+
+df_plot = genere_donnees_nombre_tests_ecrits(df, PROG_FUNCTIONS_NAME_BY_TP)
+df_plot
+
+import matplotlib.pyplot as plt
+df_plot_pratique_ecriture_tests_tp = pd.DataFrame(columns=['Tps', 'Tests présents pour toutes fonctions écrites', 'Tests présents pour aucune fonction écrite', 'Tests présents pour certaines fonctions écrites'])
+df_plot_pratique_ecriture_tests_tp['Tps'] = df_plot['Tps']
+df_nb_total = df_plot['etud_testant_toute_fonction_ecrite'] + df_plot['etud_testant_aucune_fonction_ecrite'] + df_plot['etud_qq_tests_fonction_ecrite']
+df_plot_pratique_ecriture_tests_tp['Tests présents pour toutes fonctions écrites'] = pd.to_numeric(df_plot['etud_testant_toute_fonction_ecrite']/df_nb_total*100)
+df_plot_pratique_ecriture_tests_tp['Tests présents pour aucune fonction écrite'] = pd.to_numeric(df_plot['etud_testant_aucune_fonction_ecrite']/df_nb_total*100)
+df_plot_pratique_ecriture_tests_tp['Tests présents pour certaines fonctions écrites'] = pd.to_numeric(df_plot['etud_qq_tests_fonction_ecrite']/df_nb_total*100)
+df_plot_pratique_ecriture_tests_tp.round(1)
+
+
+def genere_donnees_plot_nombre_tests_ecrits(df_plot:pd.DataFrame) -> pd.DataFrame:
+    df_plot_pratique_ecriture_tests_tp = pd.DataFrame(columns=['Tps', 'pour toutes fonctions écrites', 'pour aucune fonction écrite', 'pour certaines fonctions écrites'])
+    df_plot_pratique_ecriture_tests_tp['Tps'] = df_plot['Tps']
+    df_nb_total = df_plot['etud_testant_toute_fonction_ecrite'] + df_plot['etud_testant_aucune_fonction_ecrite'] + df_plot['etud_qq_tests_fonction_ecrite']
+    df_plot_pratique_ecriture_tests_tp['pour toutes fonctions écrites'] = pd.to_numeric(df_plot['etud_testant_toute_fonction_ecrite']/df_nb_total*100)
+    df_plot_pratique_ecriture_tests_tp['pour aucune fonction écrite'] = pd.to_numeric(df_plot['etud_testant_aucune_fonction_ecrite']/df_nb_total*100)
+    df_plot_pratique_ecriture_tests_tp['pour certaines fonctions écrites'] = pd.to_numeric(df_plot['etud_qq_tests_fonction_ecrite']/df_nb_total*100)
+    return df_plot_pratique_ecriture_tests_tp.round(1)
+
+
+genere_donnees_plot_nombre_tests_ecrits(df_plot)
+
+
+def plot_nombre_tests_ecrits(df_plot:pd.DataFrame) -> None:
+    names = TPs
+
+    df_plot_pratique_ecriture_tests_tp = genere_donnees_plot_nombre_tests_ecrits(df_plot)
+    
+    df_plot_pratique_ecriture_tests_tp.set_index('Tps')[['pour toutes fonctions écrites', 'pour aucune fonction écrite', 'pour certaines fonctions écrites']].plot(kind='bar', figsize=(12, 6))
+    plt.title("Pratique d'écriture de tests durant les TPs guidés")
+    plt.ylabel("Pourcentage du nombre d'étudiants pour lequels le code a pu être analysé")
+    plt.xlabel("TP guidés")
+    plt.xticks(rotation=45)
+    plt.legend(title="Tests présents")
+    plt.tight_layout()
+    plt.show()
+    
+
+
+plot_nombre_tests_ecrits(df_plot)
 
 
