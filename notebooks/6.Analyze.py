@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.1
+#       jupytext_version: 1.17.2
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: venv_jupyter_l1test
 #     language: python
-#     name: python3
+#     name: venv_jupyter_l1test
 # ---
 
 # %% [markdown]
@@ -450,7 +450,7 @@ def calculate_verb_in_TP(df,verb,tp):
 
         verbs_of_student = df_filtered[(df_filtered['actor'] == name) | (df_filtered['binome'] == name)]['verb'].unique()
         
-        if not verb in verbs_of_student: # not doing Run.Test
+        if not (verb in verbs_of_student): # not doing Run.Test
             students_excluding_verb.append(name)
         
         else: # doing Run.Test
