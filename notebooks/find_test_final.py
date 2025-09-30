@@ -321,7 +321,7 @@ def find_tests_in_codestate(source:str) -> dict:
         source is some codestate
 
     Returns:
-        a dictionnary if the kind {<function_name> : <test_number>:int} or None if `source` couldn't be parsed.
+        a dictionary of the kind {<function_name> : <test_number>:int} or None if `source` couldn't be parsed.
     '''
     dico = {}
     finder = L1TestFinder(source=source)
@@ -373,6 +373,7 @@ def find_tests_in_codestate_for_functions(codeState:str, functions_tp:list[str])
 #
 #
 
+# devrait s'appeler find_tests_for_tp_tpprog_actor, si un jour je réusine...
 def find_tests_for_tp_tpprog_name(name:str, df:pd.DataFrame, tp:str, functions_names:dict, filename:str=None) -> tuple[pd.DataFrame, bool, bool]:
     """
     Looks for codeStates related  to 'TP_prog' (df['Type_TP'] == 'TP_prog') for student `name` and `tp`, then looks repeatedly 
@@ -607,6 +608,8 @@ io_utils.write_csv(df_tests,INTERIM_DATA_DIR, 'test_number_old_phase2')
 
 # # Fonctions pour chercher si les tests trouvés apparaissent dans un Run.Test
 
+# ## Calcul du df de "tous les verdicts" en ligne,  df_all_verdicts
+
 # Repiqué du notebook 6.Analyze de Sana. J'ai rajouté de la doc.
 
 # +
@@ -648,6 +651,8 @@ df_all_verdicts.columns
 
 df_all_verdicts
 
+
+# ## Recherche de l'index du Run.Test le plus récent : index_last_RunTest
 
 def nom_fonction(name:str) -> str:
     '''
@@ -842,7 +847,7 @@ for ind, val in df_tests_tp2_strict_pos.iterrows():
 ok
 
 
-# à revoir pour garder trace en plus du booléen du contenu du Run.Test et des tests écrits nettoyés.
+# ## Fonction tests_executes_pour_tests_ecrits
 
 def tests_executes_pour_tests_ecrits(actor:str, df: pd.DataFrame, df_tests_ecrits_filename:pd.DataFrame, df_all_verdicts:pd.DataFrame, filename:str) -> tuple[bool, int, pd.DataFrame, pd.DataFrame]:
     '''
@@ -853,8 +858,8 @@ res_bool, index_runTest_in_df,  df_runTest_tests_number, df_tests_ecrits_filenam
     Renvoie :
         - res_bool : True ssi les fonctions qui ont n tests écrits dans df_all_verdicts ont au moins n tests exécutés dans le Run.Test.
         - index_runTest_in_df : index of the mot recent Run.Test found and used inside the computation
-        - df_runTest_tests_number : 
-        - df_tests_ecrits_filename_strict_pos : 
+        - df_runTest_tests_number : df avec colonnes "function_name" et 'tests_number', calculé en regardant les tests de df_all_verdicts à l'index du Run.Test
+        - df_tests_ecrits_filename_strict_pos : df avec colonnes "function_name" et 'tests_number', calculé en regardant les tests de df_tests_ecrits_filename pour filename
         
     Args:
         actor : some actor
@@ -862,6 +867,7 @@ res_bool, index_runTest_in_df,  df_runTest_tests_number, df_tests_ecrits_filenam
         df_tests_ecrits_filename : les tests écrits pour le codeState le plus récent dans df pour le même filename, déjà calculé ailleurs
         df_all_verdicts : df des verdicts de df, déjà calculé ailleurs
     '''
+    # ici recherche par filename_infere, cherche le RunTest le plus récent dont l'index apparaît dans df_all_verdicts
     index_runTest_in_df = index_last_RunTest(actor, df, filename, df_all_verdicts)
     if index_runTest_in_df == None:
         return (False, None, None, None)
@@ -870,6 +876,7 @@ res_bool, index_runTest_in_df,  df_runTest_tests_number, df_tests_ecrits_filenam
     df_runTest_tests_number= pd.DataFrame(columns=['function_name', 'tests_number'])
     for name in df_all_verdicts_actor['name'].unique():
         # on peut sûrement faire plus élégant
+        # compte le nb d'apparition de chaque fonction ds le df des tests en ligne, à l'index du Run.Test
         function_df = pd.DataFrame({'function_name' : [name], 'tests_number' : df_all_verdicts_actor.groupby(['name'])['name'].count()[name]})
         df_runTest_tests_number = pd.concat([df_runTest_tests_number, function_df], ignore_index=True)
     # keep only > 0 number of tests in df_tests_ecrits_tp : df_tests_ecrits_tp_strict_pos
@@ -968,6 +975,8 @@ nb_etuds_avec_tests_non_executes / nb_etuds_avec_tests * 100
 # # Fonctions pour analyser les TP_Game
 
 # Cette fois on compte les tests dans l'ensemble du module/codeState, on ne compte pas les tests par fonction (mélange de fonctions testables et non testables).
+#
+# /!\\ plus d'accord : on peut garder les tests par fonction et ensuite vérifier que ces tests-là apparaissent dans un Run.Test.
 #
 
 # Pour chaque étudiant on regarde les différents jeux sur lesquels il a travaillé, au travers des différents filename_infere. 
@@ -1156,9 +1165,190 @@ def find_tests_for_tp_tpgame(df:pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     return df_result, cannot_find_or_analyze_tpgame
 
 
-# + [markdown] jp-MarkdownHeadingCollapsed=true
+# ## Si on garde les noms de fonctions
+
+def find_tests_by_function_for_game_actor(actor:str, df:pd.DataFrame, filename:str) -> tuple[pd.DataFrame, bool, bool]:
+    """
+    Looks for codeStates related  to 'filename' for student `actor`, then looks repeatedly 
+    for the most recent codeState that can be parsed tne returns:
+
+    - a DataFrame with columns 'actor', 'filename', 'function_name', 'tests_number' (int or None if not present in codestates), 'index' (index in df of the analyzed codeState)
+    - a first bool, True if for student 'name' the codeStates cannot be analyzed (Python or l1test syntax error) or codestates contain no function of functions_names
+    - a second bool, True if for student 'name' and this tp no codeState was found, or only empty codeStates
+
+    codeStates are considered from the most recent to the least recent, so it does not matter if timestamps are not sorted in increaded order.
+    
+    Args:
+        actor: some actor (ex : 'truc.machin.etu')
+        df: some DataFrame
+        filename: the name of a particular filename_infere to analyze. 
+        
+    Returns:
+        None, False, True: if no codeState was found, or only empty codeStates
+        None, True, False: if no codeState could be parsed, or no codeState contains at least one function of functions_name
+        df, False, False: if some codeState could be parsed and contains the number of tests
+    
+    """
+    # Les timestamps ne sont pas triés par ordre croissant.
+    # La fonction recherche les codeState comme suit : 
+    # - elle cherche le codestate le plus récent,
+    # - s'il est analysable, elle vérifie qu'il y a au moins une des fonctions cherchées dedans
+    # - s'il n'est pas analysable ou si aucune fonction n'est trouvée, elle cherche à nouveau le codestate le plus récent, moins le précédent.
+    # Et ce tant qu'il y a des codestate à traiter.
+    df_name_tp = df[((df['actor'] == actor) | (df['binome'] == actor)) \
+                        & (df['filename_infere'] == filename)]
+    df_codestate_nonempty = df_name_tp[df_name_tp['codeState'] != '']
+    if len(df_codestate_nonempty) == 0:
+            return None, False, True
+    else:
+        # look for most recent parsable codeState
+        timestamps = df_codestate_nonempty['timestamp.$date'].copy() # pour être sûre de ne pas modifier le df initial
+        found = False # found codeState with functions not all unfoundable
+        while not timestamps.empty and not found: 
+            index_of_timestamp_max = timestamps.idxmax() # index of timestamp most recent
+            most_recent_codeState = df_name_tp.loc[index_of_timestamp_max]['codeState']
+            dict_tests = find_tests_in_codestate(most_recent_codeState)
+            if dict_tests != None: # parseable
+                col_functions = []
+                col_tests_number = []
+                for key, value in dict_tests.items(): # key : function_name, value : tests_number
+                    col_functions.append(key)
+                    col_tests_number.append(value)
+                nb_rows = len(dict_tests) # number of functions
+                if col_tests_number != [None]*nb_rows: # convenient codestate found, with at least one function inside
+                    found = True
+                    col_actors = [actor] * nb_rows
+                    col_index = [index_of_timestamp_max] * nb_rows
+                    df_result = pd.DataFrame({'actor' : col_actors, 'filename_infere' : filename,'function_name' : col_functions, \
+                                          'tests_number' : col_tests_number, 'index' : col_index })
+                else: # codestate no convenient : drop this index and continue
+                    timestamps = timestamps.drop(index=[index_of_timestamp_max])
+            else: # codestate not parsable : drop this index and continue
+                timestamps = timestamps.drop(index=[index_of_timestamp_max])
+        if found:
+            return df_result, False, False
+        else:
+            #print(f"no functions found for {name} and index {index_of_timestamp_max}")
+            return None, True, False
+
+
+df_tests_yanko_tictactoe1, cannot_analyze_codestate_yanko1, empty_codestate_yanko1 =  find_tests_by_function_for_game_actor('yanko.lemoine.etu', df, 'tictactoe.py')
+
+df_tests_yanko_tictactoe1
+
+
+# On trouve bien la même chose que ci-dessous, sauf qu'on n'a pas la somme des tests.
+
+def find_tests_by_function_for_game(game:str, df:pd.DataFrame) -> pd.DataFrame:
+    """
+    Looks for codeStates for `game`, looking repeatedly for the most recent codeState that can be parsed, then returns:
+
+    - a DataFrame with columns 'actor', filename_infere', 'tests_number' (int or None if not present in codestates), 'index' (index in df of the analyzed codeState)
+ 
+    codeStates are considered from the most recent to the least recent, so it does not matter if timestamps are not sorted in increaded order.
+    
+    Args:
+        game: some game (ex : 'puissance4.py')
+        df: some DataFrame        
+    Returns:
+        None if no codestate for game could be found or analyzed.
+    
+    """
+    df_game = df[df['filename_infere'] == game]
+    actor_column_game  = df_game['actor']
+    column_binome_game = df_game['binome']
+    all_students_game  = set(actor_column_game).union(set(column_binome_game))
+    if '' in all_students_game:
+        all_students_game.remove('')
+
+    df_result = pd.DataFrame(columns=['actor',  'filename_infere', 	'tests_number', 	'index'])
+    for actor in all_students_game:
+            df_filename, cannot_analyze_codestate, empty_codestate =  find_tests_by_function_for_game_actor(actor, df, game)
+            if df_filename is not None:
+                df_result = pd.concat([df_result, df_filename], ignore_index=True)
+    return df_result
+
+
+def find_tests_by_function_for_games_actor(name:str, df:pd.DataFrame, filenames:list[str]) -> pd.DataFrame:
+    """
+    Looks for codeStates related  to 'TP_prog' (df['Type_TP'] == 'TP_prog') for `name` and all filename_infere we can find for `name`, then looks repeatedly for the most recent codeState that can be parsed and contains at least one function of functions_names, then returns:
+
+    - a DataFrame with columns 'actor', 'tp', 'filename_infere', 'tests_number' (int or None if not present in codestates), 'index' (index in df of the analyzed codeState)
+ 
+    codeStates are considered from the most recent to the least recent, so it does not matter if timestamps are not sorted in increaded order.
+    
+    Args:
+        name: some actor (ex : 'truc.machin.etu')
+        df: some DataFrame   
+        filenames : list of game filenames, par ex FILENAME_TP_GAME
+    Returns:
+        None if no tp_game & tp_prog codestate could be found or analyzed.
+    
+    """
+    df_name_tp = df[((df['actor'] == name) | (df['binome'] == name))]
+    df_codestate_nonempty = df_name_tp[df_name_tp['codeState'] != '']
+    if len(df_codestate_nonempty) == 0:
+            return None
+    else:
+        df_result = pd.DataFrame(columns=['actor', 	'filename_infere', 	'tests_number', 	'index'])
+        tpgame_filenames_infere_all = df_codestate_nonempty['filename_infere'].unique()
+        tpgame_filenames = list(f for f in tpgame_filenames_infere_all if f in filenames)
+        if len(tpgame_filenames) == 0:
+            return None
+        for filename in tpgame_filenames:
+            df_filename, cannot_analyze_codestate, empty_codestate =  find_tests_by_function_for_game_actor(name, df, filename)
+            
+            if df_filename is not None:
+                df_result = pd.concat([df_result, df_filename], ignore_index=True)
+        return df_result
+
+
+df_tests_by_function_yanko_all_games = find_tests_by_function_for_games_actor('yanko.lemoine.etu', df, FILENAME_TP_GAME)
+
+df_tests_by_function_yanko_all_games
+
+
+def find_tests_by_function_for_games(df:pd.DataFrame, filenames:list[str]) -> tuple[pd.DataFrame, list[str]]:
+    """
+    Looks for codeStates related for all students and all filename in filenames, then looks repeatedly for the most recent codeState that can be parsed and contains at least one function of functions_names, then returns:
+
+     - a DataFrame with columns 'actor', 'tp', 'filename_infere', 'tests_number' (int or None if not present in codestates), 'index' (index in df of the analyzed codeState)
+     - a list of actors for which no data could be collected - they do not appear in the returned dataframe
+     
+    codeStates are considered from the most recent to the least recent, so it does not matter if timestamps are not sorted in increaded order.
+    
+    Args:
+        df: some DataFrame
+    """
+    cannot_find_or_analyze_tpgame = []
+    df_result = pd.DataFrame(columns=['actor', 	'filename_infere', 	'tests_number', 	'index'])
+    actor_column_game  = df[(df['TP'] == 'Tp_GAME') & (df['Type_TP'] == 'TP_prog')]['actor']
+    column_binome_game = df[(df['TP'] == 'Tp_GAME') & (df['Type_TP'] == 'TP_prog')]['binome']
+    all_students_game  = set(actor_column_game).union(set(column_binome_game))
+    if '' in all_students_game:
+        all_students_game.remove('')
+    for name in all_students_game:
+        df_name = find_tests_by_function_for_games_actor(name, df, filenames)
+        if df_name is None:
+            cannot_find_or_analyze_tpgame.append(name)
+        else:
+            df_result = pd.concat([df_result, df_name], ignore_index=True)
+    return df_result, cannot_find_or_analyze_tpgame
+
+
+df_tests_by_function_tpgame_all, cannot_find_games = find_tests_by_function_for_games(df, FILENAME_TP_GAME)
+
+df_tests_by_function_tpgame_all
+
+df_tests_by_function_tpgame_all[df_tests_by_function_tpgame_all['actor'] == 'enzo.dewez.etu']
+
+df_tests_by_function_tpgame_all[df_tests_by_function_tpgame_all['actor'] == 'weeti-sharleen.akogbeto.etu']
+
+# Ça correspond bien.
+
 # ## Ex d'utilisation
-# -
+
+
 
 df_count_tests_yanko_tictactoe, cannot_analyze_codestate_yanko, empty_codestate_yanko =  find_tests_for_tp_tpgame_name_filename('yanko.lemoine.etu', df, 'tictactoe.py')
 
@@ -1612,33 +1802,44 @@ print(f'Tp4 : {pourcentage_exec_tests_ecrits_Tp4} des étudiants ayant écrit de
 PROG_FILENAMES_BY_TP
 
 
-#TODO ICI
-def genere_donnees_tests_ecrits_executes(df:pd.DataFrame, df_tests:pd.DataFrame, tp_filenames:dict): # TODO
-    df_plot = pd.DataFrame(columns=['Tps', 'number_of_students', 'number_of_students_analysis_not_possible', 'etud_testant_toute_fonction_ecrite', 'etud_testant_aucune_fonction_ecrite', 'etud_qq_tests_fonction_ecrite'])
-    for tp in TPs:
-        if tp == 'Tp8':
-            df_tests_tp, cannot_analyze_codestate_students_tp, empty_codestate_students_tp  = find_tests_for_tp_tpprog(df, 'Tp8', functions_names, filename='while.py')
-            actor_column_tp  = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog') & (df['filename_infere'] == 'while.py')]['actor']
-            column_binome_tp = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog') & (df['filename_infere'] == 'while.py')]['binome'] 
-        else:
-            df_tests_tp, cannot_analyze_codestate_students_tp, empty_codestate_students_tp  = find_tests_for_tp_tpprog(df, tp, functions_names)
-            actor_column_tp  = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')]['actor']
-            column_binome_tp = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')]['binome']
-        all_students_tp  = set(actor_column_tp).union(set(column_binome_tp))
-        if '' in all_students_tp:
-            all_students_tp.remove('')
-        etud_testant_toute_fonction_ecrite_tp, etud_testant_aucune_fonction_ecrite_tp, etud_qq_tests_fonction_ecrite_tp = actors_par_pratique_ecriture_tests(df_tests_tp)
-        df_plot_tp = pd.DataFrame({'Tps' : [tp], \
-                                'number_of_students' : len(all_students_tp),\
-                                'number_of_students_analysis_not_possible' : len(cannot_analyze_codestate_students_tp) + len(empty_codestate_students_tp), \
-                                'etud_testant_toute_fonction_ecrite' : len(etud_testant_toute_fonction_ecrite_tp), \
-                                'etud_testant_aucune_fonction_ecrite' : len(etud_testant_aucune_fonction_ecrite_tp), \
-                                'etud_qq_tests_fonction_ecrite' : len(etud_qq_tests_fonction_ecrite_tp)})
-        df_plot = pd.concat([df_plot, df_plot_tp], ignore_index=True)
-    return df_plot# TODO ICI def genere_donnees_tests_ecrits_analyses
+# TODO ici mais je ne sais plus quoi !
+def genere_donnees_tests_ecrits_executes(df:pd.DataFrame, df_tests:pd.DataFrame, df_all_verdicts:pd.DataFrame, tp_filenames:dict) -> pd.DataFrame:
+    """
+    Génère un df avec les données pour plot.
 
+    Args :
+        df : le df total et global
+        df_tests : df avec colonnes ['actor', 'tp', 'function_name', 'tests_number', 'index']
+        df_all_verdicts : le df qui contient tous les tests ligne par ligne extraits de df
+        tp_filenames : le dict {nom_TP : filename}
+    """
+    df_plot = pd.DataFrame(columns=['Tps', 'number_of_students_with_tests', 'number_of_students_with_all_tests_executed', 'pourcentage'])
+    for tp in TPs:
+        df_tp_tests = df_tests[df_tests['tp']==tp]
+        actor_column_tp_tests_ecrits  = df_tp_tests['actor'].unique()
+        df_tests_ecrits_executes_tp = pd.DataFrame(columns=['actor', 'tests_ecrits_executes'])
+        for student in actor_column_tp_tests_ecrits:
+            res_bool, index_runTest_in_df,  df_runTest_tests_number, df_tests_ecrits_filename_strict_pos = tests_executes_pour_tests_ecrits(student, df, df_tp_tests, df_all_verdicts, filename=tp_filenames[tp] )
+            petit_df = pd.DataFrame({'actor':[student], 'tests_ecrits_executes':res_bool})
+            df_tests_ecrits_executes_tp = pd.concat([df_tests_ecrits_executes_tp, petit_df], ignore_index=True )
+        nb_etuds_avec_tests = len(df_tests_ecrits_executes_tp)
+        nb_etuds_avec_tests_executes = len(df_tests_ecrits_executes_tp[df_tests_ecrits_executes_tp['tests_ecrits_executes']==True])
+        pourcentage_exec_tests_ecrits_tp = nb_etuds_avec_tests_executes/nb_etuds_avec_tests*100
+        df_plot_tp = pd.DataFrame({'Tps' : [tp], \
+                                      'number_of_students_with_tests' : nb_etuds_avec_tests, \
+                                      'number_of_students_with_all_tests_executed' : nb_etuds_avec_tests_executes, \
+                                      'pourcentage' : pourcentage_exec_tests_ecrits_tp})
+        df_plot = pd.concat([df_plot, df_plot_tp], ignore_index=True)
+    return df_plot
+
+
+df_tests_ecrits_executes = genere_donnees_tests_ecrits_executes(df, df_tests, df_all_verdicts, PROG_FILENAMES_BY_TP)
+
+df_tests_ecrits_executes
 
 # # Fonctions pour analyse des TPs Game
+
+df_tests_tpgame_all.columns
 
 df_tests_tpgame_all.filename_infere.unique()
 
@@ -1800,12 +2001,213 @@ df_plot_games =  genere_donnees_test_games(df, df_tests_tpgame_all, df_admin_etu
 
 df_plot_games
 
+# df_tests_tpgame_all : calculé par find_tests_for_tp_tpgame
+
+df_tests_tpgame_all.columns
+
+df_tests_tpgame_all.loc[0]
+
+df_tests_tpgame_all.tp.unique()
+
+df_tests_tpgame_all.filename_infere.unique()
 
 
+# TODO à adapter aux TP games
+
+def tests_executes_pour_tests_ecrits_game(actor:str, df: pd.DataFrame, df_tests_ecrits_filename:pd.DataFrame, df_all_verdicts:pd.DataFrame, filename:str) -> tuple[bool, int, pd.DataFrame, pd.DataFrame]:
+    '''
+    Cherche le Run.Test le plus récent dans df pour actor. Renvoie un quadruplet
+    
+        res_bool, index_runTest_in_df,  df_runTest_tests_number, df_tests_ecrits_filename_strict_pos
+    
+    Renvoie :
+        - res_bool : True ssi les fonctions qui ont n tests écrits dans df_all_verdicts ont au moins n tests exécutés dans le Run.Test.
+        - index_runTest_in_df : index of the mot recent Run.Test found and used inside the computation
+        - df_runTest_tests_number : df avec colonnes "function_name" et 'tests_number', calculé en regardant les tests de df_all_verdicts à l'index du Run.Test
+        - df_tests_ecrits_filename_strict_pos : df avec colonnes "function_name" et 'tests_number', calculé en regardant les tests de df_tests_ecrits_filename pour filename
+        
+    Args:
+        actor : some actor
+        df : original df
+        df_tests_ecrits_filename : les tests écrits pour le codeState le plus récent dans df pour le même filename, déjà calculé ailleurs
+        df_all_verdicts : df des verdicts de df, déjà calculé ailleurs
+    '''
+    # ici recherche par filename_infere, cherche le RunTest le plus récent dont l'index apparaît dans df_all_verdicts
+    index_runTest_in_df = index_last_RunTest(actor, df, filename, df_all_verdicts)
+    if index_runTest_in_df == None:
+        return (False, None, None, None)
+    df_all_verdicts_actor = df_all_verdicts[df_all_verdicts['original_index']==index_runTest_in_df]
+    # count test numbers in runTest : df_runTest_tests_number
+    df_runTest_tests_number= pd.DataFrame(columns=['function_name', 'tests_number'])
+    for name in df_all_verdicts_actor['name'].unique():
+        # on peut sûrement faire plus élégant
+        function_df = pd.DataFrame({'function_name' : [name], 'tests_number' : df_all_verdicts_actor.groupby(['name'])['name'].count()[name]})
+        df_runTest_tests_number = pd.concat([df_runTest_tests_number, function_df], ignore_index=True)
+    # keep only > 0 number of tests in df_tests_ecrits_tp : df_tests_ecrits_tp_strict_pos
+    df_tests_ecrits_filename_strict_pos = df_tests_ecrits_filename[(df_tests_ecrits_filename['actor']==actor) & (df_tests_ecrits_filename['tests_number']>0)][['function_name', 'tests_number']]
+    # on vérifie que, pour chaque fonction de df_tests_ecrits_tp_strict_pos
+    # - la fonction apparaît dans df_runTest_tests_number
+    # - le nb de tests y est égal ou supérieur
+    for ind, val in df_tests_ecrits_filename_strict_pos.iterrows():
+        func_name = val['function_name']
+        if func_name not in df_runTest_tests_number.function_name.values:
+            return (False, index_runTest_in_df, df_runTest_tests_number, df_tests_ecrits_filename_strict_pos)
+        else:
+            tests_number_ecrits = val['tests_number']
+            # on peut sûrement faire plus élégant
+            tests_number_runTest = df_runTest_tests_number.loc[df_runTest_tests_number['function_name']==func_name]['tests_number'].values[0]
+            if tests_number_ecrits < tests_number_runTest:
+                return (False, index_runTest_in_df, df_runTest_tests_number, df_tests_ecrits_filename_strict_pos)
+    return (True, index_runTest_in_df,  df_runTest_tests_number, df_tests_ecrits_filename_strict_pos)
 
 
+df_binairo.columns
+
+df_binairo[df_binairo['actor']=='yanko.lemoine.etu']
+
+res_bool_bin_yl, index_runTest_in_df_bin_yl, df_runTest_tests_number_bin_yl, df_tests_ecrits_filename_strict_pos_bin_yl = tests_executes_pour_tests_ecrits('yanko.lemoine.etu', df, df_binairo, df_all_verdicts,filename='binairo.py' )
 
 
+res_bool_p4_yl
 
+index_runTest_in_df_p4_yl
+
+df_runTest_tests_number_p4_yl
+
+df_tests_ecrits_filename_strict_pos_p4_yl
+
+# # Investigation maudit TP6
+
+df_tp6 = df[df['TP']=='Tp6'].copy()
+
+df_tp6.columns
+
+df_tp6['filename_infere'].unique()
+
+df_tp6['Type_TP'].unique()
+
+df_tp6[df_tp6['Type_TP'] == 'TP_prog']['filename_infere'].unique()
+
+df_tp6_tests = df_tests[df_tests['tp']=='Tp6']
+actor_column_tp6_tests_ecrits  = df_tp6_tests['actor'].unique()
+df_tests_ecrits_executes_tp6 = pd.DataFrame(columns=['actor', 'tests_ecrits_executes'])
+for student in actor_column_tp6_tests_ecrits:
+    res_bool, index_runTest_in_df,  df_runTest_tests_number, df_tests_ecrits_filename_strict_pos = tests_executes_pour_tests_ecrits(student, df, df_tp6_tests, df_all_verdicts, filename=PROG_FILENAMES_BY_TP['Tp6'] )
+    petit_df = pd.DataFrame({'actor':[student], 'tests_ecrits_executes':res_bool})
+    df_tests_ecrits_executes_tp6 = pd.concat([df_tests_ecrits_executes_tp6, petit_df], ignore_index=True )
+
+df_tests_ecrits_executes_tp6
+
+df_tests_ecrits_executes_tp6[df_tests_ecrits_executes_tp6['actor']=='yanko.lemoine.etu']
+
+res_bool_yl6, index_runTest_in_df_yl6,  df_runTest_tests_number_yl6, df_tests_ecrits_filename_strict_pos_yl6 = tests_executes_pour_tests_ecrits('yanko.lemoine.etu', df, df_tp6_tests, df_all_verdicts, filename=PROG_FILENAMES_BY_TP['Tp6'] )
+
+index_runTest_in_df_yl6
+
+df_runTest_tests_number_yl6
+
+df_tests_ecrits_filename_strict_pos_yl6
+
+df_tp6_tests[df_tp6_tests['actor']=='yanko.lemoine.etu']
+
+df.loc[291828-20:291828][['actor', 'verb', 'filename_infere', 'codeState', 'seance']]
+
+# +
+#print(df.loc[291828]['codeState']) # c'est bien le TP6
+
+# +
+#print(df.loc[291818]['codeState']) # des exos pour le projet ?
+# -
+
+df_tests_ecrits_executes_tp6[df_tests_ecrits_executes_tp6['actor']=='ibrahima.diop.etu']
+
+res_bool_id6, index_runTest_in_df_id6,  df_runTest_tests_number_id6, df_tests_ecrits_filename_strict_pos_id6 = tests_executes_pour_tests_ecrits('ibrahima.diop.etu', df, df_tp6_tests, df_all_verdicts, filename=PROG_FILENAMES_BY_TP['Tp6'] )
+
+index_runTest_in_df_id6
+
+df_runTest_tests_number_id6
+
+df_tests_ecrits_filename_strict_pos_id6
+
+df_tp6_id = df[(df['actor']=='ibrahima.diop.etu') & (df['TP'] == 'Tp6')][['actor', 'verb', 'filename_infere', 'codeState', 'seance', 'timestamp.$date']]
+
+df_tp6_id
+
+df_tp6_id.loc[117876:117905+10] # Effectivement pas un seul Run.Test
+
+df.loc[117905][['actor', 'verb', 'filename_infere', 'codeState', 'seance', 'timestamp.$date']]
+
+# - 117880 13:55 : ouverture du fichier vide 
+# - 117881 13:57 : Docstring.generate carres 
+# - 117882 14:01 : Save, carres est fait   
+# - 117883 14:01 : RunCommand %cd ds le répertoire, automatique et consécutif au Save je pense
+# - 117884 14:01 : Docstring.generate nombre_occurrences
+# - 117885 14:05:44 : Save, il me semble qu'un des tests est mal indenté
+# - 117886 14:05:54 : Save, idem, il a remplacé ds les annotations list[entiers] par list[int]
+# - 117887 14:06 : Save, l'erreur d'indentation du test a disparu, pourtant pas de Run.Test !
+# - 117888 14:10 : Docstring.Generate nombre_occurrences2
+# - 117889 14:15 : Save nombre_occurrences2, un test mal indenté, son code est faux
+# - 117890 14:16 : Save, test rectifié, code tjs faux
+# - 117891 14:17 : Save, valeur attendue pour un test changée, mais il n'exécute rien ? Il y a aussi un appel de fonction pour debug :nombre_occurrences2([4, 3, 7], [4, 2, 6, 2, 2, 5, 4]) qui est son 2ème test sur les 3 (je n'en avais donné qu'un)
+# - 117892 14:17 : Run.Debugger, sans doute appel ci-dessus. fin à 14:19
+# - 117893 14:23 : Save, il a viré l'appel et le code est bon !
+# - 117894 14:25 : Docstring.Generate moyenne
+# - 117895 14:26 : Save, code moyenne faux mais passe pour le seul test copié (celui que j'ai donné)
+# - 117896 14:30 : Docstring.Generate sans_elt
+# - 117897 14:33 : Save, il a copié le test de la fonction positive (du sujet alors ?)
+# - 117898 14:34 : Save, test rectifié
+# - 117899 14:35 : Docstring.Generate positive
+# - 117900 14:37 : code de positive
+# - 117901 14:40 : Docstring.Generate chiffres
+# - 117902 14:44 : Save code chiffres fait
+# - 117903 14:45 : Docstring.Generate miroir
+# - 117904 14:47 : Save code miroir fait
+# - 117905 : Save, pas vu ce qui a changé, heure de fin de TP
+#
+#
+# 117905 2024-10-10 14:49 CodeState avec TP6  : 
+#
+# - fait : carres, nombre_occurrences,  nombre_occurrences2, moyenne, sans_elt, positive, chiffres, miroir
+# - pas fait : compte_car
+# - main
+#
+# donc lui n'a pas fait le main. Et pourtant 0 Run.Test.
+#
+#
+
+# +
+#print(df.loc[117905]['codeState'] )
+
+# +
+#print(df.loc[117903]) 
+# -
+
+df_tp7_tests = df_tests[df_tests['tp']=='Tp7']
+actor_column_tp7_tests_ecrits  = df_tp7_tests['actor'].unique()
+df_tests_ecrits_executes_tp7 = pd.DataFrame(columns=['actor', 'tests_ecrits_executes'])
+for student in actor_column_tp7_tests_ecrits:
+    res_bool, index_runTest_in_df,  df_runTest_tests_number, df_tests_ecrits_filename_strict_pos = tests_executes_pour_tests_ecrits(student, df, df_tp7_tests, df_all_verdicts, filename=PROG_FILENAMES_BY_TP['Tp7'] )
+    petit_df = pd.DataFrame({'actor':[student], 'tests_ecrits_executes':res_bool})
+    df_tests_ecrits_executes_tp7 = pd.concat([df_tests_ecrits_executes_tp7, petit_df], ignore_index=True )
+
+res_bool_id7, index_runTest_in_df_id7,  df_runTest_tests_number_id7, df_tests_ecrits_filename_strict_pos_id7 = tests_executes_pour_tests_ecrits('ibrahima.diop.etu', df, df_tp7_tests, df_all_verdicts, filename=PROG_FILENAMES_BY_TP['Tp7'] )
+
+res_bool_id7
+
+index_runTest_in_df_id7
+
+df_runTest_tests_number_id7
+
+df_tests_ecrits_filename_strict_pos_id7
+
+df_tp7_id = df[(df['actor']=='ibrahima.diop.etu') & (df['TP'] == 'Tp7')][['actor', 'verb', 'filename_infere', 'codeState', 'seance', 'timestamp.$date']]
+
+df_tp7_id
+
+len(df_tp7_id[(df_tp7_id['verb']=='Run.Test') & (df_tp7_id['filename_infere']=='iterable_indexation.py')])
+
+df_tp7_id['filename_infere'].unique()
+
+# 44 Run.Test !
 
 
