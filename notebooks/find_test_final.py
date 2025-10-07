@@ -46,6 +46,8 @@ df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='phase3_nettoya
 
 len(df)
 
+df.columns
+
 # Inutile mais j'en avais besoin avant...
 
 df['codeState'] = df['P_codeState'] + df['F_codeState']
@@ -60,6 +62,20 @@ nb_actor_df = len(set_actor_df.union(set_binome_df))
 
 print(f'nb étudiants dans le df global : {nb_actor_df}')
 
+
+def actors(df:pd.DataFrame) -> set:
+    """
+    Renvoie l'ens des acteurs du df, y compris binômes.
+    """
+    set_actor_df = set(df.actor)
+    set_binome_df = set(df.binome)
+    if '' in set_binome_df:
+        set_binome_df.remove('')
+    return set_actor_df.union(set_binome_df)
+
+
+len(actors(df))
+
 # # Tableur avec NIP, identifiants et niveau de prog des étudiant·es
 
 df_admin_etud = io_utils.reading_dataframe(dir= RAW_DATA_DIR, file_name='identifiants_2425.csv')
@@ -67,6 +83,12 @@ df_admin_etud = io_utils.reading_dataframe(dir= RAW_DATA_DIR, file_name='identif
 df_admin_etud.columns
 
 df_admin_etud
+
+df_admin_etud['NSI'].unique()
+
+df_admin_etud[df_admin_etud['NSI']=='oui']
+
+df_admin_etud['redoublant'].unique()
 
 # ## Nettoyage étudiants sans NIP
 
@@ -116,6 +138,123 @@ df_debutant[df_debutant['actor']=='ibrahima.diop.etu'].debutant.unique()
 df_debutant[df_debutant['actor']=='rosche-rostell.batchi-vouala.etu'].debutant.unique()
 
 df_debutant[df_debutant['actor']=='ilyes.benferhat.etu'].debutant.unique()
+
+
+def ajout_colonne_debutant(df:pd.DataFrame, df_admin:pd.DataFrame) -> pd.DataFrame:
+    """
+    Renvoie un nouveau df qui ajoute au paramètre `df` la colonne "débutant", de type booléen, définie par :
+    dans df_admin, l'"actor" commun à `df` et `df_admin` :
+                  - a une valeur "NSI" != "NSI2"
+                  - a une valeur "redoublant" == 'non'
+
+    Args:
+        df : le df initial, avec colone "actor"
+        df_admin : le df avec colonne "actor", "NSI", "redoublant"
+    """
+    df_admin_copy = df_admin.copy()
+    df_admin_copy['debutant'] = (df_admin_copy['NSI']!='NSI2') & (df_admin_copy['redoublant']=='non')
+    df_admin_actor_debutants = df_admin_copy[['actor', 'debutant']]
+    df_copy = df.copy()
+    df_copy['debutant'] = (df_copy.merge(df_admin_actor_debutants, on='actor', how='inner'))['debutant']
+    return df_copy
+
+
+df_deb = ajout_colonne_debutant(df, df_admin_etud)
+
+len(df_deb)
+
+df_deb.columns
+
+df_deb[df_deb['actor']=='nadjib.zoubir.etu'].debutant.unique()
+
+df_deb[df_deb['actor']=='yanko.lemoine.etu'].debutant.unique()
+
+df_deb[df_deb['actor']=='ibrahima.diop.etu'].debutant.unique()
+
+# ## Pour garder uniquement les OK pour research_usage
+
+df_deb['research_usage'].unique()
+
+# Misère... pourquoi "" ?
+
+df_deb[df_deb['research_usage']==""]
+
+df_deb[df_deb['research_usage']==""]['verb'].unique()
+
+df_deb[df_deb['verb']=='Session.End']['research_usage'].unique()
+
+# Houlala... tous les research_usage vides sont des Session.End, mais il y a des Session.End avec research_usage non vide. Bizarre. Bon, je les garde.
+
+set(df_deb[df_deb['research_usage'] == '1.0']['actor']).intersection(set(df_deb[df_deb['research_usage'] == '0.0']['actor']))
+
+df_id = df[df['actor'] == 'ibrahima.diop.etu'][['research_usage', 'timestamp.$date']]
+
+df_id[df_id['research_usage']=='1.0']
+
+len(df_deb[df_deb['research_usage'] == '0.0']['actor'].unique())
+
+actor_non_research_usage = df_deb[df_deb['research_usage'] == '0.0']['actor'].unique()
+
+len(actor_non_research_usage)
+
+# Aaaaarg !
+
+actor_yes_research_usage = df_deb[df_deb['research_usage'] == '1.0']['actor'].unique()
+
+len(actor_yes_research_usage)
+
+set(actor_non_research_usage).intersection(actor_yes_research_usage)
+
+actor_non_research_usage
+
+# Pour ceux qui ont changé d'avis, je propage le 1.0.
+
+indexes = df[df['actor'] == 'ibrahima.diop.etu'].index
+
+indexes
+
+# Pandas chatouilleux sur les vues, avec la syntaxe ci-dessous ça marche, mais pas si on utilise ['research_usage']
+
+df.loc[indexes, 'research_usage'] = "1.0"
+
+df.loc[117249]['research_usage']
+
+df_id = df[df['actor'] == 'ibrahima.diop.etu'][['research_usage', 'timestamp.$date']]
+
+df_id[df_id['research_usage']=='0.0']
+
+
+def propage_chgt_avis_research_OK(df:pd.DataFrame) -> pd.DataFrame:
+    """
+    Renvoie un nouveau df dont le research_OK est propagé en arrière et en avant.
+    """
+    df_copy = df.copy()
+    actor_non_research_usage = set(df[df['research_usage'] == '0.0']['actor'].unique())
+    actor_oui_research_usage = set(df[df['research_usage'] == '1.0']['actor'].unique())
+    actors_chgt_avis = actor_non_research_usage.intersection(actor_oui_research_usage)
+    for actor in actors_chgt_avis:
+        indexes = df[df['actor'] == actor].index
+        df_copy.loc[indexes, 'research_usage'] = "1.0"
+    return df_copy
+
+
+df_modif_research_OK = propage_chgt_avis_research_OK(df)
+
+df_modif_research_OK.columns
+
+set(df_modif_research_OK[df_modif_research_OK['research_usage'] == '1.0']['actor']).intersection(set(df_modif_research_OK[df_modif_research_OK['research_usage'] == '0.0']['actor']))
+
+len(df_modif_research_OK[df_modif_research_OK['research_usage']!= '0.0'])
+
+len(df_modif_research_OK)
+
+print(f"Le respect de la RGPD nous fait perdre {len(df_modif_research_OK) - len(df_modif_research_OK[df_modif_research_OK['research_usage']!= '0.0'])} traces") 
+
+actor_oui_research_usage = actors(df_modif_research_OK[df_modif_research_OK['research_usage'] != '0.0'])
+
+print(f"Après respect de la RGPD il reste {len(actor_oui_research_usage)} acteurs")
+
+
 
 # # Fonctions pour analyser le nb de tests écrits par fonctions, pour les TPs Tp_Prog de 'Tp2' à 'Tp9'
 
@@ -899,6 +1038,8 @@ res_bool, index_runTest_in_df,  df_runTest_tests_number, df_tests_ecrits_filenam
 
 df_tp2_tests, cannot_analyze_codestate_y_try, empty_codestate_y_try = find_tests_for_tp_tpprog(df, 'Tp2', PROG_FUNCTIONS_NAME_BY_TP, filename=PROG_FILENAMES_BY_TP['Tp2'])
 
+df_tp2_tests
+
 res_bool, index_runTest_in_df, df_runTest_tests_number, df_tests_ecrits_filename_strict_pos = tests_executes_pour_tests_ecrits('yanko.lemoine.etu', df, df_tp2_tests, df_all_verdicts,filename=PROG_FILENAMES_BY_TP['Tp2'] )
 res_bool
 
@@ -1662,7 +1803,8 @@ TPs = ['Tp2', 'Tp3', 'Tp4', 'Tp6', 'Tp7', 'Tp8', 'Tp9']
 
 
 def genere_donnees_nombre_tests_ecrits_tp_guides(df:pd.DataFrame, functions_names:dict):
-    df_plot = pd.DataFrame(columns=['Tps', 'number_of_students', 'number_of_students_analysis_not_possible', 'etud_testant_toute_fonction_ecrite', 'etud_testant_aucune_fonction_ecrite', 'etud_qq_tests_fonction_ecrite'])
+    df_plot = pd.DataFrame(columns=['Tps', 'Nb etud', 'Nb etud analyse impossible', 'Nb etud avec tests présents', 'Nb etud avec tests présents pour toute fonction écrite', \
+                                    'Nb etud avec aucun test', 'Nb etud avec tests présents pour qq fonctions écrites'])
     for tp in TPs:
         if tp == 'Tp8':
             df_tests_tp, cannot_analyze_codestate_students_tp, empty_codestate_students_tp  = find_tests_for_tp_tpprog(df, 'Tp8', functions_names, filename='while.py')
@@ -1677,11 +1819,12 @@ def genere_donnees_nombre_tests_ecrits_tp_guides(df:pd.DataFrame, functions_name
             all_students_tp.remove('')
         etud_testant_toute_fonction_ecrite_tp, etud_testant_aucune_fonction_ecrite_tp, etud_qq_tests_fonction_ecrite_tp = actors_par_pratique_ecriture_tests(df_tests_tp)
         df_plot_tp = pd.DataFrame({'Tps' : [tp], \
-                                'number_of_students' : len(all_students_tp),\
-                                'number_of_students_analysis_not_possible' : len(cannot_analyze_codestate_students_tp) + len(empty_codestate_students_tp), \
-                                'etud_testant_toute_fonction_ecrite' : len(etud_testant_toute_fonction_ecrite_tp), \
-                                'etud_testant_aucune_fonction_ecrite' : len(etud_testant_aucune_fonction_ecrite_tp), \
-                                'etud_qq_tests_fonction_ecrite' : len(etud_qq_tests_fonction_ecrite_tp)})
+                                'Nb etud' : len(all_students_tp),\
+                                'Nb etud analyse impossible' : len(cannot_analyze_codestate_students_tp) + len(empty_codestate_students_tp), \
+                                'Nb etud avec tests présents' : len(etud_testant_toute_fonction_ecrite_tp) + len(etud_qq_tests_fonction_ecrite_tp), \
+                                'Nb etud avec tests présents pour toute fonction écrite' : len(etud_testant_toute_fonction_ecrite_tp), \
+                                'Nb etud avec aucun test' : len(etud_testant_aucune_fonction_ecrite_tp), \
+                                'Nb etud avec tests présents pour qq fonctions écrites' : len(etud_qq_tests_fonction_ecrite_tp)})
         df_plot = pd.concat([df_plot, df_plot_tp], ignore_index=True)
     return df_plot
 
@@ -1759,6 +1902,8 @@ plot_nombre_etudiants_tp_guides(df_plot_nombre_tests_ecrits_tp_guides)
 
 # ## Nombre d'étudiants dont les tests écrits ont été exécutés
 
+df_tests
+
 df_tp2_tests = df_tests[df_tests['tp']=='Tp2']
 actor_column_tp2_tests_ecrits  = df_tp2_tests['actor'].unique()
 df_tests_ecrits_executes_tp2 = pd.DataFrame(columns=['actor', 'tests_ecrits_executes'])
@@ -1767,7 +1912,12 @@ for student in actor_column_tp2_tests_ecrits:
     petit_df = pd.DataFrame({'actor':[student], 'tests_ecrits_executes':res_bool})
     df_tests_ecrits_executes_tp2 = pd.concat([df_tests_ecrits_executes_tp2, petit_df], ignore_index=True )
 
-nb_etuds_avec_tests = len(df_tests_ecrits_executes_tp2)
+len(df_tests_ecrits_executes_tp2)
+
+# Attention ce n'est pas le nb d'étudiants ayant écrit des tests, mais le nb d'étudiants dont on a analysé le code.
+
+# Toujours le même pb de passer d'une ligne à une valeur :(
+nb_etuds_avec_tests = df_plot_nombre_tests_ecrits_tp_guides[df_plot_nombre_tests_ecrits_tp_guides['Tps']=='Tp2']['Nb etud avec tests présents'].iloc[0]
 nb_etuds_avec_tests_executes = len(df_tests_ecrits_executes_tp2[df_tests_ecrits_executes_tp2['tests_ecrits_executes']==True])
 pourcentage_exec_tests_ecrits_Tp2 = nb_etuds_avec_tests_executes/nb_etuds_avec_tests*100
 print(f'Tp2 : {pourcentage_exec_tests_ecrits_Tp2} des étudiants ayant écrit des tests ont exécuté ces tests')
@@ -1781,7 +1931,7 @@ for student in actor_column_tp3_tests_ecrits:
     petit_df = pd.DataFrame({'actor':[student], 'tests_ecrits_executes':res_bool})
     df_tests_ecrits_executes_tp3 = pd.concat([df_tests_ecrits_executes_tp3, petit_df], ignore_index=True )
 
-nb_etuds_avec_tests = len(df_tests_ecrits_executes_tp3)
+nb_etuds_avec_tests = df_plot_nombre_tests_ecrits_tp_guides[df_plot_nombre_tests_ecrits_tp_guides['Tps']=='Tp3']['Nb etud avec tests présents'].iloc[0]
 nb_etuds_avec_tests_executes = len(df_tests_ecrits_executes_tp3[df_tests_ecrits_executes_tp3['tests_ecrits_executes']==True])
 pourcentage_exec_tests_ecrits_Tp3 = nb_etuds_avec_tests_executes/nb_etuds_avec_tests*100
 print(f'Tp3 : {pourcentage_exec_tests_ecrits_Tp3} des étudiants ayant écrit des tests ont exécuté ces tests')
@@ -1794,7 +1944,7 @@ for student in actor_column_tp4_tests_ecrits:
     petit_df = pd.DataFrame({'actor':[student], 'tests_ecrits_executes':res_bool})
     df_tests_ecrits_executes_tp4 = pd.concat([df_tests_ecrits_executes_tp4, petit_df], ignore_index=True )
 
-nb_etuds_avec_tests = len(df_tests_ecrits_executes_tp4)
+nb_etuds_avec_tests = df_plot_nombre_tests_ecrits_tp_guides[df_plot_nombre_tests_ecrits_tp_guides['Tps']=='Tp4']['Nb etud avec tests présents'].iloc[0]
 nb_etuds_avec_tests_executes = len(df_tests_ecrits_executes_tp4[df_tests_ecrits_executes_tp4['tests_ecrits_executes']==True])
 pourcentage_exec_tests_ecrits_Tp4 = nb_etuds_avec_tests_executes/nb_etuds_avec_tests*100
 print(f'Tp4 : {pourcentage_exec_tests_ecrits_Tp4} des étudiants ayant écrit des tests ont exécuté ces tests')
@@ -1803,7 +1953,8 @@ PROG_FILENAMES_BY_TP
 
 
 # TODO ici mais je ne sais plus quoi !
-def genere_donnees_tests_ecrits_executes(df:pd.DataFrame, df_tests:pd.DataFrame, df_all_verdicts:pd.DataFrame, tp_filenames:dict) -> pd.DataFrame:
+def genere_donnees_tests_ecrits_executes(df:pd.DataFrame, df_tests:pd.DataFrame, df_all_verdicts:pd.DataFrame, \
+                                         df_plot_nombre_tests_ecrits_tp_guides:pd.DataFrame, tp_filenames:dict) -> pd.DataFrame:
     """
     Génère un df avec les données pour plot.
 
@@ -1811,6 +1962,7 @@ def genere_donnees_tests_ecrits_executes(df:pd.DataFrame, df_tests:pd.DataFrame,
         df : le df total et global
         df_tests : df avec colonnes ['actor', 'tp', 'function_name', 'tests_number', 'index']
         df_all_verdicts : le df qui contient tous les tests ligne par ligne extraits de df
+        df_plot_nombre_tests_ecrits_tp_guides : contient la colonne 'Nb etud avec tests présents'
         tp_filenames : le dict {nom_TP : filename}
     """
     df_plot = pd.DataFrame(columns=['Tps', 'number_of_students_with_tests', 'number_of_students_with_all_tests_executed', 'pourcentage'])
@@ -1822,7 +1974,7 @@ def genere_donnees_tests_ecrits_executes(df:pd.DataFrame, df_tests:pd.DataFrame,
             res_bool, index_runTest_in_df,  df_runTest_tests_number, df_tests_ecrits_filename_strict_pos = tests_executes_pour_tests_ecrits(student, df, df_tp_tests, df_all_verdicts, filename=tp_filenames[tp] )
             petit_df = pd.DataFrame({'actor':[student], 'tests_ecrits_executes':res_bool})
             df_tests_ecrits_executes_tp = pd.concat([df_tests_ecrits_executes_tp, petit_df], ignore_index=True )
-        nb_etuds_avec_tests = len(df_tests_ecrits_executes_tp)
+        nb_etuds_avec_tests = df_plot_nombre_tests_ecrits_tp_guides[df_plot_nombre_tests_ecrits_tp_guides['Tps']==tp]['Nb etud avec tests présents'].iloc[0]
         nb_etuds_avec_tests_executes = len(df_tests_ecrits_executes_tp[df_tests_ecrits_executes_tp['tests_ecrits_executes']==True])
         pourcentage_exec_tests_ecrits_tp = nb_etuds_avec_tests_executes/nb_etuds_avec_tests*100
         df_plot_tp = pd.DataFrame({'Tps' : [tp], \
@@ -1833,7 +1985,8 @@ def genere_donnees_tests_ecrits_executes(df:pd.DataFrame, df_tests:pd.DataFrame,
     return df_plot
 
 
-df_tests_ecrits_executes = genere_donnees_tests_ecrits_executes(df, df_tests, df_all_verdicts, PROG_FILENAMES_BY_TP)
+df_tests_ecrits_executes = genere_donnees_tests_ecrits_executes(df, df_tests, df_all_verdicts, \
+                                                                df_plot_nombre_tests_ecrits_tp_guides, PROG_FILENAMES_BY_TP)
 
 df_tests_ecrits_executes
 
@@ -1952,14 +2105,23 @@ len(df_jeu_nim[df_jeu_nim['tests_number']>0])
 GAMES_ANALYZED = ['tictactoe.py', 'puissance4.py', 'binairo.py']#, 'jeu_nim.py']
 
 
-def genere_donnees_test_games(df:pd.DataFrame, df_tests_game:pd.DataFrame, df_admin_etud_debutants:pd.DataFrame, games_names:list[str]) ->  df:
+def genere_donnees_test_games(df:pd.DataFrame, df_tests_games:pd.DataFrame, df_admin_etud_debutants:pd.DataFrame, games_names:list[str]) -> pd.DataFrame:
     '''
+    Génére un dataframe avec comme colonnes :
+
+    - jeu : nom du jeu
+    - 'nb étudiants ayant réalisé le jeu' : le nb d'étudiants qui ont une trace avec ce nom
+    - % étudiants ayant réalisé le jeu (total) : le % rapporté au nb d'étudiants total, pas très parlant
+    - '% étudiants débutants (jeu)' : le % de débutants rapporté au nb d'étudiants ayant réalisé le jeu
+    - '% étudiants avec tests (jeu)' : le % d'étudiants ayant écrit des tests, rapporté au nb d'étudiants ayant réalisé le jeu
+    - '% étudiants débutants avec tests (avec tests)' : le % d'étudiants débutants rapporté à ceux ayant écrits des tests
+    
     Args:
         df : df total
         df_test_games : columns actor, tp, filename_infere, tests_number, index
         df_admin_etud_debutants : columns actor, debutant
     '''
-    df_plot = pd.DataFrame(columns=['jeu', '% étudiants ayant réalisé le jeu (total)', '% étudiants débutants (jeu)', '% étudiants avec tests (jeu)', '% étudiants débutants avec tests (avec tests)'])
+    df_plot = pd.DataFrame(columns=['jeu', 'nb étudiants ayant réalisé le jeu', 'Nb etud avec tests présents', '% étudiants ayant réalisé le jeu (total)', '% étudiants débutants (jeu)', '% étudiants avec tests (jeu)', '% étudiants débutants avec tests (avec tests)'])
     set_actor_df = set(df.actor)
     set_binome_df = set(df.binome)
     if '' in set_binome_df:
@@ -1969,14 +2131,14 @@ def genere_donnees_test_games(df:pd.DataFrame, df_tests_game:pd.DataFrame, df_ad
     for game in games_names:
         #print(game, '---------')
         # nb actors - game
-        df_game = df_tests_game[df_tests_game['filename_infere'] == game]
-        game_actors = df_game.actor.unique()
+        df_test_game = df_tests_games[df_tests_games['filename_infere'] == game]
+        game_actors = df_test_game.actor.unique()
         nb_actor_df_game = len(game_actors)
         #print('nb_actor_df_game : ', nb_actor_df_game)
         pourcent_etud_game = round(nb_actor_df_game/nb_actor_df*100)
         # debutants / game
         df_admin_etud_debutants_game = df_admin_etud_debutants[df_admin_etud_debutants['actor'].isin(game_actors)]
-        df_game_debutants = df_game.merge(df_admin_etud_debutants_game, on='actor', how='inner') 
+        df_game_debutants = df_test_game.merge(df_admin_etud_debutants_game, on='actor', how='inner') 
         nb_etud_game_debutant = len(df_game_debutants[df_game_debutants['debutant']==True])
         pourcent_etud_game_debutant = round(nb_etud_game_debutant/nb_actor_df_game*100)
         #print(' : nb_etud_game_debutant', nb_etud_game_debutant)
@@ -1987,7 +2149,9 @@ def genere_donnees_test_games(df:pd.DataFrame, df_tests_game:pd.DataFrame, df_ad
         nb_etud_game_tests_debutant = len(df_game_debutants[(df_game_debutants['tests_number']>0) & (df_game_debutants['debutant']==True)])
         pourcent_etud_game_tests_debutants = round(nb_etud_game_tests_debutant/nb_etud_game_test*100)
         # local df
-        df_plot_game = pd.DataFrame({'jeu' : [game],
+        df_plot_game = pd.DataFrame({'jeu' : [game], 
+                                     'nb étudiants ayant réalisé le jeu' : nb_actor_df_game,
+                                     'Nb etud avec tests présents': nb_etud_game_test,
                                     '% étudiants ayant réalisé le jeu (total)' : pourcent_etud_game,
                                     '% étudiants débutants (jeu)' : pourcent_etud_game_debutant,
                                     '% étudiants avec tests (jeu)' : pourcent_etud_game_avec_tests,
@@ -1996,6 +2160,7 @@ def genere_donnees_test_games(df:pd.DataFrame, df_tests_game:pd.DataFrame, df_ad
     return df_plot
 
 
+df_tests_tpgame_all.columns
 
 df_plot_games =  genere_donnees_test_games(df, df_tests_tpgame_all, df_admin_etud_debutants, GAMES_ANALYZED)
 
@@ -2005,16 +2170,14 @@ df_plot_games
 
 df_tests_tpgame_all.columns
 
-df_tests_tpgame_all.loc[0]
+# df_tests_by_function_tpgame_all : calculé par find_tests_by_function_for_games
 
-df_tests_tpgame_all.tp.unique()
-
-df_tests_tpgame_all.filename_infere.unique()
+df_tests_by_function_tpgame_all.columns
 
 
-# TODO à adapter aux TP games
-
-def tests_executes_pour_tests_ecrits_game(actor:str, df: pd.DataFrame, df_tests_ecrits_filename:pd.DataFrame, df_all_verdicts:pd.DataFrame, filename:str) -> tuple[bool, int, pd.DataFrame, pd.DataFrame]:
+# Cette fonction ne sert pas...
+def tests_executes_pour_tests_ecrits_game(actor:str, df: pd.DataFrame, df_tests_ecrits_filename:pd.DataFrame, \
+                                          df_all_verdicts:pd.DataFrame, filename:str) -> tuple[bool, int, pd.DataFrame, pd.DataFrame]:
     '''
     Cherche le Run.Test le plus récent dans df pour actor. Renvoie un quadruplet
     
@@ -2063,18 +2226,72 @@ def tests_executes_pour_tests_ecrits_game(actor:str, df: pd.DataFrame, df_tests_
 
 df_binairo.columns
 
+df_binairo_by_function = df_tests_by_function_tpgame_all[df_tests_by_function_tpgame_all['filename_infere']=='binairo.py']
+
+df_binairo_by_function.columns
+
+df_binairo_by_function[df_binairo_by_function['actor']=='yanko.lemoine.etu']
+
+df_binairo_by_function[df_binairo_by_function['actor']=='yanko.lemoine.etu']['tests_number'].sum()
+
 df_binairo[df_binairo['actor']=='yanko.lemoine.etu']
 
-res_bool_bin_yl, index_runTest_in_df_bin_yl, df_runTest_tests_number_bin_yl, df_tests_ecrits_filename_strict_pos_bin_yl = tests_executes_pour_tests_ecrits('yanko.lemoine.etu', df, df_binairo, df_all_verdicts,filename='binairo.py' )
+res_bool_bin_yl, index_runTest_in_df_bin_yl, df_runTest_tests_number_bin_yl, df_tests_ecrits_filename_strict_pos_bin_yl = tests_executes_pour_tests_ecrits('yanko.lemoine.etu', df, df_binairo_by_function, df_all_verdicts,filename='binairo.py' )
 
 
-res_bool_p4_yl
+res_bool_bin_yl
 
-index_runTest_in_df_p4_yl
+index_runTest_in_df_bin_yl
 
-df_runTest_tests_number_p4_yl
+df_runTest_tests_number_bin_yl
 
-df_tests_ecrits_filename_strict_pos_p4_yl
+df_tests_ecrits_filename_strict_pos_bin_yl
+
+
+def genere_donnees_tests_ecrits_executes_game(df:pd.DataFrame, df_tests:pd.DataFrame, df_all_verdicts:pd.DataFrame,\
+                                              df_plot_nombre_tests_ecrits_games: pd.DataFrame,games_name:list[str]) -> pd.DataFrame:
+    """
+    Génère un df avec les données pour plot.
+
+    Args :
+        df : le df total et global
+        df_tests : df avec colonnes ['actor', 'filename_infere', 'function_name', 'tests_number', 'index']
+        df_all_verdicts : le df qui contient tous les tests ligne par ligne extraits de df
+        df_plot_nombre_tests_ecrits_games : df avec la colonne 'Nb etud avec tests présents'
+        games_name : la liste des noms de TP Game
+    """
+    df_plot = pd.DataFrame(columns=['Nom jeu', 'number_of_students_with_tests', 'number_of_students_with_all_tests_executed', 'pourcentage'])
+    for name_game in games_name:
+        df_tp_tests = df_tests[df_tests['filename_infere']==name_game]
+        actor_column_tp_tests_ecrits  = df_tp_tests['actor'].unique()
+        df_tests_ecrits_executes_tp = pd.DataFrame(columns=['actor', 'tests_ecrits_executes'])
+        for student in actor_column_tp_tests_ecrits:
+            res_bool, index_runTest_in_df,  df_runTest_tests_number, df_tests_ecrits_filename_strict_pos = tests_executes_pour_tests_ecrits(student, df, df_tp_tests, df_all_verdicts, filename=name_game)
+            petit_df = pd.DataFrame({'actor':[student], 'tests_ecrits_executes':res_bool})
+            df_tests_ecrits_executes_tp = pd.concat([df_tests_ecrits_executes_tp, petit_df], ignore_index=True )
+        # Il faut modifier cette ligne en reprenant la fonction faite pour les TP
+        # 'jeu' clé merdique, à revoir. 
+        nb_etuds_avec_tests = df_plot_nombre_tests_ecrits_games[df_plot_nombre_tests_ecrits_games['jeu']==name_game]['Nb etud avec tests présents'].iloc[0]
+        #nb_etuds_avec_tests = len(df_tests_ecrits_executes_tp)
+        nb_etuds_avec_tests_executes = len(df_tests_ecrits_executes_tp[df_tests_ecrits_executes_tp['tests_ecrits_executes']==True])
+        pourcentage_exec_tests_ecrits_tp = nb_etuds_avec_tests_executes/nb_etuds_avec_tests*100
+        df_plot_tp = pd.DataFrame({'Nom jeu' : [name_game], \
+                                      'number_of_students_with_tests' : nb_etuds_avec_tests, \
+                                      'number_of_students_with_all_tests_executed' : nb_etuds_avec_tests_executes, \
+                                      'pourcentage' : pourcentage_exec_tests_ecrits_tp})
+        df_plot = pd.concat([df_plot, df_plot_tp], ignore_index=True)
+    return df_plot
+
+
+GAMES_ANALYZED
+
+df_tests_by_function_tpgame_all.columns
+
+df_plot_games.columns
+
+df_tests_ecrits_executes_game = genere_donnees_tests_ecrits_executes_game(df, df_tests_by_function_tpgame_all, df_all_verdicts, df_plot_games, GAMES_ANALYZED)
+
+df_tests_ecrits_executes_game
 
 # # Investigation maudit TP6
 
