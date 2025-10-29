@@ -254,9 +254,54 @@ actor_oui_research_usage = actors(df_modif_research_OK[df_modif_research_OK['res
 
 print(f"Après respect de la RGPD il reste {len(actor_oui_research_usage)} acteurs")
 
+# # Reprise travail Sana
 
+TPs_avec_sem5 = ['Tp2', 'Tp3', 'Tp4', 'Tp5', 'Tp6', 'Tp7', 'Tp8', 'Tp9']
+
+
+def nb_etud_effectuant_au_moins_un_verb_par_tp(df:pd.DataFrame) -> pd.DataFrame:
+    """
+    Renvoie un df avec comme colonnes : TP, nombre_total_etud, Run.Command, Run.Program, Run.Test, Run.Debugger, chaque colonne contenant le nb d'étudiants
+    ayant utilisé ce verbe pendant le TP.
+    """
+    verbs = ['Run.Command','Run.Program','Run.Test','Run.Debugger']
+    dico = {'Tp' : [], 'nombre_total_etud' : [], 'Run.Command': [], 'Run.Program': [], 'Run.Test': [], 'Run.Debugger': []}
+    for tp in TPs_avec_sem5:
+        df_Tp = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')]
+        dico['nombre_total_etud'].append(len(actors(df_Tp)))
+        dico['Tp'].append(tp)
+        for verb in verbs:
+            df_Tp_verb = df_Tp[df_Tp['verb']==verb]
+            nb_actors = len(actors(df_Tp_verb))
+            dico[verb].append(nb_actors)
+    df_res = pd.DataFrame(data=dico)
+    #    df_res = pd.concat([df_res, df_ligne], ignore_index=True)
+    return df_res
+
+
+df_etud_effectuant_au_moins_un_verb_par_tp = nb_etud_effectuant_au_moins_un_verb_par_tp(df)
+
+df_etud_effectuant_au_moins_un_verb_par_tp
+
+
+def plot_etud_effectuant_au_moins_un_verb_par_tp(df:pd.DataFrame) -> None:
+    """
+    Affiche le graphique correspondant au df paramètre.
+    """
+    df_plot = df.copy()
+    df_plot.set_index('TP')[['Nombre d\'étudiants pour le Tp','Run.Command', 'Run.Program','Run.Test','Run.Debugger']].plot(kind='bar', figsize=(12, 6))
+
+    plt.title("Comparing the total number of students with the number of students using each verb in TP_prog")
+    plt.ylabel("Number of students")
+    plt.xlabel("TP guidés")
+    plt.xticks(rotation=45)
+    plt.legend(title="Verbs")
+    plt.tight_layout()
+    plt.show()
 
 # # Fonctions pour analyser le nb de tests écrits par fonctions, pour les TPs Tp_Prog de 'Tp2' à 'Tp9'
+
+
 
 # ## Ajouts à faire dans src.data.variable_constants_2425
 
@@ -961,11 +1006,14 @@ df_run_tests_tp2.loc[df_run_tests_tp2['function_name']=='repetition']['tests_num
 
 df_run_tests_tp2.loc[df_run_tests_tp2['function_name']=='repetition']['tests_number'].values
 
-df_run_tests_tp2.loc[df_run_tests_tp2['function_name']=='repetition']['tests_number'].values[0]
+# +
+#(df_run_tests_tp2.loc[df_run_tests_tp2['function_name']=='repetition']['tests_number'].values)[0]
 
-type(df_run_tests_tp2.loc[df_run_tests_tp2['function_name']=='repetition']['tests_number'].values[0])
+# +
+#type(df_run_tests_tp2.loc[df_run_tests_tp2['function_name']=='repetition']['tests_number'].values[0])
+# -
 
-# Bon, c'est très laid et sûrement qu'un pro de pandas ne ferait pas comme ça, mais ça marche.
+# Bon, c'est très laid et sûrement qu'un pro de pandas ne ferait pas comme ça, mais ça marche. Enfin ça marchait, maintenant IndexError ?
 
 'repetition' in df_run_tests_tp2.function_name.values
 
@@ -1836,12 +1884,19 @@ import matplotlib.pyplot as plt
 
 
 def genere_donnees_plot_nombre_tests_ecrits_tp_guides(df_plot:pd.DataFrame) -> pd.DataFrame:
+    df = df_plot.copy()
+    df = df.rename(columns={'Nb etud' : 'Nb etud', \
+              'Nb etud analyse impossible' : 'Nb etud analyse impossible', \
+              'Nb etud avec tests présents' : 'Nb etud avec tests présents', \
+              'Nb etud avec tests présents pour toute fonction écrite' : 'pour toutes fonctions écrites', \
+              'Nb etud avec aucun test' : 'pour aucune fonction écrite', \
+              'Nb etud avec tests présents pour qq fonctions écrites' : 'pour certaines fonctions écrites'})
     df_plot_pratique_ecriture_tests_tp = pd.DataFrame(columns=['Tps', 'pour toutes fonctions écrites', 'pour aucune fonction écrite', 'pour certaines fonctions écrites'])
-    df_plot_pratique_ecriture_tests_tp['Tps'] = df_plot['Tps']
-    df_nb_total = df_plot['etud_testant_toute_fonction_ecrite'] + df_plot['etud_testant_aucune_fonction_ecrite'] + df_plot['etud_qq_tests_fonction_ecrite']
-    df_plot_pratique_ecriture_tests_tp['pour toutes fonctions écrites'] = pd.to_numeric(df_plot['etud_testant_toute_fonction_ecrite']/df_nb_total*100)
-    df_plot_pratique_ecriture_tests_tp['pour aucune fonction écrite'] = pd.to_numeric(df_plot['etud_testant_aucune_fonction_ecrite']/df_nb_total*100)
-    df_plot_pratique_ecriture_tests_tp['pour certaines fonctions écrites'] = pd.to_numeric(df_plot['etud_qq_tests_fonction_ecrite']/df_nb_total*100)
+    df_plot_pratique_ecriture_tests_tp['Tps'] = df['Tps']
+    df_nb_total = df['pour toutes fonctions écrites'] + df['pour aucune fonction écrite'] + df['pour certaines fonctions écrites']
+    df_plot_pratique_ecriture_tests_tp['pour toutes fonctions écrites'] = pd.to_numeric(df['pour toutes fonctions écrites']/df_nb_total*100)
+    df_plot_pratique_ecriture_tests_tp['pour aucune fonction écrite'] = pd.to_numeric(df['pour aucune fonction écrite']/df_nb_total*100)
+    df_plot_pratique_ecriture_tests_tp['pour certaines fonctions écrites'] = pd.to_numeric(df['pour certaines fonctions écrites']/df_nb_total*100)
     return df_plot_pratique_ecriture_tests_tp.round(1)
 
 
@@ -1872,8 +1927,8 @@ LABEL_NB_ETUD_CODESTATE_ANALYSE = 'dont le code a pu être analysé syntaxiqueme
 def genere_donnees_plot_nombre_etudiants_tests_analyses_tp_guides(df_plot:pd.DataFrame) -> pd.DataFrame:
     df_plot_analyse_possible_codestate_tp = pd.DataFrame(columns=['Tps', LABEL_NB_ETUD_TP, LABEL_NB_ETUD_CODESTATE_ANALYSE])
     df_plot_analyse_possible_codestate_tp['Tps'] = df_plot['Tps']
-    df_plot_analyse_possible_codestate_tp[LABEL_NB_ETUD_TP] = df_plot['number_of_students']
-    df_nb_etudiants_analyse_possible = df_plot['number_of_students'] - df_plot['number_of_students_analysis_not_possible']
+    df_plot_analyse_possible_codestate_tp[LABEL_NB_ETUD_TP] = df_plot['Nb etud']
+    df_nb_etudiants_analyse_possible = df_plot['Nb etud'] - df_plot['Nb etud analyse impossible']
     df_plot_analyse_possible_codestate_tp[LABEL_NB_ETUD_CODESTATE_ANALYSE] = df_nb_etudiants_analyse_possible
     
     return df_plot_analyse_possible_codestate_tp
@@ -1884,8 +1939,6 @@ df_plot_analyse_possible_tp
 
 
 def plot_nombre_etudiants_tp_guides(df_plot:pd.DataFrame) -> None:
-    names = TPs
-
     df_plot_analyse_possible_codestate_tp = genere_donnees_plot_nombre_etudiants_tests_analyses_tp_guides(df_plot)
     
     df_plot_analyse_possible_codestate_tp.set_index('Tps')[[LABEL_NB_ETUD_TP, LABEL_NB_ETUD_CODESTATE_ANALYSE]].plot(kind='bar', figsize=(12, 6))
@@ -1989,6 +2042,36 @@ df_tests_ecrits_executes = genere_donnees_tests_ecrits_executes(df, df_tests, df
                                                                 df_plot_nombre_tests_ecrits_tp_guides, PROG_FILENAMES_BY_TP)
 
 df_tests_ecrits_executes
+
+LABEL_NB_ETUD_WITH_TESTS = "avec tests présents"
+LABEL_TESTS_EXECUTES = "dont tous les tests ont été exécutés"
+
+
+def plot_tests_ecrits_executes(df_tests_ecrits_executes:pd.DataFrame) -> None:
+    """
+    AFfiche le graphe avec le nb d'étudiants ayant exécuté tous les tests présents dans le code.
+
+    Args :
+        df : le df total et global
+        df_tests : df avec colonnes ['actor', 'tp', 'function_name', 'tests_number', 'index']
+        df_all_verdicts : le df qui contient tous les tests ligne par ligne extraits de df
+        df_plot_nombre_tests_ecrits_tp_guides : contient la colonne 'Nb etud avec tests présents'
+        tp_filenames : le dict {nom_TP : filename}
+    """
+    df_plot = df_tests_ecrits_executes.copy()
+    df_plot = df_plot.rename(columns={'number_of_students_with_tests':LABEL_NB_ETUD_WITH_TESTS, \
+                                             'number_of_students_with_all_tests_executed':LABEL_TESTS_EXECUTES})
+    df_plot.set_index('Tps')[[LABEL_NB_ETUD_WITH_TESTS, LABEL_TESTS_EXECUTES]].plot(kind='bar', figsize=(12, 6))
+    plt.title("Étudiant·s ayant travaillé sur les TPs guidés")
+    plt.ylabel("Nombre d'étudiants")
+    plt.xlabel("TPs guidés")
+    plt.xticks(rotation=45)
+    plt.legend(title="Nb étudiant·es")
+    plt.tight_layout()
+    plt.show()
+
+
+plot_tests_ecrits_executes(df_tests_ecrits_executes)
 
 # # Fonctions pour analyse des TPs Game
 
@@ -2294,6 +2377,11 @@ df_tests_ecrits_executes_game = genere_donnees_tests_ecrits_executes_game(df, df
 df_tests_ecrits_executes_game
 
 # # Investigation maudit TP6
+
+#
+# Cette partie n'est plus nécessaire, puisque j'ai trouvé le bug (qui était que j'avais oublié un "s" dans le trace... trace du fichier fourni dans le TP6.
+#
+# Je garde car j'avais quand même trouvé un étudiant qui n'a plus du tout fait de test en semaine 6 (à vérifier qd même).
 
 df_tp6 = df[df['TP']=='Tp6'].copy()
 

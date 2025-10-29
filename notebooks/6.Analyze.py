@@ -46,6 +46,9 @@ from thonnycontrib.backend.test_finder import L1TestFinder
 from thonnycontrib.exceptions import SpaceMissingAfterPromptException
 
 
+# %%
+TP_NAME
+
 # %% [markdown]
 # ## 2.Load DataFrame
 
@@ -278,6 +281,7 @@ for tp in TP_NAME:
         binome_column = df_filtered[df_filtered['verb'] == verb]['binome']
 
         all_students  = set(actor_column).union(set(binome_column))
+        # ici il faudrait virer ''
         number_of_students.append(len(all_students))
 
     # Append row to df
