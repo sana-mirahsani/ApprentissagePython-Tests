@@ -174,7 +174,7 @@ print(f"Le df après RGPD contient {len(actors(df))} acteurs et binômes et {len
 
 # ## Données générales sur les TPs guidés
 
-TPs_sans_sem5 = ['Tp2', 'Tp3', 'Tp4', 'Tp6', 'Tp7', 'Tp8', 'Tp9']
+TPS_SANS_SEM_5 = ['Tp2', 'Tp3', 'Tp4', 'Tp6', 'Tp7', 'Tp8', 'Tp9']
 
 
 def df_TP_guides_prog(df:pd.DataFrame, liste_tp:list[str]) -> pd.DataFrame:
@@ -207,7 +207,7 @@ def genere_donnees_presentation_TP_guides(df:pd.DataFrame) -> pd.DataFrame:
     Args:
         df : le df initial avec l'indication de cursus, colonnes 'TP', 'Type_TP', 'actor', 'binome', 'filename_infere', 'debutant'
     """
-    df_param = df_TP_guides_prog(df, TPs_sans_sem5)
+    df_param = df_TP_guides_prog(df, TPS_SANS_SEM_5)
     df_res = pd.DataFrame(columns=['TP', 'nb_etud', 'nb_debutants', 'pourcentage_debutants'])
     for tp in TPs_sans_sem5:
         df_tp = df_param[df_param['TP'] == tp]
@@ -223,7 +223,34 @@ df_donnees_TP_guides = genere_donnees_presentation_TP_guides(df)
 
 df_donnees_TP_guides
 
-# Le nombre d'étudiant·es ayant réalisé en présentiel les TPs guidés oscille entre 152 et 173. Parmi ces étudiant·es, le pourcentage d'étudiant·es débutant·es ayant réalisé en présentiel les TPs guidés oscille entre 53 et 58%.
+
+# Le nombre d'étudiant·es ayant réalisé en présentiel les TPs guidés oscille entre 152 et 173 selon la semaine. Parmi ces étudiant·es, le pourcentage d'étudiant·es débutant·es ayant réalisé en présentiel les TPs guidés oscille entre 53 et 58% selon la semaine.
+
+def plot_TPs_guides_general(df_donnees_TP_guides:pd.DataFrame) -> None:
+    """
+    Args :
+        df avec colonnes TP, nb_etud , nb_debutants
+    """
+    fig, ax = plt.subplots()
+    bottom = np.zeros(len(TPS_SANS_SEM_5))
+    serie_nb_etud = df_donnees_TP_guides['nb_etud']
+    serie_nb_deb = df_donnees_TP_guides['nb_debutants']
+    serie_nb_non_deb = serie_nb_etud - serie_nb_deb
+    dico = {'débutants' : serie_nb_deb, 'non débutants' : serie_nb_non_deb}
+    
+    for labels, values in dico.items():
+        p = ax.bar(TPS_SANS_SEM_5, values, 0.5, label=labels, bottom=bottom)
+        bottom += values
+
+        ax.bar_label(p, label_type='center')
+
+    ax.set_title('Données générales TPs guidés')
+    ax.legend()
+
+    plt.show()
+
+
+plot_TPs_guides_general(df_donnees_TP_guides)
 
 # ## Analyse de la pratique du test pour les TPs guidés
 
@@ -233,11 +260,167 @@ df_donnees_TP_guides
 # - exécuter ces tests une fois le code à tester écrit
 # - interpréter le verdict des tests et agir en conséquence
 #
-# Dans ce travail nous n'analysons pas l'action qui suit l'exécution des tests. Dans le cadre de TPs guidés puis des TPs non guidés, nous regardons si les étudiant·es ont écrit au moins un test. Puis, nous regardons si nous trouvons dans les traces une exécution de ce test ou ces tests. 
+# Dans ce travail nous n'analysons pas l'action qui suit l'exécution des tests. Nous regardons juste si le travail contient un ou des tests et si nous trouvons une trace de l'exécution de ces tests.
 #
-# Dans le cadre des TPs guidés, pour lesquels les fonctions à écrire sont connues, nous regardons de plus si les étudiant·es ont écrit un ou des tests pour chaque fonction, ou s'ils n'écrivent des tests pour aucune fonction.
+#
+
+# ### Écriture de tests
+
+# Les tests sont cherchés dans les fichiers récupérés dans les contenus d'éditeur. Pour un·e étudiant·e donné·e les traces contiennent de nombreux contenus d'éditeurs relatifs à un TP donné, qui représentent la chronologie du travail de l'étudiant·e. Il faut en choisir un. Le principe adopté ici est de prendre le contenu de l'éditeur qui a l'horodatage le plus récent et qu'on peut imaginer être le travail le plus abouti. 
+#
+# Pour extraire les tests écrits du code nous utilisons une fonctionnalité interne à L1Test qui nécessite d'analyser syntaxiquement le code Python. Ce n'est pas possible si l'étudiant·e a fait une erreur de syntaxe. L'algorithme est donc le suivant : on examine le contenu de l'éditeur le plus récent. Si on peut en extraire des tests, on le fait. Si on ne peut pas en extraire des tests, alors on cherche le contenu d'éditeur qui a l'horodatage le plus récent à l'exclusion du précédent, et on répète tant qu'il y a des contenus d'éditeur à examiner.
+#
+# Dans le cadre des TPs guidés, pour lesquels les fonctions à écrire sont connues, nous estimons qu'au niveau débutant une fonction est testée si au moins un test a été écrit. Nous pouvons regarder si, au sein d'un TP, les étudiant·es ont écrit un ou des tests pour chaque fonction, ou s'ils n'écrivent des tests pour aucune fonction.
 #
 # /!\ on ne sait pas si, qd un étudiant n'a pas exécuté tous les tests écrits sur toutes les fonctions, ce qu'il se passe. Il a peut-être exécuté les tests d'une fonction seulement en utilisant le menu de L1Test.
+
+# TP2
+FUNCTIONS_TP2_Prog = [
+    "repetition",
+    "moyenne_entiere",
+    "moyenne_entiere_ponderee",
+    "heure2minute",
+    "jour2heure",
+    "en_minutes",
+    "message",
+    "bonbons_par_enfant"
+]
+# TP3
+FUNCTIONS_TP3_Prog = [
+    "est_non_vide",
+    "est_reponse",
+    "est_beneficiaire",
+    "est_reponse_correcte",
+    "est_en_ete",
+    "est_nombre_mystere",
+    "ont_intersection_vide",
+    "intervalle1_contient_intervalle2",
+    "sont_intervalles_recouvrants",
+    "est_gagnant",
+    "est_strict_anterieure_a",
+    "est_mineur_a_date",
+    "est_senior_a_date",
+    "a_tarif_reduit_a_date",
+]
+# TP4 
+FUNCTIONS_TP4_Prog = [
+    "numero_jour",
+    "nom_jour",
+    "est_date_valide",
+    "est_jour_valide",
+    "nombre_jours",
+    "est_mois_valide",
+    "calcul_gain",
+    "montant_facture",
+    "nombre_exemplaires",
+    "conseil_voiture",
+    "argminimum",
+    "cout_location",
+    "minimum3",
+    "compare",
+    "maximum", 
+    "est_bissextile"
+]
+# TP5
+FUNCTIONS_TP5_Prog = [
+    #"<trace>imprimerie.py</trace>",
+    #"<trace>jeu_421.py</trace>",
+    "representation_lancer",
+    "de",
+    "est_42",
+    "est_421",
+]
+# TP6
+FUNCTIONS_TP6_Prog = [
+    "carres",
+    "nombre_occurrences",
+    "nombre_occurrences2",
+    "moyenne",
+    "sans_elt",
+    "positive",
+    "chiffres",
+    #"miroir", à enlever car présent ds 2 TP
+    "compte_car"
+]
+# TP7
+FUNCTIONS_TP7_Prog = [
+    "echantillonne",
+    "elements_indices_impairs",
+    #"miroir", à enlever car présent ds 2 TP
+    "minimum",
+    "decoupage",
+    "premieres_occurrences",
+    "matchs",
+    "nom_domaines",
+    "max_identiques",
+    "suffixes",
+    "resume",
+    "ajout_separateur",
+    "construit_mots"   
+]
+# TP8
+FUNCTIONS_TP8_Prog = [
+    #"# Jeu de Nim",
+    "compte_motif",
+    "indice_maximum",
+    "moyenne_ponderee",
+    "addition_digit",
+    "addition",
+    "determine",
+    "supprime",
+    "filtre",
+    "nb_jours_avant_1m_blob",
+    "somme_chiffres",
+    #"saisie_pseudo_avec_verification" # non testable 
+]
+# TP9
+FUNCTIONS_TP9_Prog = [
+    "toutes_longueurs_impaires_while",
+    "toutes_longueurs_impaires_for",
+    "contient_chiffre_ou_minuscule_while",
+    "indice_positif_while",
+    "indice_positif_for",
+    "contient_nb_occurrences_ou_plus_while",
+    "contient_nb_occurrences_ou_plus_for",
+    "est_palindrome_while",
+    "est_palindrome_for",
+    "est_croissante_while",
+    "est_croissante_for",
+    "tous_differents_while",
+    "tous_differents_for",
+    "produit_vaut_n_while",
+    "produit_vaut_n_for",
+    "suffixe_somme_while",
+    "suffixe_somme_for",
+    "hexa_decimal",
+    "decimal_hexa",
+    "est_hexa",
+    "hexa_binaire",
+    "binaire_hexa",
+    "genere_hexa",
+    "genere_hexa_sans_begaiement",
+]
+
+PROG_FUNCTIONS_NAME_BY_TP = {
+    'Tp2' : FUNCTIONS_TP2_Prog,
+    'Tp3' : FUNCTIONS_TP3_Prog,
+    'Tp4' : FUNCTIONS_TP4_Prog,
+    'Tp5' : FUNCTIONS_TP5_Prog,
+    'Tp6' : FUNCTIONS_TP6_Prog,
+    'Tp7' : FUNCTIONS_TP7_Prog,
+    'Tp8' : FUNCTIONS_TP8_Prog,
+    'Tp9' : FUNCTIONS_TP9_Prog,
+}
+
+PROG_FILENAMES_BY_TP = {
+    'Tp2' : 'fonctions.py',
+    'Tp3' : 'booleens.py',
+    'Tp4' : 'conditionnelles.py',
+    'Tp6' : 'iterables_for.py',
+    'Tp7' : 'iterable_indexation.py',
+    'Tp8' : 'while.py',
+    'Tp9' : 'parcours_interrompu.py',    
+}
 
 
 
