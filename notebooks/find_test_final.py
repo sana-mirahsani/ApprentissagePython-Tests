@@ -1039,10 +1039,8 @@ ok
 def tests_executes_pour_tests_ecrits(actor:str, df: pd.DataFrame, df_tests_ecrits_filename:pd.DataFrame, df_all_verdicts:pd.DataFrame, filename:str) -> tuple[bool, int, pd.DataFrame, pd.DataFrame]:
     '''
     Cherche le Run.Test le plus récent dans df pour actor.
-    
-res_bool, index_runTest_in_df,  df_runTest_tests_number, df_tests_ecrits_filename_strict_pos
-    
-    Renvoie :
+        
+    Renvoie : res_bool, index_runTest_in_df,  df_runTest_tests_number, df_tests_ecrits_filename_strict_pos
         - res_bool : True ssi les fonctions qui ont n tests écrits dans df_all_verdicts ont au moins n tests exécutés dans le Run.Test.
         - index_runTest_in_df : index of the mot recent Run.Test found and used inside the computation
         - df_runTest_tests_number : df avec colonnes "function_name" et 'tests_number', calculé en regardant les tests de df_all_verdicts à l'index du Run.Test

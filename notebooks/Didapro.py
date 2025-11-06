@@ -128,14 +128,13 @@ def is_deb_def(df_admin:pd.DataFrame) -> pd.DataFrame:
 df_is_deb = is_deb_def(df_admin_etud)
 
 
+# finalement ne sert pas
 def est_debutant(actor:str, df_is_deb:pd.DataFrame) -> bool:
     """
     Renvoie True ssi actor est "debutant" dans df_is_deb
     """
     return (df_is_deb[df_is_deb['actor']==actor]['debutant']==True).values[0]
 
-
-est_debutant('noam.taibi.etu', df_is_deb)
 
 # # Contexte de l'expérimentation
 
@@ -167,7 +166,7 @@ est_debutant('noam.taibi.etu', df_is_deb)
 #
 # Durant les premières semaine, les étudiant·es peuvent réaliser des activités de manipulation (du type de données étudié pendant la semaine, de l'outil de débogage, de recherche d'erreurs dans les fonctions fournies dans un fichier...). Ce ne sont pas des activités de programmation à proprement parler et les analyses ne les prennent pas en compte. 
 #
-# Les activités de programmation consistent à écrire des fonctions dont le nom est fourni, et dont la signature est fortement suggérée dans le fichier fourni à compléter. Les tests sont fournis au début, puis ils sont fournis de manière moins claire. Par exemple un test est donné et il est précisé dans les consignes qu'il faut en ajouter, soit des données de tests sont données sans syntaxe, soit rien n'est fourni.
+# Les activités de programmation consistent à écrire des fonctions dont le nom est fourni, et dont la signature est fortement suggérée dans le fichier fourni à compléter. Les tests sont fournis au début, puis ils sont fournis de manière moins claire. Par exemple soit un test est donné et il est précisé dans les consignes qu'il faut en ajouter, soit des données de tests sont données sans syntaxe, soit rien n'est fourni.
 #
 # Dans la mesure où nous savons exactement quelles fonctions chercher dans les traces d'activités des étudiant·es, nous pouvons analyser la pratique du test par fonction. Nous pouvons aussi exclure de l'analyse les fonctions dont nous savons qu'elles ne sont pas testables (fonction impliquant des entrées-sorties ou de l'aléatoire, fonctions principales). Nous n'avons pas cherché à analyser si les étudiant·es essaient d'écrire des tests pour ces fonctions non testables.
 #
@@ -295,8 +294,7 @@ plot_TPs_guides_general(df_donnees_TP_guides)
 
 # Les tests sont cherchés dans les fichiers récupérés dans les contenus d'éditeur. Pour un·e étudiant·e donné·e les traces contiennent de nombreux contenus d'éditeurs relatifs à un TP donné, qui représentent la chronologie du travail de l'étudiant·e. Il faut en choisir un. Le principe adopté ici est de prendre le contenu de l'éditeur qui a l'horodatage le plus récent et qu'on peut imaginer être le travail le plus abouti. 
 #
-# Pour extraire les tests écrits du code nous utilisons une fonctionnalité interne à L1Test qui nécessite d'analyser syntaxiquement le code Python. Ce n'est pas possible si l'étudiant·e a fait une erreur de syntaxe. L'algorithme est donc le suivant : on examine le contenu de l'éditeur le plus récent. Si on peut en extraire des tests, on le fait. Si on ne peut pas en extraire des tests, alors on cherche le contenu d'éditeur qui a l'horodatage le plus récent à l'exclusion du précédent, et on répète tant qu'il y a des contenus d'éditeur à examiner. L'inconvénient de notre approche est que nous excluons de notre analyse le travail des étudiant·es qui ne parviennent pas à maîtriser les aspects syntaxiques, mais le nombre de travaux exclus reste faible en regard du nombre total. Sur les TPs 2 à 9 nous avons exclu au pire 9 étudiant·es (TP8 : 9 travaux non analysables sur 155). Pour 5 de ces TPs on trouve que 100% des travaux exclus sont ceux de débutant·es, ce qui est cohérent avec la non maîtrise syntaxique du langage.
-#
+# Pour extraire les tests écrits du code nous utilisons une fonctionnalité interne à L1Test qui nécessite d'analyser syntaxiquement le code Python. Ce n'est pas possible si l'étudiant·e a fait une erreur de syntaxe. L'algorithme est donc le suivant : on examine le contenu de l'éditeur le plus récent. Si on peut en extraire des tests, on le fait. Si on ne peut pas en extraire des tests, alors on cherche le contenu d'éditeur qui a l'horodatage le plus récent à l'exclusion du précédent, et on répète tant qu'il y a des contenus d'éditeur à examiner. L'inconvénient de notre approche est que nous excluons de notre analyse le travail des étudiant·es qui ne parviennent pas à maîtriser les aspects syntaxiques, mais le nombre de travaux exclus reste faible en regard du nombre total. Sur les TPs 2 à 9 nous avons exclu en moyenne 2.6% des travaux, avec un maximum à 5.8% pour le TP8. Les travaux exclus sont en moyenne à 90% des travaux de débutants (écart-type : 17), avec une valeur de 100% pour 5 des TPs. C'est cohérent avec la non maîtrise syntaxique du langage.
 #
 #
 # /!\ on ne sait pas si, qd un étudiant n'a pas exécuté tous les tests écrits sur toutes les fonctions, ce qu'il se passe. Il a peut-être exécuté les tests d'une fonction seulement en utilisant le menu de L1Test.
@@ -732,7 +730,9 @@ def actors_par_pratique_ecriture_tests(df_tests_number:pd.DataFrame) -> tuple[li
     Args:
         df_tests_number : dataframe avec colonnes actor et tests_number issu d'un appel à find_tests_xxxx
     '''
+    # J'ai bien relu ce code, il est long mais compréhensible, il pourrait être découpé en 6 petites fonctions
     df_tests_number_sans_nan = df_tests_number.copy() # au cas où
+    # Rappel : NaN pour le nb de tests qd la fonction n'existe pas dans le code analysé 
     df_tests_number_sans_nan = df_tests_number_sans_nan[pd.notna(df_tests_number_sans_nan['tests_number'])]
     df_tests_number_sans_nan['tests_number_nul'] = df_tests_number_sans_nan['tests_number'].map(lambda x : x == 0)
     df_tests_number_sans_nan['tests_number_not_nul'] = df_tests_number_sans_nan['tests_number'].map(lambda x : x > 0)
@@ -757,12 +757,14 @@ def actors_par_pratique_ecriture_tests(df_tests_number:pd.DataFrame) -> tuple[li
     df_tests_numbers_qq_tests_interm_deb = df_tests_number_sans_nan_deb.groupby(['actor']).tests_number_not_nul.any()
     df_tests_numbers_qq_tests_deb = df_tests_numbers_qq_tests_interm_deb[df_tests_numbers_qq_tests_interm_deb==True]
     actors_qq_fonc_testees_deb = list(set(df_tests_numbers_qq_tests_deb.index).difference(set(df_tests_number_avec_tous_tests_deb.index)))
-    assert len(list(df_tests_number_avec_tous_tests.index)) + len(list(df_tests_number_avec_0_test.index)) + len(actors_qq_fonc_testees) == len(df_tests_number.actor.unique())
+    # autres var résultat
     actors_toutes_fonc_testees = list(df_tests_number_avec_tous_tests.index)
     actors_deb_toutes_fonc_testees = list(df_tests_number_avec_tous_tests_deb.index)
-    assert set(actors_deb_toutes_fonc_testees) == set(select_debutants(actors_toutes_fonc_testees, df_is_deb))
     actors_aucune_fonction_testee = list(df_tests_number_avec_0_test.index)
     actors_deb_aucune_fonction_testee = list(df_tests_number_avec_0_test_deb.index)
+    # Tient lieu de test
+    assert len(list(df_tests_number_avec_tous_tests.index)) + len(list(df_tests_number_avec_0_test.index)) + len(actors_qq_fonc_testees) == len(df_tests_number.actor.unique())
+    assert set(actors_deb_toutes_fonc_testees) == set(select_debutants(actors_toutes_fonc_testees, df_is_deb))
     assert set(actors_deb_aucune_fonction_testee) == set(select_debutants(actors_aucune_fonction_testee, df_is_deb))
     assert set(actors_qq_fonc_testees_deb) == set(select_debutants(actors_qq_fonc_testees, df_is_deb))
     return actors_toutes_fonc_testees, actors_aucune_fonction_testee, actors_qq_fonc_testees, \
@@ -773,6 +775,71 @@ actors_toutes_fonc_testees, actors_aucune_fonction_testee, actors_qq_fonc_testee
 actors_deb_toutes_fonc_testees, actors_deb_aucune_fonction_testee, actors_deb_qq_fonc_testees \
 = actors_par_pratique_ecriture_tests(df_tests_number_deb)
 
+# +
+LBL_NB_ETUD = 'Nb étud'
+LBL_NB_DEB = 'Nb débutants'
+LBL_NB_NON_DEB = 'Nb non débutants'
+LBL_NB_ETUD_ANALYSABLE = 'Nb étud analyse possible'
+LBL_NB_ETUD_NON_ANALYSABLE = 'Nb étud analyse impossible'
+LBL_PCT_NON_ANALYSABLE = 'Pourcentage étud analyse impossible'
+LBL_NB_DEB_ANALYSABLE = 'Nb déb analyse possible'
+LBL_NB_DEB_NON_ANALYSABLE = 'Nb déb analyse impossible'
+LBL_NB_NON_DEB_ANALYSABLE = 'Nb non déb analyse possible'
+LBL_NB_NON_DEB_NON_ANALYSABLE = 'Nb non déb analyse impossible'
+LBL_PCT_DEB_NON_ANALYSABLE = 'Pourcentage débutants analyse impossible (an impossible)'
+LBL_NB_ETUD_TESTS_PRESENTS = 'Nb étud avec tests présents'
+LBL_NB_DEB_TESTS_PRESENTS = 'Nb débutants avec tests présents'
+LBL_NB_NON_DEB_TESTS_PRESENTS = 'Nb non débutants avec tests présents'
+LBL_PCT_TESTS_PRESENTS = 'Pourcentage avec tests présents (analyse possible)'
+LBL_PCT_DEB_TESTS_PRESENTS = 'Pourcentage débutants avec tests présents (débutants an possible)'
+LBL_PCT_NON_DEB_TESTS_PRESENTS = 'Pourcentage non débutants avec tests présents (non débutants an possible)'
+LBL_NB_ETUD_TESTS_PRESENTS_TTES_FCTS = 'Nb étud avec tests présents pour toute fonction écrite'
+LBL_NB_DEB_TESTS_PRESENTS_TTES_FCTS = 'Nb débutants avec tests présents pour toute fonction écrite'
+LBL_NB_NON_DEB_TESTS_PRESENTS_TTES_FCTS = 'Nb non débutants avec tests présents pour toute fonction écrite'
+LBL_PCT_TTES_FCTS = 'Pourcentage pour toute fonction (travaux analysables)'
+LBL_PCT_TTES_FCTS_DEB = 'Pourcentage débutants avec tests présents pour toute fonction (déb travaux analysables)'
+LBL_PCT_TTES_FCTS_NON_DEB = 'Pourcentage non débutants avec tests présents pour toute fonction (non déb travaux analysables)'
+LBL_NB_ETUD_NO_TEST = 'Nb étud sans test'
+LBL_NB_DEB_NO_TEST = 'Nb débutants sans test'
+LBL_NB_NON_DEB_NO_TEST = 'Nb non débutants sans test'
+LBL_PCT_DEB_NO_TEST = 'Pourcentage débutants sans test (déb travaux analysables)'
+LBL_PCT_NON_DEB_NO_TEST = 'Pourcentage non débutants sans test (non déb travaux analysables)'
+NB_ETUD_TESTS_QQ_FONCTIONS = 'Nb étud avec tests présents pour qq fonctions écrites'
+
+COLUMNS_STAT_ECR_TESTS = ['Tps',
+                          LBL_NB_ETUD,
+                          LBL_NB_DEB,
+                          LBL_NB_NON_DEB,
+                          LBL_NB_ETUD_ANALYSABLE,
+                          LBL_NB_ETUD_NON_ANALYSABLE,
+                          LBL_NB_DEB_ANALYSABLE,
+                          LBL_NB_DEB_NON_ANALYSABLE,
+                          LBL_NB_NON_DEB_ANALYSABLE,
+                          LBL_NB_NON_DEB_NON_ANALYSABLE,
+                          LBL_PCT_NON_ANALYSABLE,
+                          LBL_PCT_DEB_NON_ANALYSABLE,
+                          LBL_NB_ETUD_TESTS_PRESENTS,
+                          LBL_NB_DEB_TESTS_PRESENTS,
+                          LBL_NB_NON_DEB_TESTS_PRESENTS,
+                          LBL_PCT_TESTS_PRESENTS,
+                          LBL_PCT_DEB_TESTS_PRESENTS,
+                          LBL_PCT_NON_DEB_TESTS_PRESENTS,
+                          LBL_NB_ETUD_TESTS_PRESENTS_TTES_FCTS,
+                          LBL_NB_DEB_TESTS_PRESENTS_TTES_FCTS,
+                          LBL_NB_NON_DEB_TESTS_PRESENTS_TTES_FCTS,
+                          LBL_PCT_TTES_FCTS,
+                          LBL_PCT_TTES_FCTS_DEB,
+                          LBL_PCT_TTES_FCTS_NON_DEB,
+                          LBL_NB_ETUD_NO_TEST,
+                          LBL_NB_DEB_NO_TEST,
+                          LBL_NB_NON_DEB_NO_TEST,
+                          LBL_PCT_DEB_NO_TEST,
+                          LBL_PCT_NON_DEB_NO_TEST,
+                          NB_ETUD_TESTS_QQ_FONCTIONS
+    ]
+
+
+# -
 
 def genere_donnees_nombre_tests_ecrits_tp_guides(df:pd.DataFrame, functions_names:dict, df_is_deb:pd.DataFrame) -> pd.DataFrame:
     """
@@ -784,15 +851,7 @@ def genere_donnees_nombre_tests_ecrits_tp_guides(df:pd.DataFrame, functions_name
         - function_names : dico which associates to each Tp identifier a list of functions name (ex : functions_names['Tp2] is ['foo1', 'foo2', 'foo3'])
         - df_is_deb : columns 'actor' et 'debutant'
     """
-    df_plot = pd.DataFrame(columns=['Tps', 'Nb etud', 'Nb debutants', 'Nb non debutants', 'Nb debutants analyse possible',\
-                                    'Nb non debutants analyse possible',
-            'Nb etud analyse impossible', 'Pourcentage debutants (analyse impossible)', 'Nb etud avec tests présents',\
-            'Pourcentage debutants (avec tests présents)', 'Nb etud avec tests présents pour toute fonction écrite',   \
-            'Nb debutants avec tests présents pour toute fonction écrite', 'Nb non debutants avec tests présents pour toute fonction écrite',\
-            'Pourcentage debutants (avec tests présents pour toute fonction écrite)', \
-            'Nb etud sans test', 'Nb debutants sans test', 'Nb non debutants sans test', 'Pourcentage debutants (sans test)', \
-            'Nb etud avec tests présents pour qq fonctions écrites', \
-            'Pourcentage debutants (avec tests présents pour qq fonctions écrites)'])            
+    df_plot = pd.DataFrame(columns=COLUMNS_STAT_ECR_TESTS)            
                             
     for tp in TPS_SANS_SEM_5:
         if tp == 'Tp8':
@@ -816,60 +875,89 @@ def genere_donnees_nombre_tests_ecrits_tp_guides(df:pd.DataFrame, functions_name
         etud_non_deb_testant_aucune_fonction_ecrite_tp = list(set(etud_testant_aucune_fonction_ecrite_tp) - set(etud_deb_testant_aucune_fonction_ecrite_tp))
         etud_non_deb_testant_toute_fonction_ecrite_tp = list(set(etud_testant_toute_fonction_ecrite_tp) - set(etud_deb_testant_toute_fonction_ecrite_tp))
         etud_analyse_impossible = cannot_analyze_codestate_students_tp + empty_codestate_students_tp
+        etud_analyse_possible = list(set(all_students_tp) - set(etud_analyse_impossible))
         etud_deb_analyse_impossible:list = select_debutants(etud_analyse_impossible, df_is_deb)
         etud_non_deb_analyse_impossible:list = list(set(etud_analyse_impossible) - set(etud_deb_analyse_impossible))
         etud_deb_analyse_possible:list = list(set(deb_students_tp) - set(etud_deb_analyse_impossible))
         etud_non_deb_analyse_possible:list = list(set(non_deb_students_tp) - set(etud_non_deb_analyse_impossible))
         etud_avec_tests:list = etud_testant_toute_fonction_ecrite_tp + etud_qq_tests_fonction_ecrite_tp
         etud_deb_avec_tests:list = select_debutants(etud_avec_tests, df_is_deb)
-        df_plot_tp = pd.DataFrame({'Tps': [tp],\
-                                    'Nb etud': len(all_students_tp),\
-                                    'Nb debutants': len(deb_students_tp),\
-                                    'Nb non debutants': len(non_deb_students_tp),\
-                                    'Nb debutants analyse possible': len(etud_deb_analyse_possible), \
-                                    'Nb non debutants analyse possible': len(etud_non_deb_analyse_possible), \
-                                    'Nb etud analyse impossible': len(etud_analyse_impossible),\
-                                    'Pourcentage debutants (analyse impossible)': round(len(etud_deb_analyse_impossible)/len(etud_analyse_impossible)*100),\
-                                    'Nb etud avec tests présents': len(etud_avec_tests),\
-                                    'Pourcentage debutants (avec tests présents)': round(len(etud_deb_avec_tests)/len(etud_avec_tests)*100),\
-                                    'Nb etud avec tests présents pour toute fonction écrite' : len(etud_testant_toute_fonction_ecrite_tp),\
-                                    'Nb debutants avec tests présents pour toute fonction écrite' : len(etud_deb_testant_toute_fonction_ecrite_tp),\
-                                    'Nb non debutants avec tests présents pour toute fonction écrite' : len(etud_non_deb_testant_toute_fonction_ecrite_tp),\
-                                     'Pourcentage debutants (avec tests présents pour toute fonction écrite)' : \
-                                       round(len(etud_deb_testant_toute_fonction_ecrite_tp)/len(etud_testant_toute_fonction_ecrite_tp)*100),\
-                                    'Nb etud sans test' : len(etud_testant_aucune_fonction_ecrite_tp),\
-                                    'Nb debutants sans test' : len(etud_deb_testant_aucune_fonction_ecrite_tp),\
-                                    'Nb non debutants sans test' : len(etud_non_deb_testant_aucune_fonction_ecrite_tp),\
-                                    'Pourcentage debutants (sans test)' :\
-                                       round(len(etud_deb_testant_aucune_fonction_ecrite_tp)/len(etud_testant_aucune_fonction_ecrite_tp)*100),\
-                                    'Nb etud avec tests présents pour qq fonctions écrites' : len(etud_qq_tests_fonction_ecrite_tp),\
-                                    'Pourcentage debutants (avec tests présents pour qq fonctions écrites)' :\
-                                       round(len(etud_deb_qq_tests_fonction_ecrite_tp)/len(etud_qq_tests_fonction_ecrite_tp)*100)
+        etud_non_deb_avec_tests:list = list(set(etud_avec_tests) - set(etud_deb_avec_tests))
+        df_plot_tp = pd.DataFrame({
+            'Tps': [tp],\
+            LBL_NB_ETUD: len(all_students_tp),\
+            LBL_NB_DEB: len(deb_students_tp),\
+            LBL_NB_NON_DEB: len(non_deb_students_tp),\
+            LBL_NB_ETUD_ANALYSABLE: len(etud_analyse_possible),\
+            LBL_NB_DEB_ANALYSABLE: len(etud_deb_analyse_possible),\
+            LBL_NB_NON_DEB_ANALYSABLE: len(etud_non_deb_analyse_possible),\
+            LBL_NB_ETUD_NON_ANALYSABLE: len(etud_analyse_impossible),\
+            LBL_PCT_NON_ANALYSABLE: len(etud_analyse_impossible)/len(all_students_tp)*100,\
+            LBL_PCT_DEB_NON_ANALYSABLE: len(etud_deb_analyse_impossible)/len(etud_analyse_impossible)*100,\
+            LBL_NB_ETUD_TESTS_PRESENTS: len(etud_avec_tests),\
+            LBL_NB_DEB_TESTS_PRESENTS: len(etud_deb_avec_tests), \
+            LBL_NB_NON_DEB_TESTS_PRESENTS: len(etud_avec_tests) - len(etud_deb_avec_tests),\
+            LBL_PCT_TESTS_PRESENTS: len(etud_avec_tests)/len(etud_analyse_possible)*100,\
+            LBL_PCT_DEB_TESTS_PRESENTS: len(etud_deb_avec_tests)/len(etud_deb_analyse_possible)*100,\
+            LBL_PCT_NON_DEB_TESTS_PRESENTS: len(etud_non_deb_avec_tests)/len(etud_non_deb_analyse_possible)*100,\
+            LBL_NB_ETUD_TESTS_PRESENTS_TTES_FCTS: len(etud_testant_toute_fonction_ecrite_tp),\
+            LBL_NB_DEB_TESTS_PRESENTS_TTES_FCTS: len(etud_deb_testant_toute_fonction_ecrite_tp),\
+            LBL_NB_NON_DEB_TESTS_PRESENTS_TTES_FCTS: len(etud_non_deb_testant_toute_fonction_ecrite_tp),\
+            LBL_PCT_TTES_FCTS: len(etud_testant_toute_fonction_ecrite_tp)/len(etud_analyse_possible)*100,\
+            LBL_PCT_TTES_FCTS_DEB: len(etud_deb_testant_toute_fonction_ecrite_tp)/len(etud_deb_analyse_possible)*100,\
+            LBL_PCT_TTES_FCTS_NON_DEB: len(etud_non_deb_testant_toute_fonction_ecrite_tp)/len(etud_non_deb_analyse_possible)*100,\
+            LBL_NB_ETUD_NO_TEST: len(etud_testant_aucune_fonction_ecrite_tp),\
+            LBL_NB_DEB_NO_TEST: len(etud_deb_testant_aucune_fonction_ecrite_tp),\
+            LBL_NB_NON_DEB_NO_TEST: len(etud_non_deb_testant_aucune_fonction_ecrite_tp),\
+            LBL_PCT_DEB_NO_TEST: len(etud_deb_testant_aucune_fonction_ecrite_tp)/len(etud_deb_analyse_possible)*100,\
+            LBL_PCT_NON_DEB_NO_TEST: len(etud_non_deb_testant_aucune_fonction_ecrite_tp)/len(etud_non_deb_analyse_possible)*100,\
+            NB_ETUD_TESTS_QQ_FONCTIONS : len(etud_qq_tests_fonction_ecrite_tp)
                                   })
         df_plot = pd.concat([df_plot, df_plot_tp], ignore_index=True)
     return df_plot
 
 
+
 df_plot_nombre_tests_ecrits_tp_guides = genere_donnees_nombre_tests_ecrits_tp_guides(df, PROG_FUNCTIONS_NAME_BY_TP, df_is_deb)
-df_plot_nombre_tests_ecrits_tp_guides
+df_plot_nombre_tests_ecrits_tp_guides # TODO ici il faut revoir les calculs de pourcentage et diviser la fonction
 
 
-def calcule_infos_tests_ecrits_sans_deb(df_plot_nombre_tests_ecrits_tp_guides:pd.DataFrame) -> pd.DataFrame:
+def calcule_infos_travaux_non_analysables(df_nb_tests_ecrits_tp_guides:pd.DataFrame) -> pd.DataFrame:
     """
     Args :
-        df_plot_nombre_tests_ecrits_tp_guides : colonnes 'Nb etud', 'Nb etud analyse impossible', 'Nb etud avec tests présents pour toute fonction écrite',
-            'Nb etud avec tests présents', 'Nb etud sans test', 'Nb etud avec tests présents pour qq fonctions écrites'
+        df_plot_nombre_tests_ecrits_tp_guides : colonnes définies en global
+    """
+    df_local = df_nb_tests_ecrits_tp_guides.copy()
+    return df_local[['Tps', LBL_PCT_NON_ANALYSABLE, LBL_PCT_DEB_NON_ANALYSABLE]]
+
+
+df_infos_travaux_non_analysables = calcule_infos_travaux_non_analysables(df_plot_nombre_tests_ecrits_tp_guides)
+df_infos_travaux_non_analysables
+
+df_infos_travaux_non_analysables[LBL_PCT_NON_ANALYSABLE].describe()
+
+df_infos_travaux_non_analysables[LBL_PCT_DEB_NON_ANALYSABLE].describe()
+
+
+def calcule_infos_tests_ecrits_sans_deb(df_nb_tests_ecrits_tp_guides:pd.DataFrame) -> pd.DataFrame:
+    """
+    Args :
+        df_plot_nombre_tests_ecrits_tp_guides : colonnes définies en global
     """
 
-    df_plot_nombre_tests_ecrits_tp_guides_sans_deb = df_plot_nombre_tests_ecrits_tp_guides.copy()
-    df_plot_nombre_tests_ecrits_tp_guides_sans_deb['Nb etud travaux analysables'] = df_plot_nombre_tests_ecrits_tp_guides_sans_deb['Nb etud'] - df_plot_nombre_tests_ecrits_tp_guides_sans_deb['Nb etud analyse impossible']
-    df_plot_nombre_tests_ecrits_tp_guides_sans_deb['pourcentage pour toute fonction (travaux analysables)'] = df_plot_nombre_tests_ecrits_tp_guides_sans_deb['Nb etud avec tests présents pour toute fonction écrite']/df_plot_nombre_tests_ecrits_tp_guides_sans_deb['Nb etud travaux analysables']*100
-    return df_plot_nombre_tests_ecrits_tp_guides_sans_deb[['Tps', 'Nb etud', 'Nb etud travaux analysables', 'Nb etud avec tests présents',\
-                                           'Nb etud avec tests présents pour toute fonction écrite', 'pourcentage pour toute fonction (travaux analysables)',\
-                                               'Nb etud sans test', 'Nb etud avec tests présents pour qq fonctions écrites']]
+    df_nb_tests_ecrits_tp_guides_sans_deb = df_nb_tests_ecrits_tp_guides.copy()
+    return df_nb_tests_ecrits_tp_guides_sans_deb[['Tps', LBL_NB_ETUD, LBL_NB_ETUD_ANALYSABLE, LBL_NB_ETUD_TESTS_PRESENTS,\
+                                                      LBL_PCT_TESTS_PRESENTS, \
+                                                      LBL_NB_ETUD_TESTS_PRESENTS_TTES_FCTS, LBL_PCT_TTES_FCTS,\
+                                                      LBL_NB_ETUD_NO_TEST, NB_ETUD_TESTS_QQ_FONCTIONS]]
 
 
-calcule_infos_tests_ecrits_sans_deb(df_plot_nombre_tests_ecrits_tp_guides)
+df_infos_tests_ecrits_sans_deb =  calcule_infos_tests_ecrits_sans_deb(df_plot_nombre_tests_ecrits_tp_guides)
+df_infos_tests_ecrits_sans_deb
+
+df_infos_tests_ecrits_sans_deb[LBL_PCT_TESTS_PRESENTS].describe()
+
+df_infos_tests_ecrits_sans_deb[LBL_PCT_TTES_FCTS].describe()
 
 
 def plot_tests_ecrits_TP_guides(df_tests_ecrits_tp_guides:pd.DataFrame) -> None:
@@ -879,8 +967,8 @@ def plot_tests_ecrits_TP_guides(df_tests_ecrits_tp_guides:pd.DataFrame) -> None:
     """
     fig, ax = plt.subplots()
     bottom = np.zeros(len(TPS_SANS_SEM_5))
-    serie_nb_avec_tests = df_tests_ecrits_tp_guides['Nb etud avec tests présents']
-    serie_nb_sans_test = df_tests_ecrits_tp_guides['Nb etud sans test']
+    serie_nb_avec_tests = df_tests_ecrits_tp_guides[LBL_NB_ETUD_TESTS_PRESENTS]
+    serie_nb_sans_test = df_tests_ecrits_tp_guides[LBL_NB_ETUD_NO_TEST]
     dico = {'avec au moins un test' : serie_nb_avec_tests, 'sans test' : serie_nb_sans_test}
     
     for labels, values in dico.items():
@@ -905,9 +993,9 @@ def plot_tests_ecrits_par_fonctions_TP_guides(df_tests_ecrits_tp_guides:pd.DataF
     """
     fig, ax = plt.subplots()
     bottom = np.zeros(len(TPS_SANS_SEM_5))
-    serie_nb_avec_tests = df_tests_ecrits_tp_guides['Nb etud avec tests présents']
-    serie_nb_avec_tests_pour_toute_fonction = df_tests_ecrits_tp_guides['Nb etud avec tests présents pour toute fonction écrite']
-    serie_nb_avec_tests_pour_certaines_fonctions = df_tests_ecrits_tp_guides['Nb etud avec tests présents pour qq fonctions écrites']
+    serie_nb_avec_tests = df_tests_ecrits_tp_guides[LBL_NB_ETUD_TESTS_PRESENTS]
+    serie_nb_avec_tests_pour_toute_fonction = df_tests_ecrits_tp_guides[LBL_NB_ETUD_TESTS_PRESENTS_TTES_FCTS]
+    serie_nb_avec_tests_pour_certaines_fonctions = df_tests_ecrits_tp_guides[NB_ETUD_TESTS_QQ_FONCTIONS]
     dico = {'Pour chaque fonction' : serie_nb_avec_tests_pour_toute_fonction, 'Pour certaines fonctions' : serie_nb_avec_tests_pour_certaines_fonctions}
     
     for labels, values in dico.items():
@@ -925,61 +1013,40 @@ def plot_tests_ecrits_par_fonctions_TP_guides(df_tests_ecrits_tp_guides:pd.DataF
 plot_tests_ecrits_par_fonctions_TP_guides(calcule_infos_tests_ecrits_sans_deb(df_plot_nombre_tests_ecrits_tp_guides))
 
 
-# Le premier graphique montre que quasiment tous les travaux analysables (c'est à dire un fichier Python syntaxiquement correct contenant des fonctions) contiennent au moins un test. Comme pour les TPs guidés nous connaissons les fonctions à programmer, nous pouvons regarder quelle proportion des fonctions écrites et testables contiennent des tests. Le second graphique montre que la plupart des étudiant·es écrivent des tests pour toutes les fonctions testables qu'ils ou elles ont programmé. On note un tassement modéré pour le TP9 : environ 77% des étudiant·es ayant écrit des tests l'ont fait pour toutes les fonctions. À noter que nous n'avons pas regardé combien de fonctions ont été écrites par les étudiant·es : du point de vue de l'écriture des tests une étudiante qui n'aura écrit que 4 fonctions avec tests durant les séances est considérée de la même manière qu'une étudiante ayant écrit 10 fonctions avec tests, mais de manière différente d'une étudiante ayant écrit 12 fonctions sans aucun test. 
+# Un très grand nombre des travaux analysables (c'est à dire un fichier Python syntaxiquement correct contenant des fonctions) contient au moins un test (cf premier graphique). La moyenne sur les TPs indique que 94.7% des étudiant•es dont le travail est analysable ont écrit au moins un test, avec un écart-type de 1.86, un minimum de 92.25% pour le TP8 et un maximum de 96.7% pour le TP2.  Nous ne savons pas expliquer pourquoi le minimum 
+#
+#
+# La brique de base pour le test unitaire étant la fonction, l'écriture d'au moins un test par fonction testable peut représenter un comportement nominal pour des débutant·es (le comportement nominal réel consistant à écrire un jeu de tests pertinents). Pour les TPs guidés nous connaissons les fonctions à programmer : nous pouvons donc regarder quelle proportion des fonctions écrites et testables contiennent des tests. Les résultats montrent que la plupart des étudiant·es écrivent des tests pour toutes les fonctions testables qu'ils ou elles ont programmé. La moyenne sur les TPs indique que 86.7% des étudiant·es dont le code est analysable écrivent des tests pour toutes les fonctions, avec un écart-type à 6.5, un maximum à 96.3% pour le TP2, et un tassement pour le TP9 (pour ce TP environ 77% des étudiant·es ayant écrit des tests l'ont fait pour toutes les fonctions). On note que ce TP est l'un des plus difficiles du semestre, avec des boucles difficiles à écrire. 
+#
+# Nous n'avons pas regardé combien de fonctions ont été écrites par les étudiant·es : du point de vue de l'écriture des tests une étudiante qui n'aura écrit que 4 fonctions avec tests durant les séances est considérée de la même manière qu'une étudiante ayant écrit 10 fonctions avec tests, mais de manière différente d'une étudiante ayant écrit 12 fonctions sans aucun test. Dans le cas où toutes les fonctions ne possèdent pas de tests dans le code, nous n'avons pas regardé si c'est la dernière fonction écrite qui n'a pas de tests (ce qui peut correspondre au comportement "écrire le code, faire un test manuel puis ajouter des tests", avec fin du TP avant l'ajout des tests).
 
 # ### Impact du cursus antérieur sur l'écriture des tests
 
-# On regarde la proportion de débutant·es dans les cas extrèmes :
-#
-# - toute fonction testée
-# - aucun test
-#
-# Mais cette proportion doit être rapportée à la proportion de débutant·es pour les travaux analysables
-#
-# Dc on fait pour chaque TP une barre:
-#
-# - nb debutants analysables
-# - nb débutants toute fonction testée
-# - nb débutants aucun test  
-
-def calcule_infos_tests_ecrits_avec_deb(df_nb_tests_ecrits_tp_guides_avec_deb:pd.DataFrame) -> pd.DataFrame:
+def calcule_infos_tests_ecrits_deb_non_deb(df_nb_tests_ecrits_tp_guides_avec_deb:pd.DataFrame) -> pd.DataFrame:
     """
     Args :
         df_plot_nombre_tests_ecrits_tp_guides : colonnes Tps', 'Nb debutants analyse possible',
                                                     'Nb debutants avec tests présents pour toute fonction écrite',
                                                     'Nb debutants sans test'
     """
-    df_local_select =  df_nb_tests_ecrits_tp_guides_avec_deb[['Tps', 'Nb debutants analyse possible',\
-                                                    'Nb debutants avec tests présents pour toute fonction écrite',\
-                                                    'Nb debutants sans test']].copy()
-    df_local_select['Pourcentage deb avec tests présents pour toute fonction écrite'] = \
-        df_local_select['Nb debutants avec tests présents pour toute fonction écrite']/df_local_select['Nb debutants analyse possible']*100
-    df_local_select['Pourcentage deb sans test'] = \
-        df_local_select['Nb debutants sans test']/df_local_select['Nb debutants analyse possible']*100
+    df_local_select =  df_nb_tests_ecrits_tp_guides_avec_deb[['Tps', LBL_NB_DEB_ANALYSABLE, LBL_NB_NON_DEB_ANALYSABLE,\
+                                                    LBL_NB_DEB_TESTS_PRESENTS_TTES_FCTS, LBL_NB_NON_DEB_TESTS_PRESENTS_TTES_FCTS,\
+                                                    LBL_PCT_TTES_FCTS_DEB, LBL_PCT_TTES_FCTS_NON_DEB, \
+                                                    LBL_NB_DEB_NO_TEST, LBL_NB_NON_DEB_NO_TEST, \
+                                                    LBL_PCT_DEB_NO_TEST, LBL_PCT_NON_DEB_NO_TEST]].copy()
     return df_local_select
 
 
-calcule_infos_tests_ecrits_avec_deb(df_plot_nombre_tests_ecrits_tp_guides)
+df_infos_tests_ecrits_deb_non_deb = calcule_infos_tests_ecrits_deb_non_deb(df_plot_nombre_tests_ecrits_tp_guides)
+df_infos_tests_ecrits_deb_non_deb 
 
+df_infos_tests_ecrits_deb_non_deb[LBL_PCT_TTES_FCTS_DEB].describe()
 
-def calcule_infos_tests_ecrits_avec_non_deb(df_nb_tests_ecrits_tp_guides_avec_non_deb:pd.DataFrame) -> pd.DataFrame:
-    """
-    Args :
-        df avec colonnes Tps', 'Nb non debutants analyse possible',
-                                                    'Nb non debutants avec tests présents pour toute fonction écrite',
-                                                    'Nb non debutants sans test'
-    """
-    df_local_select =  df_nb_tests_ecrits_tp_guides_avec_non_deb[['Tps', 'Nb non debutants analyse possible',\
-                                                    'Nb non debutants avec tests présents pour toute fonction écrite',\
-                                                    'Nb non debutants sans test']].copy()
-    df_local_select['Pourcentage non deb avec tests présents pour toute fonction écrite'] = \
-        df_local_select['Nb non debutants avec tests présents pour toute fonction écrite']/df_local_select['Nb non debutants analyse possible']*100
-    df_local_select['Pourcentage non deb sans test'] = \
-        df_local_select['Nb non debutants sans test']/df_local_select['Nb non debutants analyse possible']*100
-    return df_local_select
+df_infos_tests_ecrits_deb_non_deb[LBL_PCT_TTES_FCTS_NON_DEB].describe()
 
+df_infos_tests_ecrits_deb_non_deb[LBL_PCT_DEB_NO_TEST].describe()
 
-calcule_infos_tests_ecrits_avec_non_deb(df_plot_nombre_tests_ecrits_tp_guides)
+df_infos_tests_ecrits_deb_non_deb[LBL_PCT_NON_DEB_NO_TEST].describe()
 
 
 def plot_tests_ecrits_deb(df_tests_ecrits_deb:pd.DataFrame) -> None:
@@ -989,11 +1056,11 @@ def plot_tests_ecrits_deb(df_tests_ecrits_deb:pd.DataFrame) -> None:
                                                     'Nb debutants avec tests présents pour toute fonction écrite',
                                                     'Nb debutants sans test'
     """
-    df_local = df_tests_ecrits_deb[['Tps', 'Nb debutants analyse possible', \
-                                    'Nb debutants avec tests présents pour toute fonction écrite', 'Nb debutants sans test']].copy()
-    df_local = df_local.rename(columns={'Nb debutants analyse possible':'dont les travaux sont analysables',\
-                                       'Nb debutants avec tests présents pour toute fonction écrite': 'ayant écrit au moins un test\n pour toute fonction écrite',\
-                                        'Nb debutants sans test': 'sans test'})
+    df_local = df_tests_ecrits_deb[['Tps', LBL_NB_DEB_ANALYSABLE, \
+                                    LBL_NB_DEB_TESTS_PRESENTS_TTES_FCTS, LBL_NB_DEB_NO_TEST]].copy()
+    df_local = df_local.rename(columns={LBL_NB_DEB_ANALYSABLE: 'dont les travaux sont analysables',\
+                                        LBL_NB_DEB_TESTS_PRESENTS_TTES_FCTS: 'ayant écrit au moins un test\n pour toute fonction écrite',\
+                                        LBL_NB_DEB_NO_TEST: 'sans test'})
     df_local.set_index('Tps').plot(kind='bar', figsize=(12, 6))
 
     plt.title("Étudiant·es débutant·es : écriture de tests")
@@ -1012,12 +1079,12 @@ def plot_tests_ecrits_non_deb(df_tests_ecrits_non_deb:pd.DataFrame) -> None:
                                                     'Nb nondebutants avec tests présents pour toute fonction écrite',
                                                     'Nb non debutants sans test'
     """
-    df_local = df_tests_ecrits_non_deb[['Tps', 'Nb non debutants analyse possible', \
-                                        'Nb non debutants avec tests présents pour toute fonction écrite', \
-                                        'Nb non debutants sans test']].copy()
-    df_local = df_local.rename(columns={'Nb non debutants analyse possible':'dont les travaux sont analysables',\
-                                       'Nb non debutants avec tests présents pour toute fonction écrite': 'ayant écrit au moins un test\n pour toute fonction écrite',\
-                                        'Nb nondebutants sans test': 'sans test'})
+    df_tests_ecrits_non_deb[LBL_NB_NON_DEB_ANALYSABLE]
+    df_local = df_tests_ecrits_non_deb[['Tps', LBL_NB_NON_DEB_ANALYSABLE, \
+                                        LBL_NB_NON_DEB_TESTS_PRESENTS_TTES_FCTS, LBL_NB_NON_DEB_NO_TEST]].copy()
+    df_local = df_local.rename(columns={LBL_NB_NON_DEB_ANALYSABLE: 'dont les travaux sont analysables',\
+                                        LBL_NB_NON_DEB_TESTS_PRESENTS_TTES_FCTS: 'ayant écrit au moins un test\n pour toute fonction écrite',\
+                                        LBL_NB_NON_DEB_NO_TEST: 'sans test'})
     df_local.set_index('Tps').plot(kind='bar', figsize=(12, 6))
 
     plt.title("Étudiant·es non débutant·es : écriture de tests")
@@ -1029,11 +1096,256 @@ def plot_tests_ecrits_non_deb(df_tests_ecrits_non_deb:pd.DataFrame) -> None:
     plt.show()
 
 
-plot_tests_ecrits_deb(calcule_infos_tests_ecrits_avec_deb(df_plot_nombre_tests_ecrits_tp_guides))
-plot_tests_ecrits_non_deb(calcule_infos_tests_ecrits_avec_non_deb(df_plot_nombre_tests_ecrits_tp_guides))
+df_infos_tests_ecrits_deb_non_deb = calcule_infos_tests_ecrits_deb_non_deb(df_plot_nombre_tests_ecrits_tp_guides)
+plot_tests_ecrits_deb(df_infos_tests_ecrits_deb_non_deb)
+plot_tests_ecrits_non_deb(df_infos_tests_ecrits_deb_non_deb)
 
 
-# En comparant le pourcentage d'étudiant·es débutant·es et non débutant·es qui écrivent au moins un test pour toutes les fonctions écrites, il ne ressort rien de particulier. Les pourcentages sont similaires à quelques unités. Pour les étudiant·es qui n'écrivent aucun test : les pourcentages sont plus élevés pour les débutant·es mais restent bas (autour de 4.4% pour le TP3 et 4.3% pour le TP6). On ne peut donc pas dire que le cursus des étudiant·es (vrais débutant·es ou étudiant·es ayant déjà pratiqué de la programmationPython  
+# Pour comparer le comportement moyen des débutant·es et non débutant·es pour l'écriture des tests on se base sur le pourcentage d'étudiant·es de ces 2 catégories ayant écrit au moins un test pour chaque fonction et n'ayant écrit aucun test. 
+#
+# Les données indiquent que 87.8% des débutants en moyenne ont écrit au moins un test pour toutes les fonctions qu'ils ont écrites (écart-type : 7), avec un minimum à 77.9% pour le TP9. Par ailleurs 84% des non débutants en moyenne ont écrit au moins un test pour toutes les fonctions qu'ils ont écrites (écart-type : 7.7), avec un minimum à 75.38% aussi pour le TP9. Il ne ressort donc pas de différence marquante entre les débutants et les non débutants. De plus les 2 catégories ont plus de fonctions non testées pour le TP estimé le plus difficile.  
+#
+# Dans le cas des étudiant·es qui n'écrivent aucun test, 3% des débutants en moyenne n'écrivent pas de test (écart-type : 1) et 2.4% des non débutants en moyenne n'écrivent pas de tests (écart-type : 0.7). On ne peut donc pas dire que le cursus des étudiant·es - vrais débutant·es ou étudiant·es ayant déjà pratiqué de la programmation Python, que ce soit en NSI ou dans le portail - influence l'écriture de tests. 
+
+# ### Exécution des tests
+
+# Écrire des tests sans les exécuter montre une incompréhension du processus de test. Nous regardons donc si, pour chaque fonction pour laquelle au moins un test a été écrit, on trouve une trace de l'exécution des tests de cette fonction. Techniquement nous vérifions seulement que, pour toute fonction possédant $n$ tests, on trouve une trace de l'exécution d'au moins $n$ tests pour cette fonction, sans vérifier l'égalité des appels de fonction testés. Nous procédons en cherchant dans les traces de l'étudiant·e l'action de clic sur le bouton qui exécute les tests du fichier contenu dans l'éditeur. Nous sélectionnons comme précédemment le clic le plus récent. 
+
+def convert_column_tests_to_df(df):
+    """
+    Returns a df that contains a line for each verdict found in the columns 'tests' of df. Columns :
+    ['original_index', 'filename', 'lineno', 'tested_line',
+       'expected_result', 'details', 'verdict', 'name', 'status']
+
+    Ce dataframe est construit à partir des contenus de colonne "tests" de Run.Test non vides slt.
+
+    Args:
+        df : le dataframe complet d'origine, ds lequel la colonne "tests" indique le résultat d'un Run.Test, c'est à dire une liste
+            de dictionnaires
+    """
+    df_tests = df['tests']
+    df_all_tests = None
+    list_of_df_verdicts = []
+    
+    for index, test_value in df_tests.items():    
+        if (test_value != '') and (test_value != '[]'):
+            lst:list[dict] = ast.literal_eval(test_value) # extract the list inside the string
+            df_one_verdict = pd.DataFrame(lst) # each dict in lst is represented by a line in df_one_verdict
+            df_one_verdict.insert(0, 'original_index', index)
+            list_of_df_verdicts.append(df_one_verdict)        
+
+    df_all_verdicts = pd.concat(list_of_df_verdicts, ignore_index=True)
+    return df_all_verdicts
+
+
+# nécessaire car L1Test renvoie les noms de fonction agrémenté des noms de param qu'il faut enlever
+def nom_fonction(name:str) -> str:
+    '''
+    Renvoie le nom de la fonction sans les arguments
+
+    >>> nom_fonction('compare(nb1, nb2)')
+    'compare'
+    '''
+    return name.split('(')[0]
+
+
+df_all_verdicts_interm = convert_column_tests_to_df(df) 
+df_all_verdicts_interm['name'] = df_all_verdicts_interm['name'].apply(nom_fonction)
+df_all_verdicts = df_all_verdicts_interm.copy()
+
+
+def index_last_RunTest(actor:str, df:pd.DataFrame, filename_infere:str, df_all_verdicts:pd.DataFrame) -> int:
+    '''
+    Returns the index of the most recent Run.Test of actor, limited to df and filename_infere, which appears
+    through its index in df_all_verdicts. Implies that this Run.Test was run on not empty tests.
+
+    Returns None if no such index is found.
+
+    Args:
+        - actor : some student
+        - df: the original df
+        - filename_infred : some particular file name to be analyzed
+        - df_all_verdicts : was computed elsewhere, not computed from df 
+    '''
+    df_RunTest = df[(df['verb']=='Run.Test') & ((df['actor']==actor) | (df['binome']==actor)) & (df['filename_infere']==filename_infere)]
+    timestamps = df_RunTest['timestamp.$date'].copy() # pour être sûre de ne pas modifier le df initial
+    found = False # found Run.Test which can be exploited
+    while not timestamps.empty and not found: 
+        index_of_timestamp_max_RunTest = timestamps.idxmax()
+        if index_of_timestamp_max_RunTest in df_all_verdicts['original_index']:
+            found = True # timestamp_max_RunTest
+        else:
+            # passer à un timestamp antérieur
+            timestamps = timestamps.drop(index=[index_of_timestamp_max_RunTest])
+    if found:
+        return index_of_timestamp_max_RunTest
+    else:
+        return None
+
+
+def tests_executes_pour_tests_ecrits(actor:str, df: pd.DataFrame, df_tests_ecrits_filename:pd.DataFrame, df_all_verdicts:pd.DataFrame, filename:str) -> tuple[bool, int, pd.DataFrame, pd.DataFrame]:
+    '''
+    Cherche le Run.Test le plus récent dans df pour actor, apparaissant dans df_all_verdicts, et analyse les colonnes
+    "function_name" et 'tests_number' par rapport
+    au contenu de df_tests_ecrits_filename, qui contient les fonctions et leur nb de tests du codeState analysé.
+        
+    Renvoie : res_bool, index_runTest_in_df,  df_runTest_tests_number, df_tests_ecrits_filename_strict_pos
+        - res_bool : True ssi les fonctions qui ont n tests écrits dans df_all_verdicts ont au moins n tests exécutés dans le Run.Test.
+        - index_runTest_in_df : index of the mot recent Run.Test found and used inside the computation
+        - df_runTest_tests_number : df avec colonnes "function_name" et 'tests_number', calculé en regardant les tests de df_all_verdicts à l'index du Run.Test
+        - df_tests_ecrits_filename_strict_pos : df avec colonnes "function_name" et 'tests_number', calculé en regardant les tests de df_tests_ecrits_filename pour filename
+        
+    Args:
+        actor : some actor
+        df : original df
+        df_tests_ecrits_filename : les tests écrits pour le codeState le plus récent dans df pour le même filename, déjà calculé ailleurs
+        df_all_verdicts : df des verdicts de df, déjà calculé ailleurs
+    '''
+    # cherche le RunTest le plus récent dont l'index apparaît dans df_all_verdicts, ici recherche par filename_infere
+    index_runTest_in_df = index_last_RunTest(actor, df, filename, df_all_verdicts)
+    # si on ne trouve pas ce Run.Test, on renvoie False
+    if index_runTest_in_df == None:
+        return (False, None, None, None)
+    # on calcule les verdicts de df_all_verdicts qui concernent ce Run.Test    
+    df_all_verdicts_actor = df_all_verdicts[df_all_verdicts['original_index']==index_runTest_in_df]
+    # calcul de df_runTest_tests_number : comptage du nb de tests par fonctions ds runTest 
+    df_runTest_tests_number= pd.DataFrame(columns=['function_name', 'tests_number'])
+    # la colonne 'name' contient le nom de la fonction testée
+    for name in df_all_verdicts_actor['name'].unique():
+        # on peut sûrement faire plus élégant niveau pandas, j'ai eu du mal à extraire la valeur du comptage
+        # compte le nb d'apparition de chaque fonction ds le df des tests en ligne, à l'index du Run.Test
+        # 1 apparition => 1 test exécuté pour cette fonction
+        function_df = pd.DataFrame({'function_name' : [name], 'tests_number' : df_all_verdicts_actor.groupby(['name'])['name'].count()[name]})
+        df_runTest_tests_number = pd.concat([df_runTest_tests_number, function_df], ignore_index=True)
+    # keep only > 0 number of tests in df_tests_ecrits_tp : df_tests_ecrits_tp_strict_pos
+    df_tests_ecrits_filename_strict_pos = df_tests_ecrits_filename[(df_tests_ecrits_filename['actor']==actor) & (df_tests_ecrits_filename['tests_number']>0)][['function_name', 'tests_number']]
+    # on vérifie que, pour chaque fonction de df_tests_ecrits_tp_strict_pos
+    # - la fonction apparaît dans df_runTest_tests_number
+    # - le nb de tests y est égal ou supérieur
+    for ind, val in df_tests_ecrits_filename_strict_pos.iterrows():
+        func_name = val['function_name']
+        if func_name not in df_runTest_tests_number.function_name.values:
+            return (False, index_runTest_in_df, df_runTest_tests_number, df_tests_ecrits_filename_strict_pos)
+        else:
+            tests_number_ecrits = val['tests_number']
+            # on peut sûrement faire plus élégant niveau pandas, le values[0] vise à extraire la valeur de type int de la Serie qui la contient
+            tests_number_runTest = df_runTest_tests_number.loc[df_runTest_tests_number['function_name']==func_name]['tests_number'].values[0]
+            if tests_number_ecrits < tests_number_runTest:
+                return (False, index_runTest_in_df, df_runTest_tests_number, df_tests_ecrits_filename_strict_pos)
+    return (True, index_runTest_in_df,  df_runTest_tests_number, df_tests_ecrits_filename_strict_pos)
+
+
+LBL_NB_ETUD_TOUS_TESTS_EXEC = "Nb étudiant·es avec tous tests exécutés"
+LBL_NB_DEB_TOUS_TESTS_EXEC = "Nb débutant·es avec tous tests exécutés"
+LBL_NB_NON_DEB_TOUS_TESTS_EXEC = "Nb non débutant·es avec tous tests exécutés"
+LBL_PCT_ETUD_TESTS_EXEC = 'pourcentage étud avec tous tests exécutés'
+LBL_PCT_DEB_TESTS_EXEC = 'pourcentage déb avec tous tests exécutés'
+LBL_PCT_NON_DEB_TESTS_EXEC = 'pourcentage non déb avec tous tests exécutés'
+
+
+def genere_donnees_tests_ecrits_executes(df:pd.DataFrame, df_tests:pd.DataFrame, df_all_verdicts:pd.DataFrame, \
+                                         df_nb_tests_ecrits_tp_guides:pd.DataFrame, tp_filenames:dict, \
+                                         df_is_deb:pd.DataFrame) -> pd.DataFrame:
+    """
+    Génère un df avec les données pour plot, colonnes 'Tps', number_of_students_with_tests', 
+    'number_of_students_with_all_tests_executed', 'pourcentage'
+
+    Args :
+        df : le df total et global
+        df_tests : df avec colonnes ['actor', 'tp', 'function_name', 'tests_number', 'index']
+        df_all_verdicts : le df qui contient tous les tests ligne par ligne extraits de df
+        df_nb_tests_ecrits_tp_guides : contient la colonne 'Tps' et 'Nb etud avec tests présents' et bien d'autres, c'est le gros df
+                                       fourre-tout sur les tests écrits
+        tp_filenames : le dict {nom_TP : filename}
+        df_is_deb : columns 'actor' et 'debutant'
+    """
+    df_plot = pd.DataFrame(columns=['Tps', \
+                                    LBL_NB_ETUD_TESTS_PRESENTS, LBL_NB_DEB_TESTS_PRESENTS, LBL_NB_NON_DEB_TESTS_PRESENTS,\
+                                    LBL_NB_ETUD_TOUS_TESTS_EXEC, LBL_PCT_ETUD_TESTS_EXEC, 
+                                    LBL_NB_DEB_TOUS_TESTS_EXEC, LBL_PCT_DEB_TESTS_EXEC,
+                                    LBL_NB_NON_DEB_TOUS_TESTS_EXEC, LBL_PCT_NON_DEB_TESTS_EXEC])
+    for tp in TPS_SANS_SEM_5:
+        df_tp_tests = df_tests[df_tests['tp']==tp]
+        actor_column_tp_tests_ecrits  = df_tp_tests['actor'].unique()
+        # df intermédiaire qu'on calcule : 'actor' et 'tests_ecrits_executes' : bool qui contient le résultat
+        df_tests_ecrits_executes_tp = pd.DataFrame(columns=['actor', 'tests_ecrits_executes'])
+        for student in actor_column_tp_tests_ecrits:
+            res_bool, index_runTest_in_df,  df_runTest_tests_number, df_tests_ecrits_filename_strict_pos = \
+                tests_executes_pour_tests_ecrits(student, df, df_tp_tests, df_all_verdicts, filename=tp_filenames[tp] )
+            petit_df = pd.DataFrame({'actor':[student], 'tests_ecrits_executes':res_bool})
+            df_tests_ecrits_executes_tp = pd.concat([df_tests_ecrits_executes_tp, petit_df], ignore_index=True )
+        df_tests_ecrits_executes_tp_is_deb = merge_debutant(df_tests_ecrits_executes_tp, df_is_deb)
+        # résultats pour toute la promo
+        # pas élégant : sert à récupérer un entier
+        nb_etuds_avec_tests = df_nb_tests_ecrits_tp_guides[df_nb_tests_ecrits_tp_guides['Tps']==tp][LBL_NB_ETUD_TESTS_PRESENTS].iloc[0]
+        nb_etuds_avec_tests_executes = len(df_tests_ecrits_executes_tp[df_tests_ecrits_executes_tp['tests_ecrits_executes']==True])
+        pourcentage_exec_tests_ecrits_tp = nb_etuds_avec_tests_executes/nb_etuds_avec_tests*100
+        # résultats pour les débutants
+        df_tests_ecrits_executes_tp_deb = df_tests_ecrits_executes_tp_is_deb[df_tests_ecrits_executes_tp_is_deb['debutant']==True]
+        nb_deb_avec_tests = df_nb_tests_ecrits_tp_guides[df_nb_tests_ecrits_tp_guides['Tps']==tp][LBL_NB_DEB_TESTS_PRESENTS].iloc[0]
+        nb_deb_avec_tests_executes = len(df_tests_ecrits_executes_tp_deb[df_tests_ecrits_executes_tp_deb['tests_ecrits_executes']==True])
+        pourcentage_deb_exec_tests_ecrits_tp = nb_deb_avec_tests_executes/nb_deb_avec_tests*100
+        # résultats pour les non débutants
+        df_tests_ecrits_executes_tp_non_deb = df_tests_ecrits_executes_tp_is_deb[df_tests_ecrits_executes_tp_is_deb['debutant']==False]
+        nb_non_deb_avec_tests = df_nb_tests_ecrits_tp_guides[df_nb_tests_ecrits_tp_guides['Tps']==tp][LBL_NB_NON_DEB_TESTS_PRESENTS].iloc[0]
+        nb_non_deb_avec_tests_executes = len(df_tests_ecrits_executes_tp_non_deb[df_tests_ecrits_executes_tp_non_deb['tests_ecrits_executes']==True])
+        pourcentage_non_deb_exec_tests_ecrits_tp = nb_non_deb_avec_tests_executes/nb_non_deb_avec_tests*100        
+        df_plot_tp = pd.DataFrame({'Tps' : [tp], \
+                                       LBL_NB_ETUD_TESTS_PRESENTS: nb_etuds_avec_tests, \
+                                       LBL_NB_DEB_TESTS_PRESENTS: nb_deb_avec_tests, \
+                                       LBL_NB_NON_DEB_TESTS_PRESENTS: nb_non_deb_avec_tests,\
+                                       LBL_NB_ETUD_TOUS_TESTS_EXEC: nb_etuds_avec_tests_executes, \
+                                       LBL_NB_DEB_TOUS_TESTS_EXEC: nb_deb_avec_tests_executes, \
+                                       LBL_NB_NON_DEB_TOUS_TESTS_EXEC: nb_non_deb_avec_tests_executes, \
+                                       LBL_PCT_ETUD_TESTS_EXEC: pourcentage_exec_tests_ecrits_tp,\
+                                       LBL_PCT_DEB_TESTS_EXEC: pourcentage_deb_exec_tests_ecrits_tp,\
+                                       LBL_PCT_NON_DEB_TESTS_EXEC: pourcentage_non_deb_exec_tests_ecrits_tp})
+        df_plot = pd.concat([df_plot, df_plot_tp], ignore_index=True)
+    return df_plot
+
+
+df_tests_ecrits_executes = genere_donnees_tests_ecrits_executes(df, df_tests_number_tp_prog, df_all_verdicts, \
+                                                                df_plot_nombre_tests_ecrits_tp_guides, PROG_FILENAMES_BY_TP, df_is_deb)
+
+df_tests_ecrits_executes
+
+LABEL_NB_ETUD_WITH_TESTS = "avec tests présents"
+LABEL_TESTS_EXECUTES = "dont tous les tests ont été exécutés"
+
+
+def plot_tests_ecrits_executes(df_tests_ecrits_executes:pd.DataFrame) -> None:
+    """
+    AFfiche le graphe avec le nb d'étudiants ayant exécuté tous les tests présents dans le code.
+
+    Args :
+        df : le df total et global
+        df_tests : df avec colonnes ['actor', 'tp', 'function_name', 'tests_number', 'index']
+        df_all_verdicts : le df qui contient tous les tests ligne par ligne extraits de df
+        df_plot_nombre_tests_ecrits_tp_guides : contient la colonne 'Nb etud avec tests présents'
+        tp_filenames : le dict {nom_TP : filename}
+    """
+    df_plot = df_tests_ecrits_executes.copy()
+    df_plot = df_plot.rename(columns={LBL_NB_ETUD_TESTS_PRESENTS: LABEL_NB_ETUD_WITH_TESTS, \
+                                        LBL_NB_ETUD_TOUS_TESTS_EXEC: LABEL_TESTS_EXECUTES})
+    df_plot.set_index('Tps')[[LABEL_NB_ETUD_WITH_TESTS, LABEL_TESTS_EXECUTES]].plot(kind='bar', figsize=(12, 6))
+    plt.title("Étudiant·es ayant travaillé sur les TPs guidés")
+    plt.ylabel("Nombre d'étudiant·es")
+    plt.xlabel("TPs guidés")
+    plt.xticks(rotation=45)
+    plt.legend(title="Nombre étudiant·es")
+    plt.tight_layout()
+    plt.show()
+
+
+plot_tests_ecrits_executes(df_tests_ecrits_executes)
+
+df_tests_ecrits_executes[LBL_PCT_ETUD_TESTS_EXEC].describe()
+
+df_tests_ecrits_executes[LBL_PCT_DEB_TESTS_EXEC].describe()
+
+df_tests_ecrits_executes[LBL_PCT_NON_DEB_TESTS_EXEC].describe()
+
+# Les données montrent que 86% en moyenne des étudiant·es ayant écrit au moins un test dans leur travail ont exécuté tous les tests écrits (écart-type : 3.6), 85.4% en moyenne des débutants ayant écrit au moins un test (écart-type : 6) et 88.4% en moyenne des non débutants (écart-type : 3.6). 
 
 # # QR2 : les étudiants prennent-ils l'habitude de tester leurs programmes ?
 
@@ -1044,7 +1356,7 @@ plot_tests_ecrits_non_deb(calcule_infos_tests_ecrits_avec_non_deb(df_plot_nombre
 # - quelle action suite à un test en échec ou erreur ?
 # - les tests écrits par les étudiant·es sont-ils pertinents ?
 # - les étudiant·es se contentent-ils de recopier en les adaptant les données de test suggérées par l'énoncé, quand il y en a ?
-# - Peut-on dégager des classes de comportements ? Par ex j'écris les tests puis le code puis je teste, ou j'écris tout le code de toutes les fonctions puis je teste sans procéder par approche itérative ?
+# - Analyse des comportements individuels des étudiant·es au lieu de l'aalyse moyenne de la promo ? Peut-on dégager des classes de comportements ? Par ex j'écris les tests puis le code puis je teste, ou j'écris tout le code de toutes les fonctions puis je teste sans procéder par approche itérative ?
 # - quand un test est en échec, est-ce le plus souvent un test mal écrit ou un code faux ?
 # - quelle proportion de code avec des tests qui passent est néanmoins faux (TPs guidés) ?
 # - écriture des tests avant le code ou ajouts des tests une fois une tout est testé manuellement ?
