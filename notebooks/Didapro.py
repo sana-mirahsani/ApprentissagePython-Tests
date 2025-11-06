@@ -128,6 +128,55 @@ def is_deb_def(df_admin:pd.DataFrame) -> pd.DataFrame:
 df_is_deb = is_deb_def(df_admin_etud)
 
 
+def merge_debutant(df:pd.DataFrame, df_is_deb:pd.DataFrame) -> pd.DataFrame:
+    """
+    Renvoie un nouveau df qui ajoute au paramètre `df` la colonne "débutant", de type booléen, définie dans df_is_deb.
+
+    Args:
+        df : initial ou autre, contient la colonne "actor"
+        df_is_deb : colonnes 'actor' et 'debutant'
+    """
+    df_copy = df.copy()
+    df_deb_copy = df_is_deb.copy()
+    df_copy['debutant'] = (df_copy.merge(df_is_deb, on='actor', how='inner'))['debutant']
+    return df_copy
+
+
+# quasiment pareil ajout_colonnes, sauf le codeState...
+def ajout_debutant_admin(df:pd.DataFrame, df_admin:pd.DataFrame) -> pd.DataFrame:
+    """
+    Renvoie un nouveau df qui ajoute au paramètre `df` la colonne "débutant", de type booléen, définie par :
+    dans df_admin, l'"actor" commun à `df` et `df_admin` :
+                  - a une valeur "NSI" != "NSI2"
+                  - a une valeur "redoublant" == 'non'
+
+    Args:
+        df : le df initial, avec colone "actor"
+        df_admin : le df avec colonne "actor", "NSI", "redoublant"
+    """
+    df_admin_copy = df_admin.copy()
+    df_admin_copy['debutant'] = (df_admin_copy['NSI']!='NSI2') & (df_admin_copy['redoublant']=='non')
+    df_admin_actor_debutants = df_admin_copy[['actor', 'debutant']]
+    df_copy = df.copy()
+    df_copy['debutant'] = (df_copy.merge(df_admin_actor_debutants, on='actor', how='inner'))['debutant']
+    return df_copy
+
+
+def select_debutants(actors:list[str], df_is_deb:pd.DataFrame) -> list[str]:
+    """
+    Renvoie les débutants contenus dans `actors`, ssur la foi de `df_is_deb` 
+    Args : 
+        df_is_deb : df avec colonnes 'actor' et 'debutant' (bool)
+    """
+    df_param = df_is_deb.copy()
+    df_select_deb = df_param[df_param['actor'].isin(actors)]
+    res = list(df_select_deb[df_select_deb['debutant']==True]['actor'])
+    for actor in res:
+        assert df[df['actor']==actor]['debutant'].all()
+    return res
+
+
+
 # finalement ne sert pas
 def est_debutant(actor:str, df_is_deb:pd.DataFrame) -> bool:
     """
@@ -664,57 +713,7 @@ def find_tests_for_all_tp_tpprog(df:pd.DataFrame, functions_names:dict) -> tuple
 
 df_tests_number_tp_prog, _, _ =  find_tests_for_all_tp_tpprog(df, PROG_FUNCTIONS_NAME_BY_TP)
 
-
-def ajout_debutant_admin(df:pd.DataFrame, df_admin:pd.DataFrame) -> pd.DataFrame:
-    """
-    Renvoie un nouveau df qui ajoute au paramètre `df` la colonne "débutant", de type booléen, définie par :
-    dans df_admin, l'"actor" commun à `df` et `df_admin` :
-                  - a une valeur "NSI" != "NSI2"
-                  - a une valeur "redoublant" == 'non'
-
-    Args:
-        df : le df initial, avec colone "actor"
-        df_admin : le df avec colonne "actor", "NSI", "redoublant"
-    """
-    df_admin_copy = df_admin.copy()
-    df_admin_copy['debutant'] = (df_admin_copy['NSI']!='NSI2') & (df_admin_copy['redoublant']=='non')
-    df_admin_actor_debutants = df_admin_copy[['actor', 'debutant']]
-    df_copy = df.copy()
-    #df_copy['codeState'] = df_copy['P_codeState'] + df_copy['F_codeState']
-    df_copy['debutant'] = (df_copy.merge(df_admin_actor_debutants, on='actor', how='inner'))['debutant']
-    return df_copy
-
-
-def merge_debutant(df:pd.DataFrame, df_is_deb:pd.DataFrame) -> pd.DataFrame:
-    """
-    Renvoie un nouveau df qui ajoute au paramètre `df` la colonne "débutant", de type booléen, définie dans df_is_deb.
-
-    Args:
-        df : initial ou autre, contient la colonne "actor"
-        df_is_deb : colonnes 'actor' et 'debutant'
-    """
-    df_copy = df.copy()
-    df_deb_copy = df_is_deb.copy()
-    df_copy['debutant'] = (df_copy.merge(df_is_deb, on='actor', how='inner'))['debutant']
-    return df_copy
-
-
 df_tests_number_tp_prog_deb = merge_debutant(df_tests_number_tp_prog, df_is_deb)
-
-
-def select_debutants(actors:list[str], df_is_deb:pd.DataFrame) -> list[str]:
-    """
-    Renvoie les débutants contenus dans `actors`, ssur la foi de `df_is_deb` 
-    Args : 
-        df_is_deb : df avec colonnes 'actor' et 'debutant' (bool)
-    """
-    df_param = df_is_deb.copy()
-    df_select_deb = df_param[df_param['actor'].isin(actors)]
-    res = list(df_select_deb[df_select_deb['debutant']==True]['actor'])
-    for actor in res:
-        assert df[df['actor']==actor]['debutant'].all()
-    return res
-
 
 
 def actors_par_pratique_ecriture_tests(df_tests_number:pd.DataFrame) -> tuple[list[str], list[str], list[str], list[str], list[str], list[str]]:
@@ -1013,7 +1012,7 @@ def plot_tests_ecrits_par_fonctions_TP_guides(df_tests_ecrits_tp_guides:pd.DataF
 plot_tests_ecrits_par_fonctions_TP_guides(calcule_infos_tests_ecrits_sans_deb(df_plot_nombre_tests_ecrits_tp_guides))
 
 
-# Un très grand nombre des travaux analysables (c'est à dire un fichier Python syntaxiquement correct contenant des fonctions) contient au moins un test (cf premier graphique). La moyenne sur les TPs indique que 94.7% des étudiant•es dont le travail est analysable ont écrit au moins un test, avec un écart-type de 1.86, un minimum de 92.25% pour le TP8 et un maximum de 96.7% pour le TP2.  Nous ne savons pas expliquer pourquoi le minimum 
+# Un très grand nombre des travaux analysables (c'est à dire un fichier Python syntaxiquement correct contenant des fonctions) contient au moins un test (cf premier graphique). La moyenne sur les TPs indique que 94.7% des étudiant•es dont le travail est analysable ont écrit au moins un test, avec un écart-type de 1.86, un minimum de 92.25% pour le TP8 et un maximum de 96.7% pour le TP2.  Nous ne savons pas expliquer pourquoi le minimum se produit au niveau du TP8.
 #
 #
 # La brique de base pour le test unitaire étant la fonction, l'écriture d'au moins un test par fonction testable peut représenter un comportement nominal pour des débutant·es (le comportement nominal réel consistant à écrire un jeu de tests pertinents). Pour les TPs guidés nous connaissons les fonctions à programmer : nous pouvons donc regarder quelle proportion des fonctions écrites et testables contiennent des tests. Les résultats montrent que la plupart des étudiant·es écrivent des tests pour toutes les fonctions testables qu'ils ou elles ont programmé. La moyenne sur les TPs indique que 86.7% des étudiant·es dont le code est analysable écrivent des tests pour toutes les fonctions, avec un écart-type à 6.5, un maximum à 96.3% pour le TP2, et un tassement pour le TP9 (pour ce TP environ 77% des étudiant·es ayant écrit des tests l'ont fait pour toutes les fonctions). On note que ce TP est l'un des plus difficiles du semestre, avec des boucles difficiles à écrire. 
@@ -1349,6 +1348,242 @@ df_tests_ecrits_executes[LBL_PCT_NON_DEB_TESTS_EXEC].describe()
 
 # # QR2 : les étudiants prennent-ils l'habitude de tester leurs programmes ?
 
+GAMES_ANALYZED = ['tictactoe.py', 'puissance4.py', 'binairo.py', 'jeu_2048.py']#, 'jeu_nim.py']
+
+# Je traîne du code inutilement compliqué... pas besoin de filtrer sur Tp_GAME ni TP_prog si je filtre d'abord sur le filename_infere.
+
+assert(df[(df['filename_infere'].isin(GAMES_ANALYZED)) & ~((df['TP'] == 'Tp_GAME') & (df['Type_TP'] == 'TP_prog'))].empty)
+
+
+# ## Écriture de tests
+
+def find_tests_by_function_for_game_actor(actor:str, df:pd.DataFrame, filename:str) -> tuple[pd.DataFrame, bool, bool]:
+    """
+    Looks for codeStates related  to 'filename' for student `actor`, then looks repeatedly 
+    for the most recent codeState that can be parsed tne returns:
+
+    - a DataFrame with columns 'actor', 'filename', 'function_name', 'tests_number' (int or None if not present in codestates), 'index' (index in df of the analyzed codeState)
+    - a first bool, True if for student 'name' the codeStates cannot be analyzed (Python or l1test syntax error) or codestates contain no function of functions_names
+    - a second bool, True if for student 'name' and this tp no codeState was found, or only empty codeStates
+
+    codeStates are considered from the most recent to the least recent, so it does not matter if timestamps are not sorted in increaded order.
+    
+    Args:
+        actor: some actor (ex : 'truc.machin.etu')
+        df: some DataFrame
+        filename: the name of a particular filename_infere to analyze. 
+        
+    Returns:
+        None, False, True: if no codeState was found, or only empty codeStates
+        None, True, False: if no codeState could be parsed, or no codeState contains at least one function of functions_name
+        df, False, False: if some codeState could be parsed and contains the number of tests
+    
+    """
+    # Les timestamps ne sont pas triés par ordre croissant.
+    # La fonction recherche les codeState comme suit : 
+    # - elle cherche le codestate le plus récent,
+    # - s'il est analysable, elle vérifie qu'il y a au moins une des fonctions cherchées dedans
+    # - s'il n'est pas analysable ou si aucune fonction n'est trouvée, elle cherche à nouveau le codestate le plus récent, moins le précédent.
+    # Et ce tant qu'il y a des codestate à traiter.
+    df_name_tp = df[((df['actor'] == actor) | (df['binome'] == actor)) \
+                        & (df['filename_infere'] == filename)]
+    df_codestate_nonempty = df_name_tp[df_name_tp['codeState'] != '']
+    if len(df_codestate_nonempty) == 0:
+            return None, False, True
+    else:
+        # look for most recent parsable codeState
+        timestamps = df_codestate_nonempty['timestamp.$date'].copy() # pour être sûre de ne pas modifier le df initial
+        found = False # found codeState with functions not all unfoundable
+        while not timestamps.empty and not found: 
+            index_of_timestamp_max = timestamps.idxmax() # index of timestamp most recent
+            most_recent_codeState = df_name_tp.loc[index_of_timestamp_max]['codeState']
+            dict_tests = find_tests_in_codestate(most_recent_codeState)
+            if dict_tests != None and dict_tests != {}: # parseable and contains at least 1 function
+                col_functions = []
+                col_tests_number = []
+                for key, value in dict_tests.items(): # key : function_name, value : tests_number
+                    col_functions.append(key)
+                    col_tests_number.append(value)
+                nb_rows = len(dict_tests) # number of functions
+                if col_tests_number != [None]*nb_rows: # convenient codestate found, with at least one function inside TODO ici
+                                                       # comment pourrait-on avoir None partout ?
+                    found = True
+                    col_actors = [actor] * nb_rows
+                    col_index = [index_of_timestamp_max] * nb_rows
+                    df_result = pd.DataFrame({'actor' : col_actors, 'filename_infere' : filename,'function_name' : col_functions, \
+                                          'tests_number' : col_tests_number, 'index' : col_index })
+                else: # codestate not convenient : drop this index and continue
+                    print(dict_tests)
+                    print(most_recent_codeState)
+                    assert(False) # pour vérifier
+                    timestamps = timestamps.drop(index=[index_of_timestamp_max])
+            else: # codestate not parsable : drop this index and continue
+                timestamps = timestamps.drop(index=[index_of_timestamp_max])
+        if found:
+            return df_result, False, False
+        else:
+            #print(f"no functions found for {name} and index {index_of_timestamp_max}")
+            return None, True, False
+
+
+def find_tests_for_tp_tpgame_name(name:str, df:pd.DataFrame, games:list[str]) -> pd.DataFrame:
+    """
+    Looks for codeStates related  to 'TP_prog' (df['Type_TP'] == 'TP_prog') for `name` and all filename_infere we can find for `name`, then looks repeatedly for the most recent codeState that can be parsed and contains at least one function of functions_names, then returns:
+
+    - a DataFrame with columns 'actor', 'tp', 'filename_infere', 'tests_number' (int or None if not present in codestates), 'index' (index in df of the analyzed codeState)
+ 
+    codeStates are considered from the most recent to the least recent, so it does not matter if timestamps are not sorted in increaded order.
+    
+    Args:
+        name: some actor (ex : 'truc.machin.etu')
+        df: some DataFrame   
+        games : la liste des noms de fichiers de jeu à considérer dans l'analyse
+    Returns:
+        None if no tp_game & tp_prog codestate could be found or analyzed.
+    
+    """
+    df_name_tp = df[((df['actor'] == name) | (df['binome'] == name)) &\
+                    (df['TP'] == 'Tp_GAME') & (df['Type_TP'] == 'TP_prog') & df['filename_infere'].isin(games)].copy()
+    df_codestate_nonempty = df_name_tp[df_name_tp['codeState'] != '']
+    if len(df_codestate_nonempty) == 0:
+            return None
+    else:
+        df_result = pd.DataFrame(columns=['actor', 'filename_infere', 	'tests_number', 	'index'])
+        tpgame_filenames_infere_all = df_codestate_nonempty['filename_infere'].unique()
+        tpgame_filenames = list(f for f in tpgame_filenames_infere_all if f in games)
+        if len(tpgame_filenames) == 0:
+            return None
+        for filename in tpgame_filenames:
+            df_filename, cannot_analyze_codestate, empty_codestate =  find_tests_by_function_for_game_actor(name, df, filename)
+            if df_filename is not None:
+                df_result = pd.concat([df_result, df_filename], ignore_index=True)
+        return df_result
+
+
+def find_tests_for_tp_tpgame(df:pd.DataFrame, games:list[str]) -> tuple[pd.DataFrame, list[str]]:
+    """
+    Looks for codeStates related  to 'Tp_GAME' (df['Type_TP'] == 'TP_prog') for all students and all filename_infere we can find for `name`, then looks repeatedly for the most recent codeState that can be parsed and contains at least one function of functions_names, then returns:
+
+     - a DataFrame with columns 'actor', 'tp', 'filename_infere', 'tests_number' (int or None if not present in codestates), 'index' (index in df of the analyzed codeState)
+     - a list of actors for which no data could be collected - they do not appear in the returned dataframe
+     
+    codeStates are considered from the most recent to the least recent, so it does not matter if timestamps are not sorted in increaded order.
+    
+    Args:
+        df: some DataFrame
+        games : la liste des noms de fichiers de jeu à considérer dans l'analyse
+    """
+    cannot_find_or_analyze_tpgame = []
+    df_result = pd.DataFrame(columns=['actor',  'filename_infere', 	'tests_number', 	'index'])
+    df_local = df[(df['TP'] == 'Tp_GAME') & (df['Type_TP'] == 'TP_prog') & (df['filename_infere'].isin(games))].copy()
+    all_students_game = actors(df_local)
+    for name in all_students_game:
+        df_name = find_tests_for_tp_tpgame_name(name, df, games)
+        if df_name is None:
+            cannot_find_or_analyze_tpgame.append(name)
+        else:
+            df_result = pd.concat([df_result, df_name], ignore_index=True)
+    return df_result, cannot_find_or_analyze_tpgame
+
+
+df_tests_tpgame_all, cannot_find_or_analyze_tpgame = find_tests_for_tp_tpgame(df, GAMES_ANALYZED)
+
+LBL_NB_ETUD_GAME = 'nb étudiants ayant réalisé le jeu'
+LBL_NB_DEB_GAME = 'nb débutants ayant réalisé le jeu'
+LBL_NB_NON_DEB_GAME = 'nb non débutants ayant réalisé le jeu'
+LBL_NB_ETUD_AVEC_TESTS_GAME = 'Nb étud avec tests présents'
+LBL_NB_DEB_AVEC_TESTS_GAME = 'Nb deb avec tests présents'
+LBL_NB_NON_DEB_AVEC_TESTS_GAME = 'Nb non deb avec tests présents'
+LBL_PCT_ETUD_GAME = '% étudiants ayant réalisé le jeu (total)'
+LBL_PCT_DEB_GAME = '% étudiants débutants (jeu)'
+LBL_PCT_NON_DEB_GAME = '% étudiants non débutants (jeu)'
+LBL_PCT_ETUD_TESTS_GAME = '% étudiants avec tests (jeu)'
+LBL_PCT_DEB_TESTS_GAME = '% étudiants débutants avec tests (nb débutants game)'
+LBL_PCT_NON_DEB_TESTS_GAME = '% étudiants non débutants avec tests (nb non débutants game)'
+
+
+def genere_donnees_test_games(df:pd.DataFrame, df_tests_games:pd.DataFrame, df_is_deb:pd.DataFrame, games_names:list[str]) -> pd.DataFrame:
+    '''
+    Génére un dataframe avec comme colonnes :
+
+    - jeu : nom du jeu
+    - 'nb étudiants ayant réalisé le jeu' : le nb d'étudiants qui ont une trace avec ce nom
+    - % étudiants ayant réalisé le jeu (total) : le % rapporté au nb d'étudiants total, pas très parlant
+    - '% étudiants débutants (jeu)' : le % de débutants rapporté au nb d'étudiants ayant réalisé le jeu
+    - '% étudiants avec tests (jeu)' : le % d'étudiants ayant écrit des tests, rapporté au nb d'étudiants ayant réalisé le jeu
+    - '% étudiants débutants avec tests (avec tests)' : le % d'étudiants débutants avec tests rapporté au nb de débutants
+    
+    Args:
+        df : df total
+        df_test_games : columns actor, tp, filename_infere, tests_number, index
+        df_admin_etud_debutants : columns actor, debutant
+    '''
+    df_plot = pd.DataFrame(columns=['jeu', LBL_NB_ETUD_GAME, LBL_NB_DEB_GAME, LBL_NB_NON_DEB_GAME,\
+                                    LBL_NB_ETUD_AVEC_TESTS_GAME, LBL_NB_DEB_AVEC_TESTS_GAME, LBL_NB_NON_DEB_AVEC_TESTS_GAME,\
+                                    LBL_PCT_ETUD_GAME, LBL_PCT_DEB_GAME, LBL_PCT_NON_DEB_GAME,\
+                                    LBL_PCT_ETUD_TESTS_GAME, LBL_PCT_DEB_TESTS_GAME, LBL_PCT_NON_DEB_TESTS_GAME])
+    all_students_df = actors(df)
+    # nb actors - global df    
+    nb_actor_df = len(all_students_df)
+    df_tests_games_avec_debutants = merge_debutant(df_tests_games, df_is_deb) 
+
+    for game in games_names:
+        #print(game, '---------')
+        # nb actors - game
+        df_tests_game = df_tests_games_avec_debutants[df_tests_games_avec_debutants['filename_infere'] == game]
+        game_etuds = df_tests_game.actor.unique()
+        nb_etud_df_game = len(game_etuds)
+        #print('nb_actor_df_game : ', nb_actor_df_game)
+        pourcent_etud_game = nb_etud_df_game/nb_actor_df*100
+        # debutants / game
+        debutants_game = select_debutants(game_etuds, df_is_deb)
+        non_debutants_game = list(set(game_etuds) - set(debutants_game))
+        nb_debutants_game = len(debutants_game)
+        nb_non_debutants_game = len(non_debutants_game)
+        pourcent_etud_game_debutant = nb_debutants_game/nb_etud_df_game*100
+        pourcent_etud_game_non_debutant = nb_non_debutants_game/nb_etud_df_game*100
+        # tests / game
+        df_tests_presents = df_tests_game[df_tests_game['tests_number']>0]
+        etud_tests_presents = df_tests_presents.actor.unique()
+        nb_etud_game_test = len(etud_tests_presents)
+        pourcent_etud_game_avec_tests = nb_etud_game_test/nb_etud_df_game*100
+        # tests & debutants / tests
+        debutants_tests_presents = select_debutants(etud_tests_presents, df_is_deb)
+        nb_etud_game_tests_debutant = len(debutants_tests_presents)
+        pourcent_etud_game_tests_debutants = nb_etud_game_tests_debutant/nb_debutants_game*100
+        # tests & non debutants / tests
+        non_debutants_tests_presents = list(set(etud_tests_presents) - set(debutants_tests_presents))
+        nb_etud_game_tests_non_debutant = len(non_debutants_tests_presents)
+        pourcent_etud_game_tests_non_debutants = nb_etud_game_tests_non_debutant/nb_non_debutants_game*100
+        # local df
+        df_plot_game = pd.DataFrame({'jeu' : [game], 
+                                     LBL_NB_ETUD_GAME : nb_etud_df_game,
+                                     LBL_NB_DEB_GAME : nb_debutants_game,
+                                     LBL_NB_NON_DEB_GAME : nb_non_debutants_game,
+                                     LBL_NB_ETUD_AVEC_TESTS_GAME: nb_etud_game_test,
+                                     LBL_NB_DEB_AVEC_TESTS_GAME: nb_etud_game_tests_debutant,
+                                     LBL_NB_NON_DEB_AVEC_TESTS_GAME: nb_etud_game_tests_non_debutant,
+                                     LBL_PCT_ETUD_GAME: pourcent_etud_game,
+                                     LBL_PCT_DEB_GAME: pourcent_etud_game_debutant,
+                                     LBL_PCT_NON_DEB_GAME: pourcent_etud_game_non_debutant,
+                                     LBL_PCT_ETUD_TESTS_GAME: pourcent_etud_game_avec_tests,
+                                     LBL_PCT_DEB_TESTS_GAME: pourcent_etud_game_tests_debutants,
+                                     LBL_PCT_NON_DEB_TESTS_GAME: pourcent_etud_game_tests_non_debutants})
+        df_plot = pd.concat([df_plot, df_plot_game], ignore_index=True)
+    return df_plot
+
+
+len(merge_debutant(df_tests_tpgame_all, df_is_deb).actor.unique())
+
+df_plot_games =  genere_donnees_test_games(df, df_tests_tpgame_all, df_is_deb, GAMES_ANALYZED)
+df_plot_games
+
+# Il faut sans doute virer le 2048 car 8% d'étudiant·es l'ont fait, c'est très peu. Pour le binairo et le puissance 4, ce n'est pas tellement mieux :( Je pense que des NSI ont fait les projets chez eux, ce qui explique qu'on ait si peu de non débutants pour le tictactoe.
+
+df_plot_games[LBL_NB_ETUD_AVEC_TESTS_GAME].describe()
+
+df_plot_games[LBL_NB_ETUD_GAME].describ()
+
 # # Pistes de recherche
 
 # Analyse :
@@ -1356,7 +1591,8 @@ df_tests_ecrits_executes[LBL_PCT_NON_DEB_TESTS_EXEC].describe()
 # - quelle action suite à un test en échec ou erreur ?
 # - les tests écrits par les étudiant·es sont-ils pertinents ?
 # - les étudiant·es se contentent-ils de recopier en les adaptant les données de test suggérées par l'énoncé, quand il y en a ?
-# - Analyse des comportements individuels des étudiant·es au lieu de l'aalyse moyenne de la promo ? Peut-on dégager des classes de comportements ? Par ex j'écris les tests puis le code puis je teste, ou j'écris tout le code de toutes les fonctions puis je teste sans procéder par approche itérative ?
+# - Analyse des comportements individuels des étudiant·es au lieu de l'analyse moyenne de la promo ? Peut-on dégager des classes de comportements ?
+# - analyse temporelle des travaux. Pour notre analyse on regarde le travail le plus récent, mais pas la succession des travaux qui y ont mené. On a donc le travail le plus fini, mais on a peu ou prou un rendu Moodle à une étape intermédiaire. Par ex j'écris les tests puis le code puis je teste, ou j'écris tout le code de toutes les fonctions puis je teste sans procéder par approche itérative ?
 # - quand un test est en échec, est-ce le plus souvent un test mal écrit ou un code faux ?
 # - quelle proportion de code avec des tests qui passent est néanmoins faux (TPs guidés) ?
 # - écriture des tests avant le code ou ajouts des tests une fois une tout est testé manuellement ?

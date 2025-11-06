@@ -1402,7 +1402,7 @@ def find_tests_by_function_for_game_actor(actor:str, df:pd.DataFrame, filename:s
                     col_functions.append(key)
                     col_tests_number.append(value)
                 nb_rows = len(dict_tests) # number of functions
-                if col_tests_number != [None]*nb_rows: # convenient codestate found, with at least one function inside
+                if col_tests_number != [None]*nb_rows: # convenient codestate found, with at least one function inside TODO ici
                     found = True
                     col_actors = [actor] * nb_rows
                     col_index = [index_of_timestamp_max] * nb_rows
