@@ -716,6 +716,47 @@ df_tests_number_tp_prog, _, _ =  find_tests_for_all_tp_tpprog(df, PROG_FUNCTIONS
 df_tests_number_tp_prog_deb = merge_debutant(df_tests_number_tp_prog, df_is_deb)
 
 
+def nb_tests_par_etud_par_fonction_tp(tp:str, df_tests_number:pd.DataFrame) -> float:
+    """
+    Renvoie la moyenne du nb moyen de tests que chaque étudiant a écrit par fonction pour le tp `tp`.
+    """
+    df_tests_number_tp = df_tests_number[df_tests_number['tp']==tp].copy()
+    # 1er mean : nb de test moyen des tests écrits par fonctio, par étudiant
+    # 2ème mean : la moyenne de ce nombre
+    return df_tests_number_tp.groupby('actor').tests_number.mean().mean()
+
+
+def nb_tests_par_etud_par_fonction(df_tests_number:pd.DataFrame) -> pd.DataFrame:
+    """
+    Renvoie un df de colonnes 'tp' et 'nb tests par fonction moyen', 'nb tests par fonction moyen débutants', 'nb tests par fonction moyen non débutants'
+    """
+    df_res = pd.DataFrame()
+    moyennes = []
+    moyennes_deb = []
+    moyennes_non_deb = []
+    for tp in TPS_SANS_SEM_5:
+        moyennes.append(nb_tests_par_etud_par_fonction_tp(tp, df_tests_number))
+        moyennes_deb.append(nb_tests_par_etud_par_fonction_tp(tp, df_tests_number[df_tests_number['debutant']==True]))
+        moyennes_non_deb.append(nb_tests_par_etud_par_fonction_tp(tp, df_tests_number[df_tests_number['debutant']==False]))
+    return pd.DataFrame({'tp' : TPS_SANS_SEM_5, 'nb tests par fonction moyen' : moyennes,\
+                         'nb tests par fonction moyen débutants' : moyennes_deb,
+                        'nb tests par fonction moyen non débutants' : moyennes_non_deb}
+                       )
+
+
+nb_tests_par_etud_par_fonction(df_tests_number_tp_prog_deb)
+
+
+# +
+# Essai pour faire un test mais ça ne marche guère...
+#ar = np.array([['lou.etu', 'Tp2', 'foo', 2, True], \
+#               ['lou.etu', 'Tp2', 'bar', 4, True], \
+#               ['tom.etu', 'Tp2', 'foo', 1, True],\
+#               ['tom.etu', 'Tp2', 'bar', np.nan, True]])
+#df_brouillon = pd.DataFrame(ar, columns = ['actor', 'tp', 'function_name', 	'tests_number', 'debutant'])
+#df_brouillon 
+# -
+
 def actors_par_pratique_ecriture_tests(df_tests_number:pd.DataFrame) -> tuple[list[str], list[str], list[str], list[str], list[str], list[str]]:
     '''
     Renvoie 
@@ -1017,6 +1058,8 @@ plot_tests_ecrits_par_fonctions_TP_guides(calcule_infos_tests_ecrits_sans_deb(df
 # La brique de base pour le test unitaire étant la fonction, l'écriture d'au moins un test par fonction testable peut représenter un comportement nominal pour des débutant·es (le comportement nominal réel consistant à écrire un jeu de tests pertinents). Pour les TPs guidés nous connaissons les fonctions à programmer : nous pouvons donc regarder quelle proportion des fonctions écrites et testables contiennent des tests. Les résultats montrent que la plupart des étudiant·es écrivent des tests pour toutes les fonctions testables qu'ils ou elles ont programmé. La moyenne sur les TPs indique que 86.7% des étudiant·es dont le code est analysable écrivent des tests pour toutes les fonctions, avec un écart-type à 6.5, un maximum à 96.3% pour le TP2, et un tassement pour le TP9 (pour ce TP environ 77% des étudiant·es ayant écrit des tests l'ont fait pour toutes les fonctions). On note que ce TP est l'un des plus difficiles du semestre, avec des boucles difficiles à écrire. 
 #
 # Nous n'avons pas regardé combien de fonctions ont été écrites par les étudiant·es : du point de vue de l'écriture des tests une étudiante qui n'aura écrit que 4 fonctions avec tests durant les séances est considérée de la même manière qu'une étudiante ayant écrit 10 fonctions avec tests, mais de manière différente d'une étudiante ayant écrit 12 fonctions sans aucun test. Dans le cas où toutes les fonctions ne possèdent pas de tests dans le code, nous n'avons pas regardé si c'est la dernière fonction écrite qui n'a pas de tests (ce qui peut correspondre au comportement "écrire le code, faire un test manuel puis ajouter des tests", avec fin du TP avant l'ajout des tests).
+#
+# Le nombre de tests par fonction moyen varie en fonction des TPs, mais reste homogène quant au cursus antérieur des étudiant·es (peu de différence constatée entre débutant·es et non débutant·es). Le nombre de tests par fonction moyen minimum est constaté pour les TP2, TP6 et TP7 (autour de 1.7) et le nombre de tests par fonction moyen minimum est constaté pour le TP9 (3.4). Ces variations s'expliquent par les différences entre les sujets proposés et la précision des indications données concernant les tests à écrire. Pour la semaine 2 la simplicité des fonctions écrites n'appelait pas un grand nombre de tests.  Pour les semaines 6 et 7, un seul exemple nominal était donné avec pour mission de trouver les autres tests pertinents (essentiellement un test sur une séquence vide), et la moyenne indique que tous les étudiant·es ne l'ont pas fait. Pour le TP9 les données de tests n'étaient pas fournies mais de nombreux cas de tests étaient indiqués en raison de la difficulté algorithmique des fonctions. 
 
 # ### Impact du cursus antérieur sur l'écriture des tests
 
