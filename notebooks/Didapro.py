@@ -341,7 +341,7 @@ plot_TPs_guides_general(df_donnees_TP_guides)
 
 # ### Écriture de tests
 
-# Les tests sont cherchés dans les fichiers récupérés dans les contenus d'éditeur. Pour un·e étudiant·e donné·e les traces contiennent de nombreux contenus d'éditeurs relatifs à un TP donné, qui représentent la chronologie du travail de l'étudiant·e. Il faut en choisir un. Le principe adopté ici est de prendre le contenu de l'éditeur qui a l'horodatage le plus récent et qu'on peut imaginer être le travail le plus abouti. 
+# Les tests sont cherchés dans les fichiers récupérés dans les contenus d'éditeur. Pour un·e étudiant·e donné·e les traces contiennent de nombreux contenus d'éditeurs relatifs à un TP donné, qui représentent la chronologie du travail de l'étudiant·e. Il faut en choisir un. Le principe adopté ici est de prendre le contenu de l'éditeur qui a l'horodatage le plus récent et qu'on peut imaginer être le travail le plus abouti. Cette heuristique ne marche pas toujours : nous avons trouvé l'activité de débutant·es pour lesquelles on trouve le début d'un TP réalisé, puis la fin sans le début. Dans ce cas seule la fin du TP sera prise en compte dans l'analyse.
 #
 # Pour extraire les tests écrits du code nous utilisons une fonctionnalité interne à L1Test qui nécessite d'analyser syntaxiquement le code Python. Ce n'est pas possible si l'étudiant·e a fait une erreur de syntaxe. L'algorithme est donc le suivant : on examine le contenu de l'éditeur le plus récent. Si on peut en extraire des tests, on le fait. Si on ne peut pas en extraire des tests, alors on cherche le contenu d'éditeur qui a l'horodatage le plus récent à l'exclusion du précédent, et on répète tant qu'il y a des contenus d'éditeur à examiner. L'inconvénient de notre approche est que nous excluons de notre analyse le travail des étudiant·es qui ne parviennent pas à maîtriser les aspects syntaxiques, mais le nombre de travaux exclus reste faible en regard du nombre total. Sur les TPs 2 à 9 nous avons exclu en moyenne 2.6% des travaux, avec un maximum à 5.8% pour le TP8. Les travaux exclus sont en moyenne à 90% des travaux de débutants (écart-type : 17), avec une valeur de 100% pour 5 des TPs. C'est cohérent avec la non maîtrise syntaxique du langage.
 #
@@ -1059,7 +1059,11 @@ plot_tests_ecrits_par_fonctions_TP_guides(calcule_infos_tests_ecrits_sans_deb(df
 #
 # Nous n'avons pas regardé combien de fonctions ont été écrites par les étudiant·es : du point de vue de l'écriture des tests une étudiante qui n'aura écrit que 4 fonctions avec tests durant les séances est considérée de la même manière qu'une étudiante ayant écrit 10 fonctions avec tests, mais de manière différente d'une étudiante ayant écrit 12 fonctions sans aucun test. Dans le cas où toutes les fonctions ne possèdent pas de tests dans le code, nous n'avons pas regardé si c'est la dernière fonction écrite qui n'a pas de tests (ce qui peut correspondre au comportement "écrire le code, faire un test manuel puis ajouter des tests", avec fin du TP avant l'ajout des tests).
 #
+# **Il faut revoir ce paragraphe Dans la mesure où on n'a pas noté quelles fonctions sont donées avec des tests ds les sujets, je ne peux pas dire grand chose. Il faudrait analyser une fonction en particulier**
+#
 # Le nombre de tests par fonction moyen varie en fonction des TPs, mais reste homogène quant au cursus antérieur des étudiant·es (peu de différence constatée entre débutant·es et non débutant·es). Le nombre de tests par fonction moyen minimum est constaté pour les TP2, TP6 et TP7 (autour de 1.7) et le nombre de tests par fonction moyen minimum est constaté pour le TP9 (3.4). Ces variations s'expliquent par les différences entre les sujets proposés et la précision des indications données concernant les tests à écrire. Pour la semaine 2 la simplicité des fonctions écrites n'appelait pas un grand nombre de tests.  Pour les semaines 6 et 7, un seul exemple nominal était donné avec pour mission de trouver les autres tests pertinents (essentiellement un test sur une séquence vide), et la moyenne indique que tous les étudiant·es ne l'ont pas fait. Pour le TP9 les données de tests n'étaient pas fournies mais de nombreux cas de tests étaient indiqués en raison de la difficulté algorithmique des fonctions. 
+#
+# Ces données tendent à montrer que les étudiant·es n'ont pas de problème avec la syntaxe des tests. Par contre, et même si une étude plus approfondie reste à mener, le nombre de test moyen laisse penser que les étudiant·es ont tendance à limiter les tests qu'ils écrivent à ceux qui sont indiqués dans le sujet. 
 
 # ### Impact du cursus antérieur sur l'écriture des tests
 
@@ -1201,6 +1205,10 @@ def nom_fonction(name:str) -> str:
 df_all_verdicts_interm = convert_column_tests_to_df(df) 
 df_all_verdicts_interm['name'] = df_all_verdicts_interm['name'].apply(nom_fonction)
 df_all_verdicts = df_all_verdicts_interm.copy()
+
+df_all_verdicts_interm_tpprog = convert_column_tests_to_df(df[df['Type_TP'] == 'TP_prog']) 
+df_all_verdicts_interm_tpprog['name'] = df_all_verdicts_interm_tpprog['name'].apply(nom_fonction)
+df_all_verdicts_tpprog = df_all_verdicts_interm_tpprog.copy()
 
 
 def index_last_RunTest(actor:str, df:pd.DataFrame, filename_infere:str, df_all_verdicts:pd.DataFrame) -> int:
@@ -1394,7 +1402,197 @@ df_tests_ecrits_executes[LBL_PCT_DEB_TESTS_EXEC].describe()
 
 df_tests_ecrits_executes[LBL_PCT_NON_DEB_TESTS_EXEC].describe()
 
+
 # Les données montrent que 86% en moyenne des étudiant·es ayant écrit au moins un test dans leur travail ont exécuté tous les tests écrits (écart-type : 3.6), 85.4% en moyenne des débutants ayant écrit au moins un test (écart-type : 6) et 88.4% en moyenne des non débutants (écart-type : 3.6). 
+
+# #### Étudiants qui n'exécutent pas du tout les tests qu'ils ont écrits
+
+def acteurs_au_moins_un_test_ecrit(df_tests_number:pd.DataFrame, tp:str) -> list[str]:
+    """
+    Renvoie les étudiant·es qui ont écrit au moins un test pour le `tp` mais pour lequels on ne trouve aucun Run.Test
+    pour `tp`.
+    """
+    df_tests_number_sans_nan = df_tests_number[df_tests_number['tp']==tp].copy() # au cas où
+    # Rappel : NaN pour le nb de tests qd la fonction n'existe pas dans le code analysé 
+    df_tests_number_sans_nan = df_tests_number_sans_nan[pd.notna(df_tests_number_sans_nan['tests_number'])]
+    df_tests_number_sans_nan['tests_number_not_nul'] = df_tests_number_sans_nan['tests_number'].map(lambda x : x > 0)
+    df_tests_numbers_au_moins_un_test_interm = df_tests_number_sans_nan.groupby(['actor']).tests_number_not_nul.any()
+    df_tests_numbers_au_moins_un_test = df_tests_numbers_au_moins_un_test_interm[df_tests_numbers_au_moins_un_test_interm==True]
+    actors_au_moins_un_test =  df_tests_numbers_au_moins_un_test.index
+    return actors_au_moins_un_test
+
+
+def acteurs_0_RunTest_tpprog_tp(df:pd.DataFrame, tp:str) -> list[str]:
+    """
+    Renvoie les acteurs qui n'ont aucun Run.Test pour `tp` dans les tpprog.
+    """
+    etud_no_runTest = []
+    if tp=='Tp8':
+        df_tp  = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog') & (df['filename_infere'] == 'while.py')]
+    else:
+        df_tp  = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')]
+    etuds_tp = actors(df_tp)
+    for etud in etuds_tp:
+            df_tp_etud = df_tp[(df_tp['actor'] == etud) | (df_tp['binome'] == etud)]
+            verbs = df_tp_etud.verb.unique()
+            if 'Run.Test' not in verbs:
+                etud_no_runTest.append(etud)
+    return etud_no_runTest
+
+
+def acteurs_0_non_empty_RunTest_tpprog_tp(df:pd.DataFrame, tp:str) -> list[str]:
+    """
+    Renvoie les acteurs qui n'ont aucun Run.Test non vide pour `tp` dans les tpprog.
+    """
+    etud_no_runTest = []
+    if tp=='Tp8':
+        df_tp  = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog') & (df['filename_infere'] == 'while.py')]
+    else:
+        df_tp  = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')]
+    etuds_tp = actors(df_tp)
+    for etud in etuds_tp:
+            df_tp_etud = df_tp[(df_tp['actor'] == etud) | (df_tp['binome'] == etud)]
+            df_tp_etud_RT = df_tp_etud[(df_tp_etud['verb']=='Run.Test')]
+            if len(df_tp_etud_RT)==0:
+                etud_no_runTest.append(etud)
+            else:
+                tests_unique = df_tp_etud_RT.tests.unique()
+                if len(tests_unique)==1 and tests_unique[0]=='[]': # test vide slt
+                    etud_no_runTest.append(etud)
+    return etud_no_runTest
+
+
+acteurs_0_non_empty_RunTest_tpprog_tp(df, 'Tp3')
+
+LBL_NB_ETUD_NO_RUN_TEST = 'nb etud sans Run.Test ou vide uniquement'
+LBL_NB_ETUD_TESTS_ECRITS_NO_RUN_TEST = 'nb etud tests écrits sans Run.Test'
+LBL_PCT_NO_RUN_TEST_QD_TESTS_ECRITS = 'pourcentage etud sans Run.Test (ayant écrit des tests)'
+
+
+def acteurs_0_RunTest_tpprog(df:pd.DataFrame) -> pd.DataFrame:
+    """
+    Renvoie un df avec colonnes 'tp' et 'nb etud sans Run.Test ou vides uniquement' 
+    """
+    no_RT = []
+    for tp in TPS_SANS_SEM_5:
+        nb_0_RT = len(acteurs_0_non_empty_RunTest_tpprog_tp(df, tp))
+        no_RT.append(nb_0_RT)
+    return pd.DataFrame({'Tps' : TPS_SANS_SEM_5, LBL_NB_ETUD_NO_RUN_TEST : no_RT})
+
+
+acteurs_0_RunTest_tpprog(df)
+
+
+def acteurs_tests_ecrits_0_RunTest(df_tests_number:pd.DataFrame, df:pd.DataFrame) -> dict:
+    """
+    Renvoie un dico de clé les tps et de valeurs la liste des étud qui ont écrit des tests ET n'ont aucun Run.Test non vide
+    """
+    dico = {}
+    for tp in TPS_SANS_SEM_5:
+        actors_au_moins_un_test = acteurs_au_moins_un_test_ecrit(df_tests_number, tp)
+        etud_no_RunTest = acteurs_0_non_empty_RunTest_tpprog_tp(df, tp)
+        acteurs_tests_0_RunTest = set(actors_au_moins_un_test).intersection(set(etud_no_RunTest))
+        dico[tp] = list(acteurs_tests_0_RunTest)
+    return dico
+
+
+def nb_acteurs_tests_ecrits_0_RunTest(df_tests_number:pd.DataFrame, df:pd.DataFrame) -> pd.DataFrame:
+    """
+    Renvoie un dico de clé les tps et de valeurs la liste des étud qui ont écrit des tests ET n'ont aucun Run.Test non vide
+    """
+    dico = acteurs_tests_ecrits_0_non_empty_RunTest(df_tests_number, df)
+    liste = list(len(dico[tp]) for tp in TPS_SANS_SEM_5)
+    return pd.DataFrame({'Tps' : TPS_SANS_SEM_5, LBL_TESTS_NB_ETUD_ECRITS_NO_RUN_TEST : liste})
+
+
+def pourcentage_acteurs_tests_ecrits_0_RunTest(df_tests_number:pd.DataFrame, df:pd.DataFrame) -> pd.DataFrame:
+    """
+    Renvoie un dico de clé les tps et de valeurs la liste des étud qui ont écrit des tests ET n'ont aucun Run.Test
+    """
+    dico = acteurs_tests_ecrits_0_RunTest(df_tests_number, df)
+    liste = list(len(dico[tp]) for tp in TPS_SANS_SEM_5)
+    df_tp_nbEtud_0_RT = pd.DataFrame({'Tps' : TPS_SANS_SEM_5, LBL_NB_ETUD_TESTS_ECRITS_NO_RUN_TEST : liste})
+    df_tp_nbEtud_0_RT = df_tp_nbEtud_0_RT.merge(df_infos_tests_ecrits_sans_deb, on='Tps', how='inner')[['Tps', LBL_NB_ETUD_TESTS_ECRITS_NO_RUN_TEST, LBL_NB_ETUD_TESTS_PRESENTS]]
+    df_tp_nbEtud_0_RT[LBL_PCT_NO_RUN_TEST_QD_TESTS_ECRITS] = df_tp_nbEtud_0_RT[LBL_NB_ETUD_TESTS_ECRITS_NO_RUN_TEST] / df_tp_nbEtud_0_RT[LBL_NB_ETUD_TESTS_PRESENTS]*100
+    return df_tp_nbEtud_0_RT
+
+
+pourcentage_acteurs_tests_ecrits_0_RunTest(df_tests_number_tp_prog, df)
+
+acteurs_tests_ecrits_0_RunTest(df_tests_number_tp_prog, df)
+
+
+# En regardant on trouve des répétitions : 4 acteur·ices apparaissent comme non testeurs pour 2 TPs. Pour le TP2 on trouve au moins un binôme. Dans le TP7 on trouve un travail avec juste une fonction commencée. Il faudrait tout éplucher... Ces chiffres sont bas, max 6.28% étudiant·e ayant écrit des tests et sans Run.Test nonvide pour le TP4.
+
+# #### Nb de fonctions non exécutées
+
+# On veut regarder les étudiant·es qui ont des tests, faire "la somme" de leurs Run.Test (ou prendre le dernier ?) et voir combien de fonctions qui ont été codées n'ont pas été exécutées. Plus précis qu'un résultat binaire.
+
+def nb_fonctions_tests_non_exécutes(df:pd.DataFrame, df_all_verdicts:pd.DataFrame,\
+                                    df_tests_number_tp_prog:pd.DataFrame, tp:str,\
+                                   function_names:dict) -> pd.DataFrame:
+    """
+    Renvoie un df avec colonnes 'Tps', 'actor', 'nb fonctions avec tests écrits', 'nb fonctions avec tests écrits mais non exécutés'
+
+    Arg : 
+        tp : un TP
+        function_names : les noms de fonctions par TP
+        autres df : voir les noms des df ds le notebook
+        
+    """
+    df_res = pd.DataFrame(columns = ['tp', 'actor', 'fonctions_tests_ecrits' , 'fonctions_tests_executes', 'fonctions_tests_non_executes'])
+    # Dans df_all_verdicts il n'y a pas les acteurs, mais il y a l'index d'origine du Run.Test
+    # je passe par un merge sur cet index pour récupérer l'acteur et le binôme dans df
+    # ce serait peut-être plus simple de les mettre dans df_all_verdicts lors du calcul...
+    df_reduit = df.copy()
+    df_reduit = df_reduit[['TP', 'actor', 'binome']].rename(columns={'TP':'tp'}) 
+    df_reduit['original_index'] = df_reduit.index
+    df_verdicts_with_actor = df_all_verdicts.merge(df_reduit, on='original_index', how='inner')
+    # on récupère au passage tous les Run.Tests fait en manip
+    df_verdicts_with_actor_tp = df_verdicts_with_actor[df_verdicts_with_actor['tp']==tp]
+    df_tests_number_tp_prog_tp = df_tests_number_tp_prog[df_tests_number_tp_prog['tp']==tp]
+    actors_au_moins_1_test_tp = acteurs_au_moins_un_test_ecrit(df_tests_number_tp_prog_tp, tp)
+    actors_0_RT = acteurs_0_non_empty_RunTest_tpprog_tp(df, tp)
+    for actor in actors_au_moins_1_test_tp:
+        df_tests_number_tp_prog_tp_actor =  df_tests_number_tp_prog_tp[df_tests_number_tp_prog_tp['actor']==actor]
+        df_tests_number_tp_prog_tp_actor_tests_ecrits = df_tests_number_tp_prog_tp_actor[df_tests_number_tp_prog_tp_actor['tests_number']>0]
+        fonctions_tests_ecrits =  df_tests_number_tp_prog_tp_actor_tests_ecrits.function_name.unique()
+        fonctions_tests_executes_as_actor =  df_verdicts_with_actor_tp[df_verdicts_with_actor_tp['actor']==actor].name
+        fonctions_tests_executes_as_binome =  df_verdicts_with_actor_tp[df_verdicts_with_actor_tp['binome']==actor].name
+        fonctions_tests_executes = set(fonctions_tests_executes_as_actor).union(set(fonctions_tests_executes_as_binome))
+        #if actor == 'keba.thiam.etu':
+        #    print(f'fonctions_tests_executes:{fonctions_tests_executes}')
+        ### dans df_all_verdicts on récupére les Run.Test de toutes les fonctions testées, y compris celles qui étaient non guidées
+        fonctions_tests_executes = fonctions_tests_executes.intersection(set(function_names[tp]))
+        fonctions_tests_ecrits_non_executes = set(fonctions_tests_ecrits) -  set(fonctions_tests_executes)
+        if actor in actors_0_RT:
+            assert(len(fonctions_tests_executes)==0)
+        else:
+            df_res = pd.concat([df_res, pd.DataFrame({'tp': [tp],\
+                                                  'actor' : actor,\
+                                                  'fonctions_tests_ecrits': len(fonctions_tests_ecrits),\
+                                                  'fonctions_tests_executes': len(fonctions_tests_executes),\
+                                                  'fonctions_tests_non_executes': len(fonctions_tests_ecrits_non_executes)})],  ignore_index=True)
+    return df_res
+
+
+# TODO terminer ici : 
+#
+# - calculer le pourcentage d'étud avec 0 RT parmi les tests écrits
+# - calculer le pourcentage d'etud avec tests écrits mais pas toutes testées
+# - calculer 
+
+df_test_ecrit_executes_tp2 = nb_fonctions_tests_non_exécutes(df, df_all_verdicts_tpprog, df_tests_number_tp_prog, 'Tp2', PROG_FUNCTIONS_NAME_BY_TP)
+
+df_test_ecrit_executes_tp2[df_test_ecrit_executes_tp2['fonctions_tests_non_executes']!=0]
+
+df_test_ecrit_executes_tp3 = nb_fonctions_tests_non_exécutes(df, df_all_verdicts_tpprog, df_tests_number_tp_prog, 'Tp3', PROG_FUNCTIONS_NAME_BY_TP)
+
+df_test_ecrit_executes_tp3[df_test_ecrit_executes_tp3['fonctions_tests_non_executes']!=0]
+
+df_test_ecrit_executes_tp4 = nb_fonctions_tests_non_exécutes(df, df_all_verdicts, df_tests_number_tp_prog, 'Tp4', PROG_FUNCTIONS_NAME_BY_TP)
+
+df_test_ecrit_executes_tp4[df_test_ecrit_executes_tp4['fonctions_tests_non_executes']!=0]
 
 # # QR2 : les étudiants prennent-ils l'habitude de tester leurs programmes ?
 

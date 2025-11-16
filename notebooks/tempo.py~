@@ -1,0 +1,116 @@
+LBL_NB_ETUD = 'Nb étud'
+LBL_NB_DEB = 'Nb débutants'
+LBL_NB_NON_DEB = 'Nb non débutants'
+LBL_NB_ETUD_ANALYSABLES = 'Nb étud analyse possible'
+LBL_NB_ETUD_NON_ANALYSABLES = 'Nb étud analyse impossible'
+LBL_NB_DEB_ANALYSABLES = 'Nb déb analyse possible'
+LBL_NB_DEB_NON_ANALYSABLES = 'Nb déb analyse impossible'
+LBL_NB_NON_DEB_ANALYSABLES = 'Nb non déb analyse possible'
+LBL_NB_NON_DEB_NON_ANALYSABLES = 'Nb non déb analyse impossible'
+LBL_PCT_DEB_NON_ANALYSABLES = 'Pourcentage débutants analyse impossible (déb)'
+
+LBL_NB_ETUD_TESTS_PRESENTS = 'Nb étud avec tests présents'
+LBL_NB_DEB_TESTS_PRESENTS = 'Nb débutants avec tests présents'
+LBL_NB_NON_DEB_TESTS_PRESENTS = 'Nb non débutants avec tests présents'
+
+COLUMNS_STAT_ECR_TESTS = ['Tps',
+
+    ]
+# rajouter des constantes globales pour les labels de colonnes 
+def genere_donnees_nombre_tests_ecrits_tp_guides(df:pd.DataFrame, functions_names:dict, df_is_deb:pd.DataFrame) -> pd.DataFrame:
+    """
+    Renvoie un DataFrame avec colonnes : 'Tps', 'Nb etud', 'Nb etud analyse impossible', 'Nb etud avec tests présents', 'Nb etud avec tests présents pour toute fonction écrite', \
+                                    'Nb etud avec aucun test', 'Nb etud avec tests présents pour qq fonctions écrites'
+
+    Args :
+        - df : df initial
+        - function_names : dico which associates to each Tp identifier a list of functions name (ex : functions_names['Tp2] is ['foo1', 'foo2', 'foo3'])
+        - df_is_deb : columns 'actor' et 'debutant'
+    """
+    df_plot = pd.DataFrame(columns=[
+        'Tps',\
+        LBL_NB_ETUD, LBL_NB_DEB, LBL_NB_NON_DEB,\
+        LBL_NB_ETUD_ANALYSABLES, LBL_NB_DEB_ANALYSABLES, LBL_NB_NON_DEB_ANALYSABLES,\
+        LBL_NB_ETUD_NON_ANALYSABLES, LBL_DEB_NON_ANALYSABLES, LBL_NB_DEB_NON_ANALYSABLES,\
+        LBL_PCT_DEB_NON_ANALYSABLES,\
+             LBL_NB_ETUD_TESTS_PRESENTS, LBL_NB_DEB_TESTS_PRESENTS, LBL_NB_NON_DEB_TESTS_PRESENTS, \
+            'Pourcentage avec tests présents (analyse possible)',                      
+            'Pourcentage debutants avec tests présents (debutants an possible)', \
+            'Pourcentage non debutants avec tests présents (non debutants an possible)',\
+            'Nb etud avec tests présents pour toute fonction écrite',   \
+            'Pourcentage pour toute fonction (travaux analysables)', \
+            'Nb debutants avec tests présents pour toute fonction écrite', 'Nb non debutants avec tests présents pour toute fonction écrite',\
+            'Pourcentage debutants avec tests présents pour toute fonction (deb travaux analysables)', \
+            'Pourcentage non debutants avec tests présents pour toute fonction (non deb travaux analysables)',\
+            'Nb etud sans test', 'Nb debutants sans test', 'Nb non debutants sans test', \
+            'Pourcentage debutants sans test (deb travaux analysables)', \
+            'Pourcentage non debutants sans test (non deb travaux analysables)',\
+            'Nb etud avec tests présents pour qq fonctions écrites', \
+            'Pourcentage debutants (avec tests présents pour qq fonctions écrites)'])            
+                            
+    for tp in TPS_SANS_SEM_5:
+        if tp == 'Tp8':
+            df_tests_tp, cannot_analyze_codestate_students_tp, empty_codestate_students_tp  = find_tests_for_tp_tpprog(df, 'Tp8', functions_names, filename='while.py')
+            actor_column_tp  = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog') & (df['filename_infere'] == 'while.py')]['actor']
+            column_binome_tp = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog') & (df['filename_infere'] == 'while.py')]['binome'] 
+        else:
+            df_tests_tp, cannot_analyze_codestate_students_tp, empty_codestate_students_tp  = find_tests_for_tp_tpprog(df, tp, functions_names)
+            actor_column_tp  = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')]['actor']
+            column_binome_tp = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')]['binome']
+        all_students_tp  = set(actor_column_tp).union(set(column_binome_tp))
+        deb_students_tp = select_debutants(all_students_tp, df_is_deb)
+        non_deb_students_tp = list(all_students_tp - set(deb_students_tp))
+        if '' in all_students_tp:
+            all_students_tp.remove('')
+        df_tests_tp_avec_deb = merge_debutant(df_tests_tp, df_is_deb)
+        etud_testant_toute_fonction_ecrite_tp, etud_testant_aucune_fonction_ecrite_tp, etud_qq_tests_fonction_ecrite_tp, \
+            etud_deb_testant_toute_fonction_ecrite_tp, etud_deb_testant_aucune_fonction_ecrite_tp, etud_deb_qq_tests_fonction_ecrite_tp \
+                = actors_par_pratique_ecriture_tests(df_tests_tp_avec_deb)
+        assert(set(etud_deb_testant_toute_fonction_ecrite_tp) == set(select_debutants(etud_testant_toute_fonction_ecrite_tp, df_is_deb)))
+        etud_non_deb_testant_aucune_fonction_ecrite_tp = list(set(etud_testant_aucune_fonction_ecrite_tp) - set(etud_deb_testant_aucune_fonction_ecrite_tp))
+        etud_non_deb_testant_toute_fonction_ecrite_tp = list(set(etud_testant_toute_fonction_ecrite_tp) - set(etud_deb_testant_toute_fonction_ecrite_tp))
+        etud_analyse_impossible = cannot_analyze_codestate_students_tp + empty_codestate_students_tp
+        etud_analyse_possible = list(set(all_students_tp) - set(etud_analyse_impossible))
+        etud_deb_analyse_impossible:list = select_debutants(etud_analyse_impossible, df_is_deb)
+        etud_non_deb_analyse_impossible:list = list(set(etud_analyse_impossible) - set(etud_deb_analyse_impossible))
+        etud_deb_analyse_possible:list = list(set(deb_students_tp) - set(etud_deb_analyse_impossible))
+        etud_non_deb_analyse_possible:list = list(set(non_deb_students_tp) - set(etud_non_deb_analyse_impossible))
+        etud_avec_tests:list = etud_testant_toute_fonction_ecrite_tp + etud_qq_tests_fonction_ecrite_tp
+        etud_deb_avec_tests:list = select_debutants(etud_avec_tests, df_is_deb)
+        etud_non_deb_avec_tests:list = list(set(etud_avec_tests) - set(etud_deb_avec_tests))
+        df_plot_tp = pd.DataFrame({'Tps': [tp],\
+                                    'Nb etud': len(all_students_tp),\
+                                    'Nb debutants': len(deb_students_tp),\
+                                    'Nb non debutants': len(non_deb_students_tp),\
+                                    'Nb etud analyse possible': len(etud_analyse_possible),
+                                    'Nb debutants analyse possible': len(etud_deb_analyse_possible), \
+                                    'Nb non debutants analyse possible': len(etud_non_deb_analyse_possible), \
+                                    'Nb etud analyse impossible': len(etud_analyse_impossible),\
+                                    'Pourcentage debutants (analyse impossible)': round(len(etud_deb_analyse_impossible)/len(etud_analyse_impossible)*100),\
+                                     LBL_NB_ETUD_TESTS_PRESENTS: len(etud_avec_tests),\
+                                     LBL_NB_DEB_TESTS_PRESENTS: len(etud_deb_avec_tests), \
+                                     LBL_NB_NON_DEB_TESTS_PRESENTS: len(etud_avec_tests) - len(etud_deb_avec_tests),\
+                                    'Pourcentage avec tests présents (analyse possible)': len(etud_avec_tests)/len(etud_analyse_possible)*100,\
+                                    'Pourcentage debutants avec tests présents (debutants an possible)': len(etud_deb_avec_tests)/len(etud_deb_analyse_possible)*100,\
+                                    'Pourcentage non debutants avec tests présents (non debutants an possible)': len(etud_non_deb_avec_tests)/len(etud_non_deb_analyse_possible)*100,\
+                                    'Nb etud avec tests présents pour toute fonction écrite': len(etud_testant_toute_fonction_ecrite_tp),\
+                                    'Pourcentage pour toute fonction (travaux analysables)': len(etud_testant_toute_fonction_ecrite_tp)/len(etud_analyse_possible)*100,\
+                                    'Nb debutants avec tests présents pour toute fonction': len(etud_deb_testant_toute_fonction_ecrite_tp),\
+                                    'Nb non debutants avec tests présents pour toute fonction': len(etud_non_deb_testant_toute_fonction_ecrite_tp),\
+                                    'Pourcentage debutants avec tests présents pour toute fonction (deb travaux analysables)':\
+                                       len(etud_deb_testant_toute_fonction_ecrite_tp)/len(etud_deb_analyse_possible)*100,\
+                                    'Pourcentage non debutants avec tests présents pour toute fonction (non deb travaux analysables)':\
+                                       len(etud_non_deb_testant_toute_fonction_ecrite_tp)/len(etud_non_deb_analyse_possible)*100,\
+                                    'Nb etud sans test' : len(etud_testant_aucune_fonction_ecrite_tp),\
+                                    'Nb debutants sans test' : len(etud_deb_testant_aucune_fonction_ecrite_tp),\
+                                    'Nb non debutants sans test' : len(etud_non_deb_testant_aucune_fonction_ecrite_tp),\
+                                    'Pourcentage debutants sans test (deb travaux analysables)' :\
+                                       len(etud_deb_testant_aucune_fonction_ecrite_tp)/len(etud_deb_analyse_possible)*100,\
+                                    'Pourcentage non debutants sans test (non deb travaux analysables)' :\
+                                       len(etud_non_deb_testant_aucune_fonction_ecrite_tp)/len(etud_non_deb_analyse_possible)*100,\
+                                    'Nb etud avec tests présents pour qq fonctions écrites' : len(etud_qq_tests_fonction_ecrite_tp),\
+                                    'Pourcentage debutants (avec tests présents pour qq fonctions écrites)' :\
+                                       len(etud_deb_qq_tests_fonction_ecrite_tp)/len(etud_qq_tests_fonction_ecrite_tp)*100
+                                  })
+        df_plot = pd.concat([df_plot, df_plot_tp], ignore_index=True)
+    return df_plot
