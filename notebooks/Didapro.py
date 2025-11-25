@@ -171,10 +171,10 @@ def select_debutants(actors:list[str], df_is_deb:pd.DataFrame) -> list[str]:
     df_param = df_is_deb.copy()
     df_select_deb = df_param[df_param['actor'].isin(actors)]
     res = list(df_select_deb[df_select_deb['debutant']==True]['actor'])
+    assert len(set(res)) == len(res)
     for actor in res:
         assert df[df['actor']==actor]['debutant'].all()
     return res
-
 
 
 # finalement ne sert pas
@@ -1170,7 +1170,7 @@ plot_tests_ecrits_non_deb(df_infos_tests_ecrits_deb_non_deb)
 
 # ### Exécution des tests
 
-# Écrire des tests sans les exécuter montre une incompréhension du processus de test. Nous cherchons donc à vérifier que chaque étudiant·e a exécuté au moins une fois chaque test qu'il ou elle a écrit. Nous regardons si, pour chaque étudiant·e et pour chaque fonction pour laquelle au moins un test a été écrit, on trouve une trace de l'exécution des tests de cette fonction. Nous reprenons les fonctions et les tests écrits dans les contenus de l'éditeur sélectionnés dans la section précédente. Nous procédons en cherchant dans les traces de l'étudiant·e les actions de clic sur le bouton dit `Run.Test` qui soit exécute tous les tests du fichier contenu dans l'éditeur, soit exécute les tests de la fonction sélectionnée. Nous analysons les verdicts de ces traces pour voir comment les tests exécutés sont reliés aux tests qui ont été écrits, en gardant une analyse par fonction. Nous n'utilisons que les traces des étudiant·es ayant écrit au moins un test. 
+# Écrire des tests sans les exécuter montre une incompréhension du processus de test. Nous cherchons donc à vérifier que chaque étudiant·e a exécuté au moins les tests de chaque fonction qu'il ou elle a écrit. Nous regardons si, pour chaque étudiant·e et pour chaque fonction pour laquelle au moins un test a été écrit, on trouve une trace de l'exécution des tests de cette fonction. Nous reprenons les fonctions et les tests écrits dans les contenus de l'éditeur sélectionnés dans la section précédente. Nous procédons en cherchant dans les traces de l'étudiant·e les actions de clic sur le bouton dit `Run.Test` qui exécute tous les tests du fichier contenu dans l'éditeur, et les actions de clic dans le menu qui exécute les tests de la fonction sélectionnée. Nous analysons les verdicts de ces traces pour voir comment les tests exécutés sont reliés aux tests qui ont été écrits, en gardant une analyse par fonction. 
 #
 #
 
@@ -1244,19 +1244,23 @@ def acteurs_au_moins_un_test_ecrit_tp(df_tests_number:pd.DataFrame, tp:str) -> l
     return actors_au_moins_un_test
 
 
-def df_acteurs_au_moins_un_test_ecrit(df_tests_number:pd.DataFrame) -> list[str]:
+def df_acteurs_au_moins_un_test_ecrit(df_tests_number:pd.DataFrame, df_is_deb:pd.DataFrame) -> list[str]:
     """
     Renvoie un df avec 'tp' et le nb d'étudiant·es qui ont écrit au moins un test
     """
-    df_res = pd.DataFrame(columns=['tp', LBL_NB_ETUD_TESTS_PRESENTS])
+    df_res = pd.DataFrame(columns=['tp', LBL_NB_ETUD_TESTS_PRESENTS, LBL_NB_DEB_TESTS_PRESENTS, LBL_NB_NON_DEB_TESTS_PRESENTS])
     for tp in TPS_SANS_SEM_5:
         actors_au_moins_un_test = acteurs_au_moins_un_test_ecrit_tp(df_tests_number, tp)
-        petit_df = pd.DataFrame({'tp':[tp], LBL_NB_ETUD_TESTS_PRESENTS:len(actors_au_moins_un_test)})
+        actors_deb_au_moins_un_test = select_debutants(actors_au_moins_un_test, df_is_deb)
+        actors_non_deb_au_moins_un_test = list(set(actors_au_moins_un_test) - set(actors_deb_au_moins_un_test))
+        petit_df = pd.DataFrame({'tp':[tp], LBL_NB_ETUD_TESTS_PRESENTS:len(actors_au_moins_un_test),\
+                                 LBL_NB_DEB_TESTS_PRESENTS:len(actors_deb_au_moins_un_test),\
+                                LBL_NB_NON_DEB_TESTS_PRESENTS:len(actors_non_deb_au_moins_un_test)})
         df_res = pd.concat([df_res, petit_df], ignore_index=True)
     return df_res
 
 
-df_acteurs_au_moins_un_test_ecrit(df_tests_number_tp_prog)
+df_acteurs_au_moins_un_test_ecrit(df_tests_number_tp_prog, df_is_deb)
 
 
 def acteurs_0_RunTest_tpprog_tp(df:pd.DataFrame, tp:str) -> list[str]:
@@ -1301,34 +1305,67 @@ def acteurs_0_non_empty_RunTest_tpprog_tp(df:pd.DataFrame, tp:str) -> list[str]:
 
 acteurs_0_non_empty_RunTest_tpprog_tp(df, 'Tp3')
 
+# +
 LBL_NB_ETUD_NO_RUN_TEST = 'nb etud sans Run.Test ou vide uniquement'
+LBL_NB_DEB_NO_RUN_TEST = 'nb deb sans Run.Test ou vide uniquement'
+LBL_NB_NON_DEB_NO_RUN_TEST = 'nb non deb sans Run.Test ou vide uniquement'
 LBL_NB_ETUD_TESTS_ECRITS_NO_RUN_TEST = 'nb etud tests écrits sans Run.Test non vide'
+LBL_NB_DEB_TESTS_ECRITS_NO_RUN_TEST = 'nb deb tests écrits sans Run.Test non vide'
+LBL_NB_NON_DEB_TESTS_ECRITS_NO_RUN_TEST = 'nb non deb tests écrits sans Run.Test non vide'
 LBL_PCT_NO_RUN_TEST_QD_TESTS_ECRITS = 'pourcentage etud sans Run.Test non vide (ayant écrit des tests)'
+LBL_PCT_DEB_NO_RUN_TEST_QD_TESTS_ECRITS = 'pourcentage deb sans Run.Test non vide (deb ayant écrit des tests)'
+LBL_PCT_NON_DEB_NO_RUN_TEST_QD_TESTS_ECRITS = 'pourcentage non deb sans Run.Test non vide (non deb ayant écrit des tests)'
 LBL_NB_FCT_TESTS_NON_EXECUTES = 'nb fonctions avec tests non exécutés'
 LBL_NB_FCT_TESTS_EXECUTES = 'nb fonctions avec tests exécutés'
 LBL_NB_FCT_AVEC_TESTS = 'nb fonctions avec tests écrits'
-LBL_NB_ETUD_TESTS_NON_EXEC = 'nb etud avec certaines fonctions aux tests non exécutés'
-LBL_NB_ETUD_TESTS_EXEC = 'nb etub avec au moins une exécution des tests écrits'
-LBL_NB_ETUD_1_FCT_TESTS_NON_EXEC = 'nb etud avec une seule fonction aux tests non exécutés' 
-LBL_NB_ETUD_TOUTES_FCTS_TESTS_EXEC = 'nb etud avec exec des tests pour toute fonction'
+LBL_NB_ETUD_TESTS_NON_EXEC = "nb etud n'ayant pas exécuté les tests de toutes leurs fonctions (avec tests écrits)"
+LBL_NB_DEB_TESTS_NON_EXEC = "nb deb n'ayant pas exécuté les tests de toutes leurs fonctions (avec tests écrits)"
+LBL_NB_NON_DEB_TESTS_NON_EXEC = "nb non deb n'ayant pas exécuté les tests de toutes leurs fonctions (avec tests écrits)"
+LBL_NB_ETUD_TESTS_EXEC = "nb etub avec au moins une exécution d'au moins un test écrit"
+LBL_NB_ETUD_1_FCT_TESTS_NON_EXEC = "nb etud n'ayant pas exécuté les tests d'exactement une fonction (avec tests écrits)"
+LBL_NB_DEB_1_FCT_TESTS_NON_EXEC = "nb deb n'ayant pas exécuté les tests d'exactement une fonction (avec tests écrits)"
+
+LBL_NB_ETUD_TOUTES_FCTS_TESTS_EXEC = "nb etud ayant exécuté les tests de toutes leurs fonctions (avec tests écrits)"
+LBL_NB_DEB_TOUTES_FCTS_TESTS_EXEC = "nb deb ayant exécuté les tests de toutes leurs fonctions (avec tests écrits)"
+LBL_NB_NON_DEB_TOUTES_FCTS_TESTS_EXEC = "nb non deb ayant exécuté les tests de toutes leurs fonctions (avec tests écrits)"
 LBL_PCT_ETUD_TOUTES_FCTS_TESTS_EXEC = 'pourcentage etud avec exec des tests pour toute fonction (nb etud avec tests écrits)'
+LBL_PCT_DEB_TOUTES_FCTS_TESTS_EXEC = 'pourcentage deb avec exec des tests pour toute fonction (nb deb avec tests écrits)'
+
 LBL_PCT_ETUD_FCTS_TESTS_NON_EXEC = 'pourcentage etud avec non exec des tests pour certaines fonctions (nb etud avec tests écrits)'
-LBL_PCT_ETUD_TESTS_NON_EXEC = 'pourcentage etud avec certaines fonctions aux tests non exécutés (nb etud avec au moins une exec des tests écrits)'
+LBL_PCT_DEB_FCTS_TESTS_NON_EXEC = 'pourcentage deb avec non exec des tests pour certaines fonctions (nb deb avec tests écrits)'
+
+LBL_PCT_ETUD_TESTS_NON_EXEC = 'pourcentage etud avec certaines fonctions aux tests non exécutés (nb etud avec tests écrits)'
+LBL_PCT_DEB_TESTS_NON_EXEC = 'pourcentage deb avec certaines fonctions aux tests non exécutés (nb deb avec tests écrits)'
 LBL_PCT_ETUD_1_FCT_TESTS_NON_EXEC = 'pourcentage etud avec une seule fonction aux tests non exécutés (nb etud avec certains tests non exécutés)' 
+LBL_PCT_DEB_1_FCT_TESTS_NON_EXEC = 'pourcentage deb avec une seule fonction aux tests non exécutés (nb etud avec certains tests non exécutés)' 
+# -
+
+LBL_NB_ETUD_TESTS_NON_EXEC
 
 
-def acteurs_0_RunTest_tpprog(df:pd.DataFrame) -> pd.DataFrame:
+def acteurs_0_RunTest_tpprog(df:pd.DataFrame, df_is_deb:pd.DataFrame) -> pd.DataFrame:
     """
     Renvoie un df avec colonnes 'tp' et 'nb etud sans Run.Test ou vides uniquement' 
     """
-    no_RT = []
+    etud_no_RT = []
+    etud_deb_no_RT = []
+    etud_non_deb_no_RT = []
     for tp in TPS_SANS_SEM_5:
-        nb_0_RT = len(acteurs_0_non_empty_RunTest_tpprog_tp(df, tp))
-        no_RT.append(nb_0_RT)
-    return pd.DataFrame({'Tps' : TPS_SANS_SEM_5, LBL_NB_ETUD_NO_RUN_TEST : no_RT})
+        acteurs_0_RT = acteurs_0_non_empty_RunTest_tpprog_tp(df, tp)
+        acteurs_0_RT_deb = select_debutants(acteurs_0_RT, df_is_deb)
+        acteurs_0_RT_non_deb = list(set(acteurs_0_RT) - set(acteurs_0_RT_deb))
+        nb_0_RT = len(acteurs_0_RT)
+        nb_deb_0_RT = len(acteurs_0_RT_deb)
+        nb_non_deb_0_RT = len(acteurs_0_RT_non_deb)
+        etud_no_RT.append(nb_0_RT)
+        etud_deb_no_RT.append(nb_deb_0_RT)
+        etud_non_deb_no_RT.append(nb_non_deb_0_RT)
+    return pd.DataFrame({'Tps' : TPS_SANS_SEM_5, LBL_NB_ETUD_NO_RUN_TEST : etud_no_RT,\
+                         LBL_NB_DEB_NO_RUN_TEST: etud_deb_no_RT,\
+                        LBL_NB_NON_DEB_NO_RUN_TEST: etud_non_deb_no_RT})
 
 
-acteurs_0_RunTest_tpprog(df)
+acteurs_0_RunTest_tpprog(df, df_is_deb)
 
 
 def acteurs_tests_ecrits_0_RunTest(df_tests_number:pd.DataFrame, df:pd.DataFrame) -> dict:
@@ -1344,6 +1381,33 @@ def acteurs_tests_ecrits_0_RunTest(df_tests_number:pd.DataFrame, df:pd.DataFrame
     return dico
 
 
+def pourcentage_acteurs_tests_ecrits_0_RunTest(df_tests_number:pd.DataFrame, df:pd.DataFrame,\
+                                               df_is_deb:pd.DataFrame, df_infos_tests_ecrits:pd.DataFrame) -> pd.DataFrame:
+    """
+    Renvoie un dico de clé les tps et de valeurs la liste des étud qui ont écrit des tests ET n'ont aucun Run.Test
+    """
+    dico = acteurs_tests_ecrits_0_RunTest(df_tests_number, df)
+    dico_deb = {}
+    dico_non_deb = {}
+    for tp in TPS_SANS_SEM_5:
+        dico_deb[tp] = select_debutants(dico[tp], df_is_deb)
+        dico_non_deb[tp] = list(set(dico[tp]) - set(dico_deb[tp]))
+    liste = list(len(dico[tp]) for tp in TPS_SANS_SEM_5)
+    liste_deb =  list(len(dico_deb[tp]) for tp in TPS_SANS_SEM_5)
+    liste_non_deb =  list(len(dico_non_deb[tp]) for tp in TPS_SANS_SEM_5)
+    df_tp_nbEtud_0_RT = pd.DataFrame({'Tps' : TPS_SANS_SEM_5,\
+                                      LBL_NB_ETUD_TESTS_ECRITS_NO_RUN_TEST : liste,\
+                                     LBL_NB_DEB_TESTS_ECRITS_NO_RUN_TEST: liste_deb,\
+                                     LBL_NB_NON_DEB_TESTS_ECRITS_NO_RUN_TEST: liste_non_deb}) # TODO ici df_infos_tests_ecrits_deb_non_deb
+    colonnes = ['Tps', LBL_NB_ETUD_TESTS_ECRITS_NO_RUN_TEST, LBL_NB_DEB_TESTS_ECRITS_NO_RUN_TEST, LBL_NB_NON_DEB_TESTS_ECRITS_NO_RUN_TEST,\
+                LBL_NB_ETUD_TESTS_PRESENTS, LBL_NB_DEB_TESTS_PRESENTS, LBL_NB_NON_DEB_TESTS_PRESENTS]
+    df_tp_nbEtud_0_RT = df_tp_nbEtud_0_RT.merge(df_infos_tests_ecrits, on='Tps', how='inner')[colonnes]
+    df_tp_nbEtud_0_RT[LBL_PCT_NO_RUN_TEST_QD_TESTS_ECRITS] = df_tp_nbEtud_0_RT[LBL_NB_ETUD_TESTS_ECRITS_NO_RUN_TEST] / df_tp_nbEtud_0_RT[LBL_NB_ETUD_TESTS_PRESENTS]*100
+    df_tp_nbEtud_0_RT[LBL_PCT_DEB_NO_RUN_TEST_QD_TESTS_ECRITS] = df_tp_nbEtud_0_RT[LBL_NB_DEB_TESTS_ECRITS_NO_RUN_TEST] / df_tp_nbEtud_0_RT[LBL_NB_DEB_TESTS_PRESENTS]*100
+    df_tp_nbEtud_0_RT[LBL_PCT_NON_DEB_NO_RUN_TEST_QD_TESTS_ECRITS] = df_tp_nbEtud_0_RT[LBL_NB_NON_DEB_TESTS_ECRITS_NO_RUN_TEST] / df_tp_nbEtud_0_RT[LBL_NB_NON_DEB_TESTS_PRESENTS]*100
+    return df_tp_nbEtud_0_RT
+
+
 def nb_acteurs_tests_ecrits_0_RunTest(df_tests_number:pd.DataFrame, df:pd.DataFrame) -> pd.DataFrame:
     """
     Renvoie un dico de clé les tps et de valeurs la liste des étud qui ont écrit des tests ET n'ont aucun Run.Test non vide
@@ -1353,19 +1417,7 @@ def nb_acteurs_tests_ecrits_0_RunTest(df_tests_number:pd.DataFrame, df:pd.DataFr
     return pd.DataFrame({'Tps' : TPS_SANS_SEM_5, LBL_TESTS_NB_ETUD_ECRITS_NO_RUN_TEST : liste})
 
 
-def pourcentage_acteurs_tests_ecrits_0_RunTest(df_tests_number:pd.DataFrame, df:pd.DataFrame) -> pd.DataFrame:
-    """
-    Renvoie un dico de clé les tps et de valeurs la liste des étud qui ont écrit des tests ET n'ont aucun Run.Test
-    """
-    dico = acteurs_tests_ecrits_0_RunTest(df_tests_number, df)
-    liste = list(len(dico[tp]) for tp in TPS_SANS_SEM_5)
-    df_tp_nbEtud_0_RT = pd.DataFrame({'Tps' : TPS_SANS_SEM_5, LBL_NB_ETUD_TESTS_ECRITS_NO_RUN_TEST : liste})
-    df_tp_nbEtud_0_RT = df_tp_nbEtud_0_RT.merge(df_infos_tests_ecrits_sans_deb, on='Tps', how='inner')[['Tps', LBL_NB_ETUD_TESTS_ECRITS_NO_RUN_TEST, LBL_NB_ETUD_TESTS_PRESENTS]]
-    df_tp_nbEtud_0_RT[LBL_PCT_NO_RUN_TEST_QD_TESTS_ECRITS] = df_tp_nbEtud_0_RT[LBL_NB_ETUD_TESTS_ECRITS_NO_RUN_TEST] / df_tp_nbEtud_0_RT[LBL_NB_ETUD_TESTS_PRESENTS]*100
-    return df_tp_nbEtud_0_RT
-
-
-pourcentage_acteurs_tests_ecrits_0_RunTest(df_tests_number_tp_prog, df)
+pourcentage_acteurs_tests_ecrits_0_RunTest(df_tests_number_tp_prog, df, df_is_deb, df_plot_nombre_tests_ecrits_tp_guides)
 
 acteurs_tests_ecrits_0_RunTest(df_tests_number_tp_prog, df)
 
@@ -1380,17 +1432,17 @@ def nb_fonctions_tests_non_executes_tp(df:pd.DataFrame, df_all_verdicts:pd.DataF
                                     df_tests_number_tp_prog:pd.DataFrame, tp:str,\
                                    function_names:dict) -> pd.DataFrame:
     """
-    Cette fonction travaille sur les acteurs qui, pour ce tp,  ont au moins un test écrit et au moins un Run.Test non vide.
-    
+    Cette fonction renvoie un df qui contient, pour les acteurs qui ont écrit au moins un test uniquement, et pour ce tp :
+        - le nb de fonctions (cadrées) avec tests écrits : celles qu'on a vu passer dans un Run.Test
+        - le nb de fonctions (cadrées) avec avec tests écrits mais non exécutés : celles qu'on n'a vu passer ds aucun Run.Test
+        
     Renvoie un df avec colonnes 'Tps', 'actor', 'nb fonctions avec tests écrits', 'nb fonctions avec tests écrits mais non exécutés'
-
-
     
     Arg : 
         tp : un TP
         function_names : les noms de fonctions par TP
-        autres df : voir les noms des df ds le notebook
-        
+        df_tests_number_tp_prog : colonnes ['actor', 'tp', 'function_name', 'tests_number', 'index']
+        df_all_verdicts : colonnes ['original_index', 'filename', 'lineno', 'tested_line','expected_result', 'details', 'verdict', 'name', 'status']        
     """
     df_res = pd.DataFrame(columns = ['tp', 'actor', LBL_NB_FCT_AVEC_TESTS , LBL_NB_FCT_TESTS_EXECUTES, LBL_NB_FCT_TESTS_NON_EXECUTES])
     # Dans df_all_verdicts il n'y a pas les acteurs, mais il y a l'index d'origine du Run.Test
@@ -1403,24 +1455,39 @@ def nb_fonctions_tests_non_executes_tp(df:pd.DataFrame, df_all_verdicts:pd.DataF
     # on récupère au passage tous les Run.Tests fait en manip
     df_verdicts_with_actor_tp = df_verdicts_with_actor[df_verdicts_with_actor['tp']==tp]
     df_tests_number_tp_prog_tp = df_tests_number_tp_prog[df_tests_number_tp_prog['tp']==tp]
-    actors_au_moins_1_test_tp = acteurs_au_moins_un_test_ecrit_tp(df_tests_number_tp_prog_tp, tp)
+    # acteurs avec au moins un test écrit pour une fonction de tp (tp prog)
+    actors_au_moins_1_test_ecrit_tp = acteurs_au_moins_un_test_ecrit_tp(df_tests_number_tp_prog_tp, tp)
+    # acteurs avec 0 Run.Test non vide, pour faire une vérif plus bas, ne sert pas ds le code fonctionnel
     actors_0_RT = acteurs_0_non_empty_RunTest_tpprog_tp(df, tp)
-    for actor in actors_au_moins_1_test_tp:
+    for actor in actors_au_moins_1_test_ecrit_tp:
+        # pour ces acteurs qui ont écrit au moins un test, on va voir quelles fonctions ont des tests
+        # on filtre le df des fonctions écrites sur cet acteur
         df_tests_number_tp_prog_tp_actor =  df_tests_number_tp_prog_tp[df_tests_number_tp_prog_tp['actor']==actor]
+        # on garde les lignes avec des fonctions avec tests
         df_tests_number_tp_prog_tp_actor_tests_ecrits = df_tests_number_tp_prog_tp_actor[df_tests_number_tp_prog_tp_actor['tests_number']>0]
+        # on récupère le nom des fonctions
         fonctions_tests_ecrits =  df_tests_number_tp_prog_tp_actor_tests_ecrits.function_name.unique()
+        # on calcule les fonctions dont les tests sont passés dans les verdicts : dc les tests ont été exécutés
+        # on filtre le df des tests sur l'acteur et on garde le nom de la fonction (name)
         fonctions_tests_executes_as_actor =  df_verdicts_with_actor_tp[df_verdicts_with_actor_tp['actor']==actor].name
         fonctions_tests_executes_as_binome =  df_verdicts_with_actor_tp[df_verdicts_with_actor_tp['binome']==actor].name
         fonctions_tests_executes = set(fonctions_tests_executes_as_actor).union(set(fonctions_tests_executes_as_binome))
         #if actor == 'keba.thiam.etu':
         #    print(f'fonctions_tests_executes:{fonctions_tests_executes}')
         ### dans df_all_verdicts on récupére les Run.Test de toutes les fonctions testées, y compris celles qui étaient non guidées
+        # on garde uniquement les fonctions cadrées
         fonctions_tests_executes = fonctions_tests_executes.intersection(set(function_names[tp]))
+        # fonctions_tests_executes contient les noms de fonctions cadrées du tp
+        # dont on a vu passer l'exec des tests par l'acteur dans les verdicts
+        # Et du coup, on regarde les fonctions qui ont des tests, qui n'ont pas été exécutés
         fonctions_tests_ecrits_non_executes = set(fonctions_tests_ecrits) -  set(fonctions_tests_executes)
         if actor in actors_0_RT:
+            # je vérifie que si l'acteur n'avait aucun Run.Test non vide, on ne trouve aucune fonction avec tests exécutés
             assert(len(fonctions_tests_executes)==0)
-        else:
-            df_res = pd.concat([df_res, pd.DataFrame({'tp': [tp],\
+        # pourquoi j'avais mis un else ?
+        # MOUISE ICI, je n'avais pas ajouté les acteurs qui ont 0 RT et dc 0 fonctions avec tests exécutés
+        #else:
+        df_res = pd.concat([df_res, pd.DataFrame({'tp': [tp],\
                                                   'actor' : actor,\
                                                   LBL_NB_FCT_AVEC_TESTS: len(fonctions_tests_ecrits),\
                                                   LBL_NB_FCT_TESTS_EXECUTES: len(fonctions_tests_executes),\
@@ -1432,8 +1499,10 @@ def nb_fonctions_tests_non_executes(df:pd.DataFrame, df_all_verdicts:pd.DataFram
                                     df_tests_number_tp_prog:pd.DataFrame,\
                                    function_names:dict) -> pd.DataFrame:
     """
-    Cette fonction travaille sur les acteurs qui ont au moins un test écrit et au moins un Run.Test non vide.
-    
+    Cette fonction renvoie un df qui contient, pour les acteurs qui ont écrit au moins un test uniquement, et par tp :
+        - le nb de fonctions (cadrées) avec tests écrits
+        - le nb de fonctions (cadrées) avec avec tests écrits mais non exécutés  
+        
     Renvoie un df avec colonnes 'Tps', 'actor', 'nb fonctions avec tests écrits', 'nb fonctions avec tests écrits mais non exécutés'
 
     Arg : 
@@ -1446,67 +1515,131 @@ def nb_fonctions_tests_non_executes(df:pd.DataFrame, df_all_verdicts:pd.DataFram
     for tp in TPS_SANS_SEM_5:
         petit_df = nb_fonctions_tests_non_executes_tp(df, df_all_verdicts, df_tests_number_tp_prog, tp, function_names)
         df_res = pd.concat([df_res, petit_df], ignore_index=True)
+    # on a travaillé sur les acteurs qui ont écrit au moins un test
+    assert df_res[df_res[LBL_NB_FCT_AVEC_TESTS]==0].empty
     return df_res
 
 
 df_test_ecrit_executes = nb_fonctions_tests_non_executes(df, df_all_verdicts_tpprog, df_tests_number_tp_prog, PROG_FUNCTIONS_NAME_BY_TP)
 
-df_test_ecrit_executes
+df_test_ecrit_executes[df_test_ecrit_executes[LBL_NB_FCT_TESTS_EXECUTES]==0]
 
-df_test_ecrit_executes[df_test_ecrit_executes[LBL_NB_FCT_TESTS_NON_EXECUTES]!=0]
+# #### Différence promo et deb pour le nb de fonctions avec tests ? Non
+
+df_test_ecrit_executes[LBL_NB_FCT_AVEC_TESTS].astype(int).describe()
+
+actors_df_test_ecrit_executes = df_test_ecrit_executes.actor.unique()
+deb_df_test_ecrit_executes = select_debutants(actors_df_test_ecrit_executes, df_is_deb)
+df_test_ecrit_executes_deb = df_test_ecrit_executes[df_test_ecrit_executes['actor'].isin(deb_df_test_ecrit_executes)]
+
+df_test_ecrit_executes_deb[LBL_NB_FCT_AVEC_TESTS].astype(int).describe()
+
+# #### Étudiants sans tests : jamais ou occasionel ? occasionel
+
+actors_sans_exec = df_test_ecrit_executes[df_test_ecrit_executes[LBL_NB_FCT_TESTS_EXECUTES]==0].actor.unique()
+actors_sans_exec
+
+actors_avec_exec = df_test_ecrit_executes[df_test_ecrit_executes[LBL_NB_FCT_TESTS_EXECUTES]!=0].actor.unique()
+
+set(actors_sans_exec) - set(actors_avec_exec)
 
 
-def analyse_fonctions_non_testees_qd_exec(df_test_ecrit_executes:pd.DataFrame) -> pd.DataFrame:
+# On trouve seulement 7 étudiant·es qui n'ont jamais testé du tout.
+
+def analyse_fonctions_tests_non_exec(df_test_ecrit_executes:pd.DataFrame, df_is_deb:pd.DataFrame) -> pd.DataFrame:
     """
-    Traite les étudiant·es qui ont au moins un Run.Test (et tests écrits).
+    Traite les étudiant·es qui ont au moins un test écrit, données dans df_test_ecrit_executes.
     
     Renvoie un df avec : 'tp', 'nb etud avec tests écrits', 'nb etud avec tests non exécutés', 'nb etud avec 1 fonction aux tests non exécutés'  
+
+    Arg:
+        df : avec colonnes 'tp', 'actor', 'nb fonctions avec tests écrits', 'nb fonctions avec tests exécutés', 'nb fonctions avec tests non exécutés'
     """
-    df_res = pd.DataFrame(columns=['tp', LBL_NB_ETUD_TESTS_EXEC, LBL_NB_ETUD_TOUTES_FCTS_TESTS_EXEC, LBL_NB_ETUD_TESTS_NON_EXEC, LBL_NB_ETUD_1_FCT_TESTS_NON_EXEC])
+    df_res = pd.DataFrame(columns=['tp', LBL_NB_ETUD_TESTS_PRESENTS, LBL_NB_ETUD_TOUTES_FCTS_TESTS_EXEC, LBL_NB_DEB_TOUTES_FCTS_TESTS_EXEC, LBL_NB_ETUD_TESTS_NON_EXEC,\
+                                   LBL_NB_DEB_TESTS_NON_EXEC, LBL_PCT_ETUD_TESTS_NON_EXEC, LBL_PCT_DEB_TESTS_NON_EXEC, LBL_NB_ETUD_1_FCT_TESTS_NON_EXEC])
     for tp in TPS_SANS_SEM_5:
+        # filtrage tp
         df_test_ecrit_executes_tp = df_test_ecrit_executes[df_test_ecrit_executes['tp']==tp].copy()
+        # df filtré : avec des fonctions aux tests non exécutés
         df_tests_ecrits_non_exec = df_test_ecrit_executes_tp[df_test_ecrit_executes_tp[LBL_NB_FCT_TESTS_NON_EXECUTES]!=0]
+        # df filtré : avec uniquement des fonctions aux tests exécutés
         df_tests_ecrits_exec = df_test_ecrit_executes_tp[df_test_ecrit_executes_tp[LBL_NB_FCT_TESTS_NON_EXECUTES]==0]
+        # df filtré : avec exactement une fonction aux tests non exécutés
         df_tests_ecrits_1_fct_non_testee = df_test_ecrit_executes_tp[df_test_ecrit_executes_tp[LBL_NB_FCT_TESTS_NON_EXECUTES]==1]
-        nb_etud_tests_exec = len(df_test_ecrit_executes_tp)
+        # nb etud ayant écrit au moins un test
+        nb_etud_tests_ecrits = len(df_test_ecrit_executes_tp)
+        # nb etud avec au moins une fonction dont les tests n'ont jamais été exécutés
         nb_etud_avec_tests_non_exec = len(df_tests_ecrits_non_exec)
+        # nb etud avec exactement une fonction dont les tests n'ont jamais été exécutés
         nb_etud_avec_slt_1_fct_non_exec = len(df_tests_ecrits_1_fct_non_testee)
-        petit_df = pd.DataFrame({'tp':[tp], LBL_NB_ETUD_TESTS_EXEC: nb_etud_tests_exec,\
+        # pareil pour les deb
+        actors_deb = select_debutants(df_test_ecrit_executes_tp.actor.unique(), df_is_deb)
+        df_test_ecrit_executes_tp_deb = df_test_ecrit_executes_tp[df_test_ecrit_executes_tp['actor'].isin(actors_deb)]
+        df_tests_ecrits_non_exec_deb = df_test_ecrit_executes_tp_deb[df_test_ecrit_executes_tp_deb[LBL_NB_FCT_TESTS_NON_EXECUTES]!=0]
+        df_tests_ecrits_exec_deb = df_test_ecrit_executes_tp_deb[df_test_ecrit_executes_tp_deb[LBL_NB_FCT_TESTS_NON_EXECUTES]==0]
+        df_tests_ecrits_1_fct_non_testee_deb = df_test_ecrit_executes_tp_deb[df_test_ecrit_executes_tp_deb[LBL_NB_FCT_TESTS_NON_EXECUTES]==1]
+        nb_deb_tests_ecrits = len(df_test_ecrit_executes_tp_deb)
+        nb_deb_avec_tests_non_exec = len(df_tests_ecrits_non_exec_deb)
+        nb_deb_avec_slt_1_fct_non_exec = len(df_tests_ecrits_1_fct_non_testee_deb)
+        petit_df = pd.DataFrame({'tp':[tp],\
+                                 # nb étud avec tests écrits
+                                 LBL_NB_ETUD_TESTS_PRESENTS: nb_etud_tests_ecrits,\
+                                 # nb etud ayant éxec les tests de toutes les fonctions avec tests
                                  LBL_NB_ETUD_TOUTES_FCTS_TESTS_EXEC: len(df_tests_ecrits_exec),\
+                                 LBL_NB_DEB_TOUTES_FCTS_TESTS_EXEC: len(df_tests_ecrits_exec_deb),\
                                  LBL_NB_ETUD_TESTS_NON_EXEC: nb_etud_avec_tests_non_exec,\
-                                 LBL_PCT_ETUD_TESTS_NON_EXEC: len(df_tests_ecrits_non_exec)/len(df_test_ecrit_executes_tp)*100,\
+                                 # nb deb ayant éxec les tests de toutes les fonctions avec tests
+                                 LBL_NB_DEB_TESTS_NON_EXEC: nb_deb_avec_tests_non_exec,\
+                                 # % etud n'ayant pas éxec les tests de toutes les fonctions avec tests
+                                 LBL_PCT_ETUD_TESTS_NON_EXEC: len(df_tests_ecrits_non_exec)/nb_etud_tests_ecrits*100,\
+                                 LBL_PCT_DEB_TESTS_NON_EXEC: len(df_tests_ecrits_non_exec_deb)/nb_deb_tests_ecrits*100,\
+
+                                 # pourcentage etud avec certaines fonctions aux tests non exécutés (nb etud avec tests écrits)
                                  LBL_NB_ETUD_1_FCT_TESTS_NON_EXEC: nb_etud_avec_slt_1_fct_non_exec,\
-                                 LBL_PCT_ETUD_1_FCT_TESTS_NON_EXEC: nb_etud_avec_slt_1_fct_non_exec/nb_etud_avec_tests_non_exec*100})
+                                 LBL_NB_DEB_1_FCT_TESTS_NON_EXEC: nb_deb_avec_slt_1_fct_non_exec,\
+                                 LBL_PCT_ETUD_1_FCT_TESTS_NON_EXEC: nb_etud_avec_slt_1_fct_non_exec/nb_etud_avec_tests_non_exec*100,\
+                                 LBL_PCT_DEB_1_FCT_TESTS_NON_EXEC: nb_deb_avec_slt_1_fct_non_exec/nb_deb_avec_tests_non_exec*100})
         df_res = pd.concat([df_res, petit_df], ignore_index=True)
     return df_res
 
 
-analyse_fonctions_non_testees_qd_exec(df_test_ecrit_executes)
+df_analyse_fonctions_test_non_exec = analyse_fonctions_tests_non_exec(df_test_ecrit_executes, df_is_deb)
+
+df_analyse_fonctions_test_non_exec.columns
+
+df_analyse_fonctions_test_non_exec
 
 
-def analyse_fonctions_non_testees(df_tests_ecrits_executes:pd.DataFrame, df_tests_number:pd.DataFrame, df:pd.DataFrame) -> pd.DataFrame:
+def analyse_fonctions_tests_non_exec_bis(df_tests_ecrits_executes:pd.DataFrame, df_tests_number:pd.DataFrame, df:pd.DataFrame,\
+                                 df_is_deb:pd.DataFrame, df_infos_tests_ecrits:pd.DataFrame) -> pd.DataFrame:
     """
-    Traite les étudiant·es qui ont des tests écrits, ET ceux qui ont des Run.Test.
+    Traite les étudiant·es qui ont des tests écrits.
     """
-    df_no_RT = pourcentage_acteurs_tests_ecrits_0_RunTest(df_tests_number, df)
-    df_acteurs_tests_ecrits_1_col = df_acteurs_au_moins_un_test_ecrit(df_tests_number)
-    df_analyse_tests_executes= analyse_fonctions_non_testees_qd_exec(df_test_ecrit_executes)
-    df_res = df_analyse_tests_executes.merge(df_acteurs_tests_ecrits_1_col, on='tp', how='inner')
+    df_no_RT = pourcentage_acteurs_tests_ecrits_0_RunTest(df_tests_number, df, df_is_deb, df_infos_tests_ecrits)
+    df_acteurs_tests_ecrits = df_acteurs_au_moins_un_test_ecrit(df_tests_number, df_is_deb).copy()
+    df_acteurs_tests_ecrits = df_acteurs_tests_ecrits.drop(columns=[LBL_NB_ETUD_TESTS_PRESENTS])   
+    df_analyse_tests_executes= analyse_fonctions_tests_non_exec(df_test_ecrit_executes, df_is_deb)
+    print(df_analyse_tests_executes.columns)
+    df_res = df_analyse_tests_executes.merge(df_acteurs_tests_ecrits, on='tp', how='inner')
+    print (df_res.columns)
     df_res[LBL_PCT_ETUD_TOUTES_FCTS_TESTS_EXEC] = df_res[LBL_NB_ETUD_TOUTES_FCTS_TESTS_EXEC]/df_res[LBL_NB_ETUD_TESTS_PRESENTS]*100
+    df_res[LBL_PCT_DEB_TOUTES_FCTS_TESTS_EXEC] = df_res[LBL_NB_DEB_TOUTES_FCTS_TESTS_EXEC]/df_res[LBL_NB_DEB_TESTS_PRESENTS]*100
     df_res[LBL_NB_ETUD_TESTS_ECRITS_NO_RUN_TEST] = df_no_RT[LBL_NB_ETUD_TESTS_ECRITS_NO_RUN_TEST]
+    df_res[LBL_NB_DEB_TESTS_ECRITS_NO_RUN_TEST] = df_no_RT[LBL_NB_DEB_TESTS_ECRITS_NO_RUN_TEST]
     df_res[LBL_PCT_ETUD_FCTS_TESTS_NON_EXEC] = df_res[LBL_NB_ETUD_TESTS_NON_EXEC]/df_res[LBL_NB_ETUD_TESTS_PRESENTS]*100
+    df_res[LBL_PCT_DEB_FCTS_TESTS_NON_EXEC] = df_res[LBL_NB_DEB_TESTS_NON_EXEC]/df_res[LBL_NB_DEB_TESTS_PRESENTS]*100
     return df_res
 
 
-df_analyse_tests_ecrits_fonctions_non_exec = analyse_fonctions_non_testees(df_analyse_tests_executes_fonctions_non_exec, df_tests_number_tp_prog, df)
+df_analyse_tests_ecrits_fonctions_non_exec = analyse_fonctions_tests_non_exec_bis(df_tests_ecrits_executes, df_tests_number_tp_prog, df, df_is_deb, df_plot_nombre_tests_ecrits_tp_guides)
 
 df_analyse_tests_ecrits_fonctions_non_exec
 
 # #### Plot
 
 LABEL_TESTS_DE_TOUTES_FONCTION_EXECUTES = "dont les tests de toutes fonctions\n ont été exécutés"
-LABEL_AUCUN_RT_NON_VIDE = "pour lesquels aucun clic significatif\n sur le bouton Run.Test n'a été trouvé"
-LABEL_AVEC_TESTS_NON_EXEC = "dont les tests de certaines fonctions n'ont pas été exécutées"
+LABEL_AUCUN_RT_NON_VIDE = "pour lesquels aucun clic significatif pour\n déclencher l'exécution de tests n'a été trouvé"
+LABEL_AVEC_TESTS_NON_EXEC = "dont les tests de certaines fonctions n'ont pas été exécutés"
 
 
 def plot_tests_ecrits_executes_subplot(df_tests_ecrits_exec:pd.DataFrame) -> None:
@@ -1518,10 +1651,6 @@ def plot_tests_ecrits_executes_subplot(df_tests_ecrits_exec:pd.DataFrame) -> Non
     """
     fig, ax = plt.subplots()
     bottom = np.zeros(len(TPS_SANS_SEM_5))
-    #serie_nb_avec_tests = df_tests_ecrits_tp_guides[LBL_NB_ETUD_TESTS_PRESENTS]
-    #serie_nb_avec_tests_pour_toute_fonction = df_tests_ecrits_tp_guides[LBL_NB_ETUD_TESTS_PRESENTS_TTES_FCTS]
-    #serie_nb_avec_tests_pour_certaines_fonctions = df_tests_ecrits_tp_guides[NB_ETUD_TESTS_QQ_FONCTIONS]
-    #dico = {'Pour chaque fonction' : serie_nb_avec_tests_pour_toute_fonction, 'Pour certaines fonctions' : serie_nb_avec_tests_pour_certaines_fonctions}
     dico = {LABEL_TESTS_DE_TOUTES_FONCTION_EXECUTES: df_tests_ecrits_exec[LBL_NB_ETUD_TOUTES_FCTS_TESTS_EXEC],\
             LABEL_AVEC_TESTS_NON_EXEC: df_tests_ecrits_exec[LBL_NB_ETUD_TESTS_NON_EXEC],\
            LABEL_AUCUN_RT_NON_VIDE: df_tests_ecrits_exec[LBL_NB_ETUD_TESTS_ECRITS_NO_RUN_TEST]}
@@ -1538,6 +1667,33 @@ def plot_tests_ecrits_executes_subplot(df_tests_ecrits_exec:pd.DataFrame) -> Non
 
 
 plot_tests_ecrits_executes_subplot(df_analyse_tests_ecrits_fonctions_non_exec)
+
+
+def plot_tests_ecrits_executes_subplot_deb(df_tests_ecrits_exec:pd.DataFrame) -> None:
+    """
+    AFfiche le graphe avec le nb de débutants ayant exécuté tous les tests présents dans le code, ceux n'ayant aucun Run.Test, 
+    et ceux qui n'ont pas exécuté les tests de certaines fonctions.
+
+    Avec subplot
+    """
+    fig, ax = plt.subplots()
+    bottom = np.zeros(len(TPS_SANS_SEM_5))
+    dico = {LABEL_TESTS_DE_TOUTES_FONCTION_EXECUTES: df_tests_ecrits_exec[LBL_NB_DEB_TOUTES_FCTS_TESTS_EXEC],\
+            LABEL_AVEC_TESTS_NON_EXEC: df_tests_ecrits_exec[LBL_NB_DEB_TESTS_NON_EXEC],\
+           LABEL_AUCUN_RT_NON_VIDE: df_tests_ecrits_exec[LBL_NB_DEB_TESTS_ECRITS_NO_RUN_TEST]}
+    for labels, values in dico.items():
+        p = ax.bar(TPS_SANS_SEM_5, values, 0.5, label=labels, bottom=bottom)
+        bottom += values
+
+        ax.bar_label(p, label_type='center')
+
+    ax.set_title('TPs guidés : étudiants débutants ayant écrit au moins un test')
+    ax.legend()
+
+    plt.show()
+
+
+plot_tests_ecrits_executes_subplot_deb(df_analyse_tests_ecrits_fonctions_non_exec)
 
 
 def plot_tests_ecrits_executes(df_tests_ecrits_exec:pd.DataFrame) -> None:
@@ -1563,23 +1719,44 @@ def plot_tests_ecrits_executes(df_tests_ecrits_exec:pd.DataFrame) -> None:
 
 plot_tests_ecrits_executes(df_analyse_tests_ecrits_fonctions_non_exec)
 
-df_pourcentage_acteurs_tests_ecrits_0_RunTest = pourcentage_acteurs_tests_ecrits_0_RunTest(df_tests_number_tp_prog, df)
+df_pourcentage_acteurs_tests_ecrits_0_RunTest = pourcentage_acteurs_tests_ecrits_0_RunTest(df_tests_number_tp_prog, df, df_is_deb, df_plot_nombre_tests_ecrits_tp_guides)
 
 df_pourcentage_acteurs_tests_ecrits_0_RunTest
 
+df_analyse_tests_ecrits_fonctions_non_exec
+
 df_pourcentage_acteurs_tests_ecrits_0_RunTest[LBL_PCT_NO_RUN_TEST_QD_TESTS_ECRITS].astype(float).describe()
+
+df_pourcentage_acteurs_tests_ecrits_0_RunTest[LBL_PCT_DEB_NO_RUN_TEST_QD_TESTS_ECRITS].astype(float).describe()
 
 df_analyse_tests_ecrits_fonctions_non_exec[LBL_PCT_ETUD_TOUTES_FCTS_TESTS_EXEC].astype(float).describe()
 
+df_analyse_tests_ecrits_fonctions_non_exec[LBL_PCT_DEB_TOUTES_FCTS_TESTS_EXEC].astype(float).describe()
+
 df_analyse_tests_ecrits_fonctions_non_exec[LBL_PCT_ETUD_FCTS_TESTS_NON_EXEC].astype(float).describe()
+
+df_analyse_tests_ecrits_fonctions_non_exec[LBL_PCT_DEB_FCTS_TESTS_NON_EXEC].astype(float).describe()
 
 df_analyse_tests_ecrits_fonctions_non_exec[LBL_PCT_ETUD_1_FCT_TESTS_NON_EXEC].astype(float).describe()
 
-# Le graphique montre les étudiant·es ayant écrit des tests lors des TPs guidés et deux comportements extrêmes. D'une part on montre les étudiant·es pour lesquel·les nous n'avons trouvé dans les traces aucun clic significatif sur le bouton Run.Test ("significatif" signifiant ici que nous avons exclu les clics sur ce bouton qui ont été faits quand le contenu de l'éditeur ne contenait aucun test). Ces étudiant·es qui écrivent au moins un test mais ne les exécutent jamais via L1Test représentent en moyenne 3.18% des étudiant·es ayant écrit des tests (écart-type : 1.69), sur l'ensemble des TP, avec un maximum de 6.3% pour le TP4 et un minimum de 61.4% pour le TP8. Ces étudiant·es ont un comportement montrant qu'ils ne maîtrisent pas l'activité de test.
+df_analyse_tests_ecrits_fonctions_non_exec[LBL_PCT_DEB_1_FCT_TESTS_NON_EXEC].astype(float).describe()
+
+# Le graphique montre les étudiant·es ayant écrit des tests lors des TPs guidés et deux comportements extrêmes. D'une part on montre les étudiant·es qui ont exécutés (via le bouton Run.Test ou le menu L1Test) les tests de toutes les fonctions (présentant des tests) qu'ils ont écrites. Ces étudiant·es représentent en moyenne 88.5% des étudiant·es ayant écrit des tests (écart-type : 3.88), avec un minimm de 84.6% pour le TP4 et un maximum de 94.5% pour le TP6. Ce chiffre montre que la grande majorité des étudiant·es ont a priori compris qu'un test s'exécute. 
 #
-# D'autre part on montre les étudiant·es qui ont exécutés via le bouton Run.Test les tests de toutes les fonctions (présentant des tests) qu'ils ont écrites. Ces étudiant·es représentent en moyenne 88.5% des étudiant·es ayant écrit des tests (écart-type : 3.88), avec un minimm de 84.6% pour le TP4 et un maximum de 94.5% pour le TP6. Ces étudiant·es on a priori un pratique de test vertueuse, même si nous n'avons pas regardé s'ils ou elles ont exécutés les tests au fur et à mesure de l'écriture des fonctions. 
 #
-# Le reste des étudiant·es n'a pas exécutés les tests de toutes les fonctions écrites (exécution partielle des tests). Ces étudiant·es représentent en moyenne 8.36% des  étudiant·es ayant écrit des tests (écart-type : 3.7). Pour ces étudiant·es nous avons observé que le nombre de fonctions dont les tests ne sont pas exécutés est souvent 1. En moyenne sur l'ensemble des TPs, les étudiant·es tel·les que seule une fonction a des tests non exécutés représentent 73% des étudiant·es avec exécution partielle (écart-type : 12). On peut émettre l'hypothèse que, pour ces étudiant·es, la fonction non testée était en cours d'écriture et n'avait pas encore été testée. Nous n'avons pas vérifié que cette fonction isolée est la fonction la plus récente présente dans les traces de l'étudiant·e.
+# D'autre part on montre les étudiant·es pour lesquel·les nous n'avons trouvé dans les traces aucune exécution significative de tests durant un TP donné ("significatif" signifiant ici que nous avons exclu les clics sur le bouton Run.Test qui ont été faits quand le contenu de l'éditeur ne contenait aucun test ou dans le menu L1Test sur une fonction sans test). Ces étudiant·es pour qui nous avons trouvé la présence d'au moins un test, mais sans aucune exécution via L1Test représentent en moyenne 3.18% des étudiant·es ayant écrit des tests (écart-type : 1.69), sur l'ensemble des TP, avec un maximum de 6.3% pour le TP4 et un minimum de 1.39% pour le TP8. On constate que ces étudiant·es apparaissent comme "non testeur·euse" pour un ou 2 TP seulement. Sur l'ensemble de la promotion, seul·es 7 étudiant·es présente du code avec au moins un test écrit mais n'ont jamais exécuté un test de tout le semestre. 
+#
+#
+# Le reste des étudiant·es n'a pas exécutés les tests de toutes les fonctions écrites (exécution partielle des tests). Ces étudiant·es représentent en moyenne 11.5% des  étudiant·es ayant écrit des tests (écart-type : 3.9). 
+#
+#
+#
+# Nous n'avons pas encore analysé le comportement des étudiant·es qui exécutent tout ou partie de leurs tests. D'une part il est possible que les étudiant·es qui ont exécuté les tests d'une fonction (avec test) qu'ils ont écrite ont commencé par exécuter des appels à la fonction dans la console de Thonny, dans une approche essai-erreur, avant de rédiger des tests à partir de ces appels et éventuellement de les exécuter. Ce fonctionnement qu'on peut observer sur les écrans en TP montrerait que les étudiant·es ont compris l'intérêt de conserver une trace des appels de fonctions qui ont le comportement attendu, mais que l'exécution des tests dans L1Test offre un confort inférieur à l'exécution d'un appel de fonction dans la console.  Pour analyser cela il faudrait analyser les commandes exécutées dans la console de Thonny (ce qui n'est pas simple car nous ne savons pas bien relier une commande à un TP donné, les commandes étant décorrélées du fichier ouvert dans l'éditeur).
+#
+# D'autre part, quand les tests d'une fonction ne sont pas exécutés, on ne sait pas si c'est l'activité de test qui n'est pas bien maîtrisée ou si la fin de la séance de TP a stoppé l'activité de programmation au milieu de la mise au point d'une fonction. Nous avons regardé la fréquence avec laquelle le nombre de fonctions dont les tests ne sont pas exécutés est 1. En moyenne sur l'ensemble des TPs, les étudiant·es tel·les que seule une fonction a des tests non exécutés représentent 56.9% des étudiant·es avec exécution partielle (écart-type : 15.2). On peut émettre l'hypothèse que, pour ces étudiant·es, la fonction non testée était en cours d'écriture et n'avait pas encore été testée. Nous n'avons pas vérifié que cette fonction isolée est la fonction la plus récente présente dans les traces de l'étudiant·e.
+#
+# Pour finir, nous  n'avons pas observé de différence entre les étudiant·es débutant·es et le reste de la promotion quant à l'exécution des tests. On trouve 87.3% de débutant·es ayant exécutés (via le bouton Run.Test ou le menu L1Test) les tests de toutes les fonctions (présentant des tests) qu'ils ont écrites. On trouve 3.8% de débutant·es lesquel·les nous n'avons trouvé dans les traces aucune exécution significative de tests durant un TP donné. 
+#
 
 df_test_ecrit_executes_tp2 = nb_fonctions_tests_non_executes_tp(df, df_all_verdicts_tpprog, df_tests_number_tp_prog, 'Tp2', PROG_FUNCTIONS_NAME_BY_TP)
 
