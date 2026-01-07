@@ -107,13 +107,12 @@ print(f"Le df après nettoyage contient {len(actors(df_raw))} acteurs et {len(df
 
 df_propag = propage_chgt_avis_research_OK(df_deb)
 
-df = df_propag[df_propag['research_usage']!= '0.0']
+# Attention dans la ligne ci-dessous il ne faut pas écrire != '0.0' à la place de == "1.0". En effet les Session.End n'ont pas de valeur pour research_usage. donc si on regarde les != 0.0 on les garde ds le df à analyser, ce qui donne des étudiant·es qui n'ont que des Session.End ! 
+
+df = df_propag[df_propag['research_usage']== '1.0']
 
 print(f"Le df après RGPD contient {len(actors(df))} acteurs et binômes et {len(df)} lignes")
 
-
-# Je ne comprends pas comment je peux avoir des chiffres aussi hauts avec autant d'étudiants ayant refusé la collecte ?
-# À voir pour l'an prochain, là pas le temps.
 
 def is_deb_def(df_admin:pd.DataFrame) -> pd.DataFrame:
     """
@@ -297,6 +296,21 @@ def genere_donnees_presentation_TP_guides(df:pd.DataFrame) -> pd.DataFrame:
 df_donnees_TP_guides = genere_donnees_presentation_TP_guides(df)
 
 df_donnees_TP_guides
+
+print(f"Nombre de traces pour les TPs guidés : {len(df_TP_guides_prog(df, TPS_SANS_SEM_5))}")
+
+print(f"Nombre d'acteurs pour les TPs guidés : {len(actors(df_TP_guides_prog(df, TPS_SANS_SEM_5)))}")
+
+
+def affiche_acteurs(df) -> None:
+    actors_df_total = actors(df)
+    df_prog = df_TP_guides_prog(df, TPS_SANS_SEM_5)
+    actors_df_prog = actors(df_prog)
+    actors_sans_prog = set(actors_df_total) - set(actors_df_prog)
+    print(f"acteurs sans activité prog : {actors_sans_prog}")
+
+
+affiche_acteurs(df)
 
 df_donnees_TP_guides['nb_etud'].astype(int).describe()
 
@@ -765,6 +779,8 @@ def nb_tests_par_TP(tp:str, df_tests_number:pd.DataFrame) -> pd.DataFrame:
 nb_tests_par_TP('Tp9', df_tests_number_tp_prog_deb)
 
 nb_tests_par_TP('Tp6', df_tests_number_tp_prog_deb)
+
+nb_tests_par_TP('Tp4', df_tests_number_tp_prog_deb)
 
 nb_tests_par_TP('Tp2', df_tests_number_tp_prog_deb)
 
@@ -1524,13 +1540,17 @@ df_test_ecrit_executes = nb_fonctions_tests_non_executes(df, df_all_verdicts_tpp
 
 df_test_ecrit_executes[df_test_ecrit_executes[LBL_NB_FCT_TESTS_EXECUTES]==0]
 
-# #### Différence promo et deb pour le nb de fonctions avec tests ? Non
+# #### Différence promo et deb pour le nb de fonctions avec tests ? Un peu.
+
+df_test_ecrit_executes.groupby('tp')[LBL_NB_FCT_AVEC_TESTS].mean()
 
 df_test_ecrit_executes[LBL_NB_FCT_AVEC_TESTS].astype(int).describe()
 
 actors_df_test_ecrit_executes = df_test_ecrit_executes.actor.unique()
 deb_df_test_ecrit_executes = select_debutants(actors_df_test_ecrit_executes, df_is_deb)
 df_test_ecrit_executes_deb = df_test_ecrit_executes[df_test_ecrit_executes['actor'].isin(deb_df_test_ecrit_executes)]
+
+df_test_ecrit_executes_deb.groupby('tp')[LBL_NB_FCT_AVEC_TESTS].mean()
 
 df_test_ecrit_executes_deb[LBL_NB_FCT_AVEC_TESTS].astype(int).describe()
 
@@ -1631,7 +1651,7 @@ def analyse_fonctions_tests_non_exec_bis(df_tests_ecrits_executes:pd.DataFrame, 
     return df_res
 
 
-df_analyse_tests_ecrits_fonctions_non_exec = analyse_fonctions_tests_non_exec_bis(df_tests_ecrits_executes, df_tests_number_tp_prog, df, df_is_deb, df_plot_nombre_tests_ecrits_tp_guides)
+df_analyse_tests_ecrits_fonctions_non_exec = analyse_fonctions_tests_non_exec_bis(df_test_ecrit_executes, df_tests_number_tp_prog, df, df_is_deb, df_plot_nombre_tests_ecrits_tp_guides)
 
 df_analyse_tests_ecrits_fonctions_non_exec
 
@@ -1654,9 +1674,12 @@ def plot_tests_ecrits_executes_subplot(df_tests_ecrits_exec:pd.DataFrame) -> Non
     dico = {LABEL_TESTS_DE_TOUTES_FONCTION_EXECUTES: df_tests_ecrits_exec[LBL_NB_ETUD_TOUTES_FCTS_TESTS_EXEC],\
             LABEL_AVEC_TESTS_NON_EXEC: df_tests_ecrits_exec[LBL_NB_ETUD_TESTS_NON_EXEC],\
            LABEL_AUCUN_RT_NON_VIDE: df_tests_ecrits_exec[LBL_NB_ETUD_TESTS_ECRITS_NO_RUN_TEST]}
+    bar_colors = ['tab:green', 'tab:olive', 'tab:orange']
+    i = 0
     for labels, values in dico.items():
-        p = ax.bar(TPS_SANS_SEM_5, values, 0.5, label=labels, bottom=bottom)
+        p = ax.bar(TPS_SANS_SEM_5, values, 0.5, label=labels, bottom=bottom, color=bar_colors[i])
         bottom += values
+        i = i + 1
 
         ax.bar_label(p, label_type='center')
 
@@ -1703,6 +1726,7 @@ def plot_tests_ecrits_executes(df_tests_ecrits_exec:pd.DataFrame) -> None:
 
     """
     df_plot = df_tests_ecrits_exec.copy()
+    LABEL_NB_ETUD_WITH_TESTS = LBL_NB_ETUD_TESTS_PRESENTS
     df_plot = df_plot.rename(columns={LBL_NB_ETUD_TESTS_PRESENTS: LABEL_NB_ETUD_WITH_TESTS, \
                                         LBL_NB_ETUD_TOUTES_FCTS_TESTS_EXEC: LABEL_TESTS_DE_TOUTES_FONCTION_EXECUTES,
                                          LBL_NB_ETUD_TESTS_ECRITS_NO_RUN_TEST:LABEL_AUCUN_RT_NON_VIDE,
