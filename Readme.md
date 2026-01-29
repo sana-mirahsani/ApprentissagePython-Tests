@@ -150,3 +150,20 @@ jupytext --set-formats ipynb,py:percent 2.Cleaning_filename_phase1.ipynb
     - **lazy students** : They don't have lot's of traces for a TP and during the TP they didn't change a specific thing. (wether the test result is passed or not)
     
     - **mad students** : They tried lot's of Run.Test with the same code or a tiny difference during a day
+
+
+- look at the debutan and non debutan in didapro.
+- anonymisation is send by email , code of mirabelle
+- clean and make cleaner the code of didabro
+- add test in find test functions
+- classify the student in debutan, doing test, doing functions
+
+- what did I do in the nettoyage. how all those numbers are deleted.
+- trace_clean the first CSV from Thomas work: 
+look at his work to what to do about and add the phase zero before cleaning the actor column. check how much time does it take?
+- Fnish the part not finish in analyse : 
+
+For friday : next appointment 9h
+------
+First look at the thomas code for the new data.
+
