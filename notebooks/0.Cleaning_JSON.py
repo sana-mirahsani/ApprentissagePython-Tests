@@ -1,18 +1,18 @@
 # ---
 # jupyter:
 #   jupytext:
+#     formats: ipynb,py:light
 #     text_representation:
 #       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.17.1
+#       format_name: light
+#       format_version: '1.5'
+#       jupytext_version: 1.17.2
 #   kernelspec:
-#     display_name: PFE
+#     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
 
-# %% [markdown]
 # # Preparation Workflow Overview:
 # 1. Import Libraries
 # 2. Load File (JSON) : traces260105_brutes.json
@@ -23,11 +23,13 @@
 # **Explanation** 
 #
 # The goal of this part is to get the raw data in JSON format, cleaned them and transform it to CSV file. This code is the copy of Thomas code.
+#
+# File date_labels.json contains calendar week numbers, it aims to compute column 'seance', eg week 36 yields "semaine_1". This file must be verified each year.
+#
 
-# %% [markdown]
 # ## 1.Import Libraries
 
-# %%
+# +
 import sys
 sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
 import pandas as pd
@@ -42,7 +44,7 @@ from src.data.constants import *
 filename = "traces260105"
 
 
-# %%
+# +
 def _clean_data(logs):
     """
     Simplifie les noms de colonnes et les valeurs sous forme d'URI.
@@ -132,7 +134,7 @@ def _remove_empty_sessions(logs, min_events):
         pandas.DataFrame: les logs avec des sessions de plus de deux événements
     """    
     logs['session_size'] = logs.groupby(['actor', 'session.id'])['verb'].transform(len)
-    to_remove = logs.loc[logs['session_size'] < min_events]
+    to_remove = logs.loc[logs['session_size'] <= min_events]
     
     print(f"removing {len(to_remove)} short sessions (less than {min_events} events)")
     
@@ -190,7 +192,7 @@ def _add_session_end_when_missing(logs, input_file, save_problems = True):
     no_end = logs.groupby('session.id').filter(lambda x: x['verb'].eq('Session.End').sum() == 0)
 
     if save_problems:
-        no_end.to_csv(RAW_DATA_DIR + input_file + "no_end.csv", index=False)
+        no_end.to_csv(RAW_DATA_DIR + input_file + "no_session_end.csv", index=False)
 
     no_end.sort_values(by=['actor', 'session.id', 'timestamp.$date'], inplace=True)
 
@@ -226,7 +228,7 @@ def _remove_multiple_session_end(logs, input_file, save_problems = True):
     more_ends = logs.groupby('session.id').filter(lambda x: x['verb'].eq('Session.End').sum() > 1)
 
     if save_problems:
-        more_ends.to_csv(RAW_DATA_DIR + input_file + "more_end.csv", index=False)
+        more_ends.to_csv(RAW_DATA_DIR + input_file + "multi_session_end.csv", index=False)
 
     one_end = more_ends[~(more_ends.duplicated(subset=['session.id', 'verb'], keep='last') & (more_ends['verb'] == 'Session.End'))]
 
@@ -238,20 +240,6 @@ def _remove_multiple_session_end(logs, input_file, save_problems = True):
     cleaned.sort_values(by=['actor', 'timestamp.$date'], inplace=True, ignore_index=True)
 
     return cleaned
-
-def _detect_multiple_sessions(group):
-    # Permet d'avoir sur la même ligne start et end avec les timestamps
-    merged_sessions = pd.merge(group, group, on='session.id', suffixes=('_start', '_end'))
-    merged_sessions = merged_sessions[(merged_sessions['verb_start'] == 'Session.Start') & (merged_sessions['verb_end'] == 'Session.End')]
-
-    # Selectionne les sessions qui démarrent pendant une autre session (quelle se termine avant la première ou non)
-    embedded_sessions = merged_sessions.loc[(merged_sessions['timestamp_start'] >= merged_sessions['timestamp_start'].iloc[0]) &
-        ((merged_sessions['timestamp_end'] < merged_sessions['timestamp_end'].iloc[0]) |
-        (merged_sessions['timestamp_end'].iloc[0] > merged_sessions['timestamp_start']))]
-
-    embedded_session_ids = embedded_sessions['session.id'].unique()
-
-    return embedded_session_ids
 
 def _add_session_timings(logs):
     """
@@ -274,6 +262,9 @@ def _add_session_timings(logs):
     return timed
 
 def _attribute_week_label(timestamp):
+    """
+    Computes eg "semaine_1" from week "36" (36 being the calendar week number)
+    """
     date = str(timestamp.week)
 
     if date in date_labels:
@@ -289,39 +280,6 @@ def _add_week_label(logs):
     
     return logs
 
-def load_clean_data(file_name : str) -> pd.DataFrame:
-    logs = pd.read_csv(INTERIM_DATA_DIR + file_name, keep_default_na=False, 
-                        dtype={'session.id': str})
-    logs['timestamp.$date'] = pd.to_datetime(logs['timestamp.$date'], format='ISO8601')
-    logs['time_delta'] = pd.to_timedelta(logs['time_delta'])
-    logs['session.duration'] = pd.to_timedelta(logs['session.duration'])
-    logs.reset_index(drop=True)
-    
-    return logs
-
-def load_clean_data_static(path : str) -> pd.DataFrame:
-    logs = pd.read_csv(path, keep_default_na=False, 
-                        dtype={'session.id': str})
-    logs['timestamp.$date'] = pd.to_datetime(logs['timestamp.$date'], format='ISO8601')
-    logs['time_delta'] = pd.to_timedelta(logs['time_delta'])
-    logs['session.duration'] = pd.to_timedelta(logs['session.duration'])
-    logs.reset_index(drop=True)
-    return logs
-
-# !! NON UTILISÉ DANS LA CHAINE DE NETTOYAGE !!
-# Utilisé pour récupérer uniquement les test unitaires relatif aux fichiers de code
-# Je ne sais pas comment supprimer les actions comme les Run.Command relatives aux fichiers de manipulation
-def get_indexes_of_matching_filenames(logs,filenames):
-    """
-    Renvoi la liste des indexes des lignes concernant les fichiers non pertinent
-    Ne prend en compte que les lignes comprisent dans ['File.Open','Run.Test','File.Save']
-    """
-    all_indexes = np.array([])
-    filtre_fichiers = logs[logs['verb'].isin(['File.Open','Run.Test','File.Save','Run.Command', 'Run.Program', 'Run.Debugger'])]
-    for filename in filenames :
-        indexes = filtre_fichiers[filtre_fichiers['filename'].str.contains(filename)].index.values
-        all_indexes = np.hstack([all_indexes,indexes])
-    return all_indexes
 
 def keep_research_data_only(input_file:str, output_file:str) -> None :
     """
@@ -360,8 +318,8 @@ def keep_research_data_only(input_file:str, output_file:str) -> None :
     research_logs.to_csv(INTERIM_DATA_DIR + output_file + ".csv", na_rep="", index=False)
 
 
+# -
 
-# %%
 def process_raw_data(input_file, output_file):
     """
     Nettoie et enrichit les données brutes. Celles-ci sont ensuite sauvegardées dans data/interim/traces_clean.csv
@@ -377,16 +335,18 @@ def process_raw_data(input_file, output_file):
     print("Columns in the logs DataFrame:", logs.columns)
     
     logs = _clean_data(logs)
+
+    filename = input_file.strip().split('.')[0]
     
     logs = _remove_old_plugin_data(logs)
     print(type(logs))
     logs = _remove_automatic_file_save(logs)
     print("error1")
-    logs = _add_session_start_when_missing(logs, input_file.strip('.')[0])
+    logs = _add_session_start_when_missing(logs, filename)
     print("error2")
-    logs = _add_session_end_when_missing(logs, input_file.strip('.')[0])
+    logs = _add_session_end_when_missing(logs, filename)
     print("error3")
-    logs = _remove_multiple_session_end(logs, input_file.strip('.')[0])
+    logs = _remove_multiple_session_end(logs, filename)
     print("error4")
     logs = _remove_empty_sessions(logs, min_events=2)
     print("error5")
@@ -400,9 +360,9 @@ def process_raw_data(input_file, output_file):
     print("error9")
     logs.to_csv(INTERIM_DATA_DIR + output_file, na_rep="", index=False, escapechar="\\")
     print("error10")
+    # in an older version : compute parallel sessions, see Thomas' branch
 
 
-# %%
 def process_data_clean(input_file:str, output_file:str) -> None :
     '''Nettoie les traces trouvées dans <input_file>.json et les enregistre sous <output_file>.csv dans INTERIM_DATA_DIR.
         
@@ -415,5 +375,4 @@ def process_data_clean(input_file:str, output_file:str) -> None :
     process_raw_data(input_file + ".json", output_file + ".csv")
 
 
-# %%
-process_data_clean(filename, filename + "_clean")
+process_data_clean(filename, filename + "_clean") 
