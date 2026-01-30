@@ -1,0 +1,31 @@
+[
+  {
+    "cell_index": 0,
+    "source": "x = 2\ny = 3\nx + y",
+    "outputs": [
+      {
+        "type": "execute_result",
+        "data": {
+          "text/plain": "5"
+        }
+      }
+    ]
+  },
+  {
+    "cell_index": 1,
+    "source": "\"hello sana is my name\"",
+    "outputs": [
+      {
+        "type": "execute_result",
+        "data": {
+          "text/plain": "'hello sana is my name'"
+        }
+      }
+    ]
+  },
+  {
+    "cell_index": 2,
+    "source": "",
+    "outputs": []
+  }
+]
