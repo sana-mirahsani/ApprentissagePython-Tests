@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.19.1
 #   kernelspec:
-#     display_name: venv_jupyter_l1test
+#     display_name: PFE
 #     language: python
-#     name: venv_jupyter_l1test
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -63,11 +63,27 @@ from src.features import io_utils, data_cleaning
 from src.data.constants import INTERIM_DATA_DIR
 from src.data.variable_constant_2425 import pattern_files_name, all_TP_functions_name_except_TP1_and_TPGAME
 
+# %% tags=["parameters"]
+# Parameters
+filename = None
+out_dir_interim = None
+out_dir_raw = None
+
+# %%
+assert filename is not None, "filename was not passed!"
+assert out_dir_interim is not None, "out_dir_interim missing"
+assert out_dir_raw is not None, "out_dir_raw missing"
+
+# %%
+# input and output data for this notebook
+input_file = filename + "_actor_clean" + ".csv"
+output_file = filename + "_filename_phase1_clean" + ".csv"
+
 # %% [markdown]
 # ## 2.Load DataFrame
 
 # %%
-df_clean = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='acteur_nettoyage_2425.csv')
+df_clean = io_utils.reading_dataframe(dir= out_dir_interim, file_name=input_file)
 
 # %%
 len(df_clean)
@@ -376,6 +392,4 @@ df_clean[df_clean['verb'] == 'Docstring.Generate']['function']
 # ## 4.Save new clean dataframe
 
 # %%
-io_utils.write_csv(df_clean,INTERIM_DATA_DIR,None)
-
-# %%
+io_utils.write_csv(df_clean,out_dir_interim,output_file)

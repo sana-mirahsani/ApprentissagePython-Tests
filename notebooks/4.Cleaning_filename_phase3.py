@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.19.1
 #   kernelspec:
-#     display_name: venv_jupyter_l1test
+#     display_name: PFE
 #     language: python
-#     name: venv_jupyter_l1test
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -36,11 +36,27 @@ from src.features import io_utils, data_cleaning
 from src.data.constants import INTERIM_DATA_DIR
 from src.data.variable_constant_2425 import TP_NAME, all_TP_functions_name_except_TP1_and_TPGAME , pattern_files_name
 
+# %% tags=["parameters"]
+# Parameters
+filename = None
+out_dir_interim = None
+out_dir_raw = None
+
+# %%
+assert filename is not None, "filename was not passed!"
+assert out_dir_interim is not None, "out_dir_interim missing"
+assert out_dir_raw is not None, "out_dir_raw missing"
+
+# %%
+# input and output data for this notebook
+input_file = filename + "_filename_phase2_clean" + ".csv"
+output_file = filename + "_filename_phase3_clean" + ".csv"
+
 # %% [markdown]
 # ## 2.Load DataFrame
 
 # %%
-df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='phase2_nettoyage_fichiere.csv')
+df = io_utils.reading_dataframe(dir= out_dir_interim, file_name=input_file)
 
 
 # %% [markdown]
@@ -173,7 +189,7 @@ df_strange_filenames_Run_Test
 
 # %%
 # save the removed trace into a csv
-io_utils.write_csv(df_strange_filenames_Run_Test,INTERIM_DATA_DIR,'bizzar_traces')
+io_utils.write_csv(df_strange_filenames_Run_Test,out_dir_interim,'bizzar_traces.csv')
 
 # %% [markdown]
 # ### Calculate the percentage of removing bizzar indices
@@ -255,4 +271,4 @@ len(df)
 # ## 4.Save final dataframe
 
 # %%
-io_utils.write_csv(df,INTERIM_DATA_DIR,'phase3_nettoyage_fichiere')
+io_utils.write_csv(df,out_dir_interim,output_file)

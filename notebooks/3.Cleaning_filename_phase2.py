@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.19.1
 #   kernelspec:
-#     display_name: venv_jupyter_l1test
+#     display_name: PFE
 #     language: python
-#     name: venv_jupyter_l1test
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -91,11 +91,27 @@ from src.features import io_utils, data_cleaning, data_testing
 from src.data.constants import INTERIM_DATA_DIR
 from src.data.variable_constant_2425 import TP_name, Type_TP, pattern_files_name
 
+# %% tags=["parameters"]
+# Parameters
+filename = None
+out_dir_interim = None
+out_dir_raw = None
+
+# %%
+assert filename is not None, "filename was not passed!"
+assert out_dir_interim is not None, "out_dir_interim missing"
+assert out_dir_raw is not None, "out_dir_raw missing"
+
+# %%
+# input and output data for this notebook
+input_file = filename + "_filename_phase1_clean" + ".csv"
+output_file = filename + "_filename_phase2_clean" + ".csv"
+
 # %% [markdown]
 # ## 2. Load DataFrame
 
 # %%
-df_clean = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='phase1_nettoyage_fichiere.csv')
+df_clean = io_utils.reading_dataframe(dir= out_dir_interim, file_name=input_file)
 
 # %%
 # This is for test and can be deleted later
@@ -175,7 +191,7 @@ def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
 
     # save too_short_sessions in another dataframe before removing them
     print('saving too_short_sessions...')
-    io_utils.write_too_short_indices_to_csv(df_indices,INTERIM_DATA_DIR, week, filename='too_short_sessions')
+    io_utils.write_too_short_indices_to_csv(df_indices,out_dir_interim, week, filename='too_short_sessions')
     
     # test the total empty strings in the current week for each verb
     print('Get total number of empty strings...')
@@ -193,7 +209,7 @@ def main_process(week: str,df: pd.DataFrame,pattern: str) -> pd.DataFrame:
     print('Start removing too_short_indices (if they exist!)...')
 
     df = data_cleaning.check_invalid_names(df,df_indices)
-    io_utils.write_csv(df,INTERIM_DATA_DIR,'error_df')
+    io_utils.write_csv(df,out_dir_interim,'error_df' + ".csv")
 
     # test if there is any incorrect name even after removing too_short_indices
     print('Test incorrect names again:')
@@ -343,7 +359,7 @@ df_clean, df_empty_string_CTP= main_process('CTP',df_clean,pattern_files_name)
 
 # %%
 # save the traces of seance = ''
-io_utils.write_csv(df_clean[df_clean['seance'] == ''],INTERIM_DATA_DIR,None)
+io_utils.write_csv(df_clean[df_clean['seance'] == ''],out_dir_interim,"empty_seance.csv")
 
 # extract the indices of seance == ''
 index_seance_empty = df_clean[df_clean['seance'] == ''].index.to_list()
@@ -538,7 +554,7 @@ df_clean[df_clean['_id.$oid'] == '673db140bd5a98b8f9dd1f13'][['filename_infere',
 # ## 9.Save the final dataframe
 
 # %%
-io_utils.write_csv(df_clean,INTERIM_DATA_DIR,'phase2_nettoyage_fichiere')
+io_utils.write_csv(df_clean,out_dir_interim,output_file)
 
 # %% [markdown]
 # ## 10. What are the differences after changing function **correct_filename_infere_in_subset()**

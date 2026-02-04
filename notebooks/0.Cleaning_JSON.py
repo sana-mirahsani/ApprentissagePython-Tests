@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.17.1
+#       jupytext_version: 1.19.1
 #   kernelspec:
 #     display_name: PFE
 #     language: python
@@ -15,10 +15,7 @@
 
 # # Preparation Workflow Overview:
 # 1. Import Libraries
-# 2. Load File (JSON) : traces260105_brutes.json
-# 3. Clean JSON 
-# 4. Convert JSON to DF
-# 5. Save cleaned DataFrame : traces260105_clean.csv
+# 2. Cleaning JSON
 # ____________________________________________
 # **Explanation** 
 #
@@ -50,6 +47,9 @@ assert filename is not None, "filename was not passed!"
 assert out_dir_interim is not None, "out_dir_interim missing"
 assert out_dir_raw is not None, "out_dir_raw missing"
 
+input_file = filename + ".json"
+output_file = filename +  "_clean"  + ".csv"
+
 # +
 
-process_raw_data(filename + ".json", filename +  "_clean"  + ".csv", out_dir_interim, out_dir_raw)
+process_raw_data(input_file, output_file, out_dir_interim, out_dir_raw)

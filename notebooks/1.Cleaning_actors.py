@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.19.1
 #   kernelspec:
-#     display_name: venv_jupyter_l1test
+#     display_name: PFE
 #     language: python
-#     name: venv_jupyter_l1test
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -40,13 +40,29 @@ sys.path.append('../') # these two lines allow the notebook to find the path to 
 from src.features import io_utils, data_cleaning
 from src.data.constants import INTERIM_DATA_DIR
 
+# %% tags=["parameters"]
+# Parameters
+filename = None
+out_dir_interim = None
+out_dir_raw = None
+
+# %%
+assert filename is not None, "filename was not passed!"
+assert out_dir_interim is not None, "out_dir_interim missing"
+assert out_dir_raw is not None, "out_dir_raw missing"
+
+# %%
+# input and output data for this notebook
+input_file = filename + "_clean" + ".csv"
+output_file = filename + "_actor_clean" + ".csv"
+
 # %% [markdown]
 # ## 2.Load DataFrame
 # - Use functions in file **io_utils.py.py**
 # - The csv file is the output of process_raw_data
 
 # %%
-df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='traces250102_clean.csv')
+df = io_utils.reading_dataframe(dir= out_dir_interim, file_name= input_file)
 
 # %% [markdown]
 # ### 1.Print 5 rows and columns of dataframe
@@ -267,4 +283,4 @@ print("Cleaning actor successful!") if len(incorrect_actor) == 0 and len(incorre
 # ## 4.Save new dataframe
 
 # %%
-io_utils.write_csv(df_clean,INTERIM_DATA_DIR,None) 
+io_utils.write_csv(df_clean,out_dir_interim, output_file) 

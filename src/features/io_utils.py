@@ -3,6 +3,7 @@
 #------------------------------------------------
 import pandas as pd 
 import os
+from pathlib import Path
 #------------------------------------------------
 #                  Functions
 #------------------------------------------------
@@ -21,9 +22,9 @@ def reading_dataframe(dir : str, file_name : str) -> pd.DataFrame:
     """
 
     # Check if the file exists in the directory
-    file_path = os.path.join(dir, file_name)
+    file_path = Path(dir) / file_name
 
-    if os.path.isfile(file_path):
+    if file_path.exists():
         print(f"Directory is ok.")
 
         # convert to dataframe
@@ -51,14 +52,15 @@ def write_csv(df : pd.DataFrame, dir: str, file_name: None) -> None:
 
     # If I hadn't give any name 
     if file_name is None:
-        file_name = str(input("Enter the name of csv (WITHOUT .csv) : \n"))
+        file_name = str(input("Enter the name of csv (WITHOUT .csv) : \n")) + ".csv"
 
     # Check if the file exists in the directory
-    if os.path.isdir(dir):
+    if Path(dir).exists():
         print(f"Directory is ok.")
 
         # convert to csv
-        df.to_csv(dir + file_name + ".csv", mode = mode_input, index=False)
+        file_path = Path(dir) / file_name
+        df.to_csv(file_path, mode = mode_input, index=False)
         print("File saved.")
 
     else:
@@ -86,10 +88,11 @@ def write_too_short_indices_to_csv(df : pd.DataFrame, dir: str, week : str, file
     filtered_df = df[df['too_short_indices'].apply(lambda x: x != [])]
     new_df      = filtered_df[['name_students','too_short_indices']]
 
-    file = os.path.join(dir, 'too_short_sessions.csv')
+    filename += ".csv"
+    file = Path(dir) / filename
 
     # check if there is already too_short_sessions.csv, append the data
-    if os.path.isfile(file) and week != 'semaine_2': # extract the df to append the new df to it
+    if Path(dir).exists() and week != 'semaine_2': # extract the df to append the new df to it
         
         old_df = pd.read_csv(file, keep_default_na=False)
         df_combined = pd.concat([old_df, new_df], ignore_index=True) # append the new df to the old df

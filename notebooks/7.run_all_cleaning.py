@@ -15,7 +15,6 @@ import papermill as pm
 
 notebooks = ["0.Cleaning_JSON.ipynb", "1.Cleaning_actors.ipynb", "2.Cleaning_filename_phase1.ipynb", 
              "3.Cleaning_filename_phase2.ipynb", "4.Cleaning_filename_phase3.ipynb"] # all nb of cleaning
-
 #------------------------------------------------
 #      1.Prepare output folder
 #------------------------------------------------
@@ -32,17 +31,16 @@ out_dir_interim = parent_folder / "data" / "interim" / run_id
 out_dir_interim.mkdir(parents=True, exist_ok=True) 
 
 # create folder for raw data into data/raw
-print(run_id)
 out_dir_raw = parent_folder / "data" / "raw" / run_id
 out_dir_raw.mkdir(parents=True, exist_ok=True) 
-print(out_dir_raw)
-print(out_dir_interim)
+
 #------------------------------------------------
 #      2.Run notebooks and extract outputs
 #------------------------------------------------
 for nb_path in notebooks:
+    
     executed_nb_path = out_dir_result / f"{Path(nb_path).stem}_executed.ipynb"
-
+    
     # Run notebook with Papermill
     pm.execute_notebook(
         input_path=nb_path,
@@ -54,7 +52,6 @@ for nb_path in notebooks:
         },
         log_output=True
     )
-    print("hello")
 
     nb = nbformat.read(executed_nb_path, as_version=4)
     all_outputs = []
@@ -76,10 +73,12 @@ for nb_path in notebooks:
             all_outputs.append(cell_data)
 
     # Save outputs
-    out_file = out_dir_result / f"{Path(nb_path).stem}_outputs.json"
+    out_file = Path(out_dir_result) / f"{Path(nb_path).stem}_outputs.json"
     with open(out_file, "w", encoding="utf-8") as f:
         json.dump(all_outputs, f, indent=2, ensure_ascii=False)
     print(f"Saved outputs for {nb_path} -> {out_file}")
-    break
+
+    print("=================================================")
+    
 
 print("All notebooks executed and outputs saved in:", out_dir_result)
