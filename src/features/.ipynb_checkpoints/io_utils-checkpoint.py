@@ -1,0 +1,105 @@
+#------------------------------------------------
+#                  Library
+#------------------------------------------------
+import pandas as pd 
+import os
+from pathlib import Path
+#------------------------------------------------
+#                  Functions
+#------------------------------------------------
+
+# Read dataframe
+def reading_dataframe(dir : str, file_name : str) -> pd.DataFrame:
+    """
+    Read data from the CSV file in a directory and convert them into a dataframe.
+    
+    Args:
+        dir: can be any directory like INTERIM_DATA_DIR
+        file_name: the name of the file to read the data (like CSV or JSON)
+    
+    Returns:
+        A dataframe.
+    """
+
+    # Check if the file exists in the directory
+    file_path = Path(dir) / file_name
+
+    if file_path.exists():
+        print(f"Directory is ok.")
+
+        # convert to dataframe
+        df = pd.read_csv(file_path, keep_default_na=False)
+        return df
+
+    else:
+        print(f"The filepath : {file_path} does not exist.")
+
+    return None
+
+# Write the new dataframe into CSV file
+def write_csv(df : pd.DataFrame, dir: str, file_name: None) -> None:
+    """
+    Write the dataframe into csv file.
+    
+    Args:
+        df  : Any dataframe.
+        dir : Directory to save the csv file
+        file_name : if there is already a filename to save the file 
+    Returns:
+        CSV file.
+    """
+    mode_input = 'w'
+
+    # If I hadn't give any name 
+    if file_name is None:
+        file_name = str(input("Enter the name of csv (WITHOUT .csv) : \n")) + ".csv"
+
+    # Check if the file exists in the directory
+    if Path(dir).exists():
+        print(f"Directory is ok.")
+
+        # convert to csv
+        file_path = Path(dir) / file_name
+        df.to_csv(file_path, mode = mode_input, index=False)
+        print("File saved.")
+
+    else:
+        print(f"The directory: {dir} doesn't exist.")
+
+    return None
+    
+def write_too_short_indices_to_csv(df : pd.DataFrame, dir: str, week : str, filename:str) -> None:
+    """
+    This function writes too_short_sessions into a csv file before removing them from the original dataframe.
+    
+    Args:
+        df: Any dataframe BUT with specific columns.
+        dir : Directory to save the csv file.
+        columns_to_keep : List of columns to keep them.
+
+    Returns:
+        CSV file.
+    """
+
+    # add column semaine
+    df['seance'] = week
+    
+    # remove the rows without any too_short_sessions
+    filtered_df = df[df['too_short_indices'].apply(lambda x: x != [])]
+    new_df      = filtered_df[['name_students','too_short_indices']]
+
+    filename += ".csv"
+    file = Path(dir) / filename
+
+    # check if there is already too_short_sessions.csv, append the data
+    if Path(dir).exists() and week != 'semaine_2': # extract the df to append the new df to it
+        
+        old_df = pd.read_csv(file, keep_default_na=False)
+        df_combined = pd.concat([old_df, new_df], ignore_index=True) # append the new df to the old df
+
+    # if there is no csv file, or rewrite the data
+    else:
+        df_combined = new_df
+
+    # save them into a csv file
+    write_csv(df_combined,dir,filename)

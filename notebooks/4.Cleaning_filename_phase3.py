@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.19.1
+#       jupytext_version: 1.17.2
 #   kernelspec:
-#     display_name: PFE
+#     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
@@ -37,15 +37,37 @@ from src.data.constants import INTERIM_DATA_DIR
 from src.data.variable_constant_2425 import TP_NAME, all_TP_functions_name_except_TP1_and_TPGAME , pattern_files_name
 
 # %% tags=["parameters"]
+{
+    "tags": [
+        "parameters"
+    ]
+}
 # Parameters
 filename = None
 out_dir_interim = None
 out_dir_raw = None
 
+# %% [markdown]
+# Si on execute ce notebook via le pipeline, décommenter ci-dessous
+
 # %%
-assert filename is not None, "filename was not passed!"
-assert out_dir_interim is not None, "out_dir_interim missing"
-assert out_dir_raw is not None, "out_dir_raw missing"
+#assert filename is not None, "filename was not passed!"
+#assert out_dir_interim is not None, "out_dir_interim missing"
+#assert out_dir_raw is not None, "out_dir_raw missing"
+
+# %% [markdown]
+# This is when you run notebook alone, give the parameters manually
+
+# %%
+# ici ajouter le filename pour exécution du notebook hors pipeline
+filename = "traces260105"
+
+# %%
+# input and output data for this notebook
+out_dir_interim = "../data/interim/traces260105_20260205_093949/"
+
+# %% [markdown]
+# Fin des modifs à faire liées à l'exécution autonome / pipeline.
 
 # %%
 # input and output data for this notebook

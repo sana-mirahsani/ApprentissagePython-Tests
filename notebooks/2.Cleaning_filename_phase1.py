@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.19.1
+#       jupytext_version: 1.17.2
 #   kernelspec:
-#     display_name: PFE
+#     display_name: venv_jupyter_l1test
 #     language: python
-#     name: python3
+#     name: venv_jupyter_l1test
 # ---
 
 # %% [markdown]
@@ -53,7 +53,7 @@
 #
 # The goal is creating a new column filename_infere, and finding the correct name of files and put them into this column. Since the process is complecated, I divided this part into two phases, phase one filling column filename_infere by columns : filename, commandRan and codestate; phase two validate them and use mecanism like similarity and sandwich to find filenames which were impossible to find them during the phase one. This notebook includs only phase one, it saves the result into a csv file and shoudl read this csv file as the input in the phase two notebook which is the next step.
 
-# %% [markdown]
+# %% [markdown] jupyter={"source_hidden": true}
 # ## 1.Import Libraries
 
 # %%
@@ -64,15 +64,37 @@ from src.data.constants import INTERIM_DATA_DIR
 from src.data.variable_constant_2425 import pattern_files_name, all_TP_functions_name_except_TP1_and_TPGAME
 
 # %% tags=["parameters"]
+{
+    "tags": [
+        "parameters"
+    ]
+}
 # Parameters
 filename = None
 out_dir_interim = None
 out_dir_raw = None
 
+# %% [markdown]
+# Si on execute ce notebook via le pipeline, décommenter ci-dessous
+
 # %%
-assert filename is not None, "filename was not passed!"
-assert out_dir_interim is not None, "out_dir_interim missing"
-assert out_dir_raw is not None, "out_dir_raw missing"
+#assert filename is not None, "filename was not passed!"
+#assert out_dir_interim is not None, "out_dir_interim missing"
+#assert out_dir_raw is not None, "out_dir_raw missing"
+
+# %% [markdown]
+# This is when you run notebook alone, give the parameters manually
+
+# %%
+# ici ajouter le filename pour exécution du notebook hors pipeline
+filename = "traces260105"
+
+# %%
+# input and output data for this notebook
+out_dir_interim = "../data/interim/traces260105_20260205_093949/"
+
+# %% [markdown]
+# Fin des modifs à faire liées à l'exécution autonome / pipeline.
 
 # %%
 # input and output data for this notebook
