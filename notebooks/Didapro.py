@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.19.1
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: venv_jupyter_l1test
 #     language: python
@@ -49,6 +49,8 @@ df_admin_etud = io_utils.reading_dataframe(dir= RAW_DATA_DIR, file_name='identif
 
 
 # ## Merge des données
+
+# Ici c'est faux, j'ajoute la colonne 'debutant' uniquement en me basant sur l'acteur. Il ne faut pas utiliser ce champ 'debutant' du df.
 
 def ajout_colonnes(df:pd.DataFrame, df_admin:pd.DataFrame) -> pd.DataFrame:
     """
@@ -95,8 +97,10 @@ def propage_chgt_avis_research_OK(df:pd.DataFrame) -> pd.DataFrame:
 def actors(df:pd.DataFrame) -> set:
     """
     Renvoie l'ens des acteurs du df, y compris binômes.
+    union(actors + binomes - '')
     """
     set_actor_df = set(df.actor)
+    assert '' not in set_actor_df
     set_binome_df = set(df.binome)
     if '' in set_binome_df:
         set_binome_df.remove('')
@@ -105,9 +109,13 @@ def actors(df:pd.DataFrame) -> set:
 
 print(f"Le df après nettoyage contient {len(actors(df_raw))} acteurs et {len(df_raw)} lignes")
 
+# Ici on ajoute la colonne 'debutants' ET on propage, pourquoi j'ai fait ça en une seule ligne ???
+
 df_propag = propage_chgt_avis_research_OK(df_deb)
 
 # Attention dans la ligne ci-dessous il ne faut pas écrire != '0.0' à la place de == "1.0". En effet les Session.End n'ont pas de valeur pour research_usage. donc si on regarde les != 0.0 on les garde ds le df à analyser, ce qui donne des étudiant·es qui n'ont que des Session.End ! 
+
+# df contient l'info 'debutant', et slt les RGPD compatibles.
 
 df = df_propag[df_propag['research_usage']== '1.0']
 
@@ -123,6 +131,8 @@ def is_deb_def(df_admin:pd.DataFrame) -> pd.DataFrame:
     df_admin_actor_debutants = df_admin_copy[['actor', 'debutant']]
     return df_admin_actor_debutants
 
+
+# TODO ici ajouter des tests pour qques étudiant·es
 
 df_is_deb = is_deb_def(df_admin_etud)
 
@@ -270,6 +280,11 @@ def df_TP_guides_prog(df:pd.DataFrame, liste_tp:list[str]) -> pd.DataFrame:
     return df_res
 
 
+df_tp2_guide_prog = df_TP_guides_prog(df, ['Tp2'])
+
+len(actors(df_tp2_guide_prog))
+
+
 def genere_donnees_presentation_TP_guides(df:pd.DataFrame) -> pd.DataFrame:
     """
     Produit un df avec les colonnes suivantes :
@@ -285,7 +300,7 @@ def genere_donnees_presentation_TP_guides(df:pd.DataFrame) -> pd.DataFrame:
     df_res = pd.DataFrame(columns=['TP', 'nb_etud', 'nb_debutants', 'pourcentage_debutants'])
     for tp in TPS_SANS_SEM_5:
         df_tp = df_param[df_param['TP'] == tp]
-        df_tp_deb = df_tp[df_tp['debutant']==True]
+        df_tp_deb = df_tp[df_tp['debutant']==True] # ici il ne faut pas faire ça
         actors_set = actors(df_tp)
         actors_deb_set = actors(df_tp_deb)
         dict_tp = {'TP': [tp], 'nb_etud' : len(actors_set), 'nb_debutants' : len(actors_deb_set), 'pourcentage_debutants' : round(len(actors_deb_set)/len(actors_set)*100)}
@@ -293,9 +308,50 @@ def genere_donnees_presentation_TP_guides(df:pd.DataFrame) -> pd.DataFrame:
     return df_res
 
 
+def genere_donnees_presentation_TP_guides_corrige(df:pd.DataFrame, df_is_deb_param:pd.DataFrame) -> pd.DataFrame:
+    """
+    Produit un df avec les colonnes suivantes :
+        - TP : le numéro du TP
+        - nb_etud : le nombre d'étudiants ayant réalisé ce TP
+        - nb_debutants : le nombre de débutants ayant réalisé ce TP
+        - pourcentage_debutants : le pourcentage de débutants ayant réalisé ce TP
+
+    Args:
+        df : le df initial avec l'indication de cursus, colonnes 'TP', 'Type_TP', 'actor', 'binome', 'filename_infere', 'debutant'
+        df_is_deb_param : le df de colonnes 'actor' 'debutant'
+        
+    """
+    df_param = df_TP_guides_prog(df, TPS_SANS_SEM_5)
+    df_res = pd.DataFrame(columns=['TP', 'nb_etud', 'nb_debutants', 'pourcentage_debutants'])
+    for tp in TPS_SANS_SEM_5:
+        df_tp = df_param[df_param['TP'] == tp]
+        #df_tp_deb = df_tp[df_tp['debutant']==True] # ici il ne faut pas faire ça
+        actors_set = actors(df_tp)
+        actors_deb_set = select_debutants(actors_set, df_is_deb_param.copy())
+        dict_tp = {'TP': [tp], 'nb_etud' : len(actors_set), 'nb_debutants' : len(actors_deb_set), 'pourcentage_debutants' : round(len(actors_deb_set)/len(actors_set)*100)}
+        df_res = pd.concat([df_res, pd.DataFrame.from_dict(data=dict_tp)], ignore_index=True)
+    return df_res
+
+
+df_param_local = df_TP_guides_prog(df, TPS_SANS_SEM_5)
+df_tp_tp2_local = df_param_local[df_param_local['TP'] == 'Tp2']
+df_tp_deb_tp2_local = df_tp_tp2_local[df_tp_tp2_local['debutant']==True]
+actors_set_tp2_local = actors(df_tp_tp2_local)
+actors_deb_set_tp2_local = actors(df_tp_deb_tp2_local) 
+# ici on récupère 3 non débutants 'luc.duriez.etu', 'mohamed-el-amine.samahri.etu', 'samuel.huret.etu'
+# et a priori on rate 4 débutants {'hajar.amnay.etu', 'henry.hebelamou.etu', 'qassim.kahoul.etu', 'yanis.brahimi.etu'}
+
+len(actors_deb_set_tp2_local)
+
 df_donnees_TP_guides = genere_donnees_presentation_TP_guides(df)
 
 df_donnees_TP_guides
+
+df_donnees_TP_guides_corrige = genere_donnees_presentation_TP_guides_corrige(df, df_is_deb)
+
+# Là je retombe bien sur les données de la section ecriture de tests
+
+df_donnees_TP_guides_corrige
 
 print(f"Nombre de traces pour les TPs guidés : {len(df_TP_guides_prog(df, TPS_SANS_SEM_5))}")
 
@@ -314,10 +370,14 @@ affiche_acteurs(df)
 
 df_donnees_TP_guides['nb_etud'].astype(int).describe()
 
+df_donnees_TP_guides_corrige['nb_etud'].astype(int).describe()
+
 df_donnees_TP_guides['pourcentage_debutants'].astype(float).describe()
 
+df_donnees_TP_guides_corrige['pourcentage_debutants'].astype(float).describe()
 
-# Le nombre d'étudiant·es ayant réalisé en présentiel les TPs guidés oscille entre 152 (semaine 9) et 181 (semaine 4) selon la semaine, avec une moyenne de 168 étudiant·es par semaine. Les chiffres reflètent l'évolution de la promotion au fil du semestre, avec une décroissance des effectifs à partir du milieu du semestre dûe aux abandons.  Parmi ces étudiant·es, le pourcentage d'étudiant·es débutant·es ayant réalisé en présentiel les TPs guidés oscille entre 53 (semaine 6) et et 58% (semaine 7) selon la semaine, avec une moyenne de 56% d'étudiant·es débutant·es (écart-type : 1.68).
+
+# **TODO revoir ce texte** Le nombre d'étudiant·es ayant réalisé en présentiel les TPs guidés oscille entre 152 (semaine 9) et 181 (semaine 4) selon la semaine, avec une moyenne de 168 étudiant·es par semaine. Les chiffres reflètent l'évolution de la promotion au fil du semestre, avec une décroissance des effectifs à partir du milieu du semestre dûe aux abandons.  Parmi ces étudiant·es, le pourcentage d'étudiant·es débutant·es ayant réalisé en présentiel les TPs guidés oscille entre 53 (semaine 6) et et 58% (semaine 7) selon la semaine, avec une moyenne de 56% d'étudiant·es débutant·es (écart-type : 1.68).
 
 def plot_TPs_guides_general(df_donnees_TP_guides:pd.DataFrame) -> None:
     """
@@ -344,6 +404,10 @@ def plot_TPs_guides_general(df_donnees_TP_guides:pd.DataFrame) -> None:
 
 
 plot_TPs_guides_general(df_donnees_TP_guides)
+
+# prendre cette figure pour l'article
+
+plot_TPs_guides_general(df_donnees_TP_guides_corrige)
 
 # ## Analyse de la pratique du test pour les TPs guidés
 
@@ -731,7 +795,15 @@ def find_tests_for_all_tp_tpprog(df:pd.DataFrame, functions_names:dict) -> tuple
 
 df_tests_number_tp_prog, _, _ =  find_tests_for_all_tp_tpprog(df, PROG_FUNCTIONS_NAME_BY_TP)
 
+# Cette variable est très mal nommée : il ne s'agit pas des débutant·es mais du df "nb de tests par fonction" qui contient l'info "débutant ou pas". Et cette info est correcte, car pas de pb de binôme ici.
+
 df_tests_number_tp_prog_deb = merge_debutant(df_tests_number_tp_prog, df_is_deb)
+
+df_is_deb[df_is_deb['actor']=='ibn-farrid.sama.etu']
+
+df_is_deb[df_is_deb['actor']=='aurelien.dez.etu']
+
+df_tests_number_tp_prog_deb
 
 
 def nb_tests_par_etud_par_fonction_tp(tp:str, df_tests_number:pd.DataFrame) -> float:
@@ -865,6 +937,7 @@ LBL_NB_ETUD_TESTS_PRESENTS = 'Nb étud avec tests présents'
 LBL_NB_DEB_TESTS_PRESENTS = 'Nb débutants avec tests présents'
 LBL_NB_NON_DEB_TESTS_PRESENTS = 'Nb non débutants avec tests présents'
 LBL_PCT_TESTS_PRESENTS = 'Pourcentage avec tests présents (analyse possible)'
+LBL_PCT_TESTS_ABSENTS = 'Pourcentage avec tests absents (analyse possible)'
 LBL_PCT_DEB_TESTS_PRESENTS = 'Pourcentage débutants avec tests présents (débutants an possible)'
 LBL_PCT_NON_DEB_TESTS_PRESENTS = 'Pourcentage non débutants avec tests présents (non débutants an possible)'
 LBL_NB_ETUD_TESTS_PRESENTS_TTES_FCTS = 'Nb étud avec tests présents pour toute fonction écrite'
@@ -896,6 +969,7 @@ COLUMNS_STAT_ECR_TESTS = ['Tps',
                           LBL_NB_DEB_TESTS_PRESENTS,
                           LBL_NB_NON_DEB_TESTS_PRESENTS,
                           LBL_PCT_TESTS_PRESENTS,
+                          LBL_PCT_TESTS_ABSENTS,
                           LBL_PCT_DEB_TESTS_PRESENTS,
                           LBL_PCT_NON_DEB_TESTS_PRESENTS,
                           LBL_NB_ETUD_TESTS_PRESENTS_TTES_FCTS,
@@ -937,10 +1011,10 @@ def genere_donnees_nombre_tests_ecrits_tp_guides(df:pd.DataFrame, functions_name
             actor_column_tp  = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')]['actor']
             column_binome_tp = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')]['binome']
         all_students_tp  = set(actor_column_tp).union(set(column_binome_tp))
-        deb_students_tp = select_debutants(all_students_tp, df_is_deb)
-        non_deb_students_tp = list(all_students_tp - set(deb_students_tp))
         if '' in all_students_tp:
             all_students_tp.remove('')
+        deb_students_tp = select_debutants(all_students_tp, df_is_deb)
+        non_deb_students_tp = list(all_students_tp - set(deb_students_tp))
         df_tests_tp_avec_deb = merge_debutant(df_tests_tp, df_is_deb)
         etud_testant_toute_fonction_ecrite_tp, etud_testant_aucune_fonction_ecrite_tp, etud_qq_tests_fonction_ecrite_tp, \
             etud_deb_testant_toute_fonction_ecrite_tp, etud_deb_testant_aucune_fonction_ecrite_tp, etud_deb_qq_tests_fonction_ecrite_tp \
@@ -966,12 +1040,15 @@ def genere_donnees_nombre_tests_ecrits_tp_guides(df:pd.DataFrame, functions_name
             LBL_NB_DEB_ANALYSABLE: len(etud_deb_analyse_possible),\
             LBL_NB_NON_DEB_ANALYSABLE: len(etud_non_deb_analyse_possible),\
             LBL_NB_ETUD_NON_ANALYSABLE: len(etud_analyse_impossible),\
+            LBL_NB_DEB_NON_ANALYSABLE: len(deb_students_tp)-len(etud_deb_analyse_possible),\
+            LBL_NB_NON_DEB_NON_ANALYSABLE: len(non_deb_students_tp)-len(etud_non_deb_analyse_possible),\
             LBL_PCT_NON_ANALYSABLE: len(etud_analyse_impossible)/len(all_students_tp)*100,\
             LBL_PCT_DEB_NON_ANALYSABLE: len(etud_deb_analyse_impossible)/len(etud_analyse_impossible)*100,\
             LBL_NB_ETUD_TESTS_PRESENTS: len(etud_avec_tests),\
             LBL_NB_DEB_TESTS_PRESENTS: len(etud_deb_avec_tests), \
             LBL_NB_NON_DEB_TESTS_PRESENTS: len(etud_avec_tests) - len(etud_deb_avec_tests),\
             LBL_PCT_TESTS_PRESENTS: len(etud_avec_tests)/len(etud_analyse_possible)*100,\
+            LBL_PCT_TESTS_ABSENTS: len(etud_testant_aucune_fonction_ecrite_tp)/len(etud_analyse_possible)*100,\
             LBL_PCT_DEB_TESTS_PRESENTS: len(etud_deb_avec_tests)/len(etud_deb_analyse_possible)*100,\
             LBL_PCT_NON_DEB_TESTS_PRESENTS: len(etud_non_deb_avec_tests)/len(etud_non_deb_analyse_possible)*100,\
             LBL_NB_ETUD_TESTS_PRESENTS_TTES_FCTS: len(etud_testant_toute_fonction_ecrite_tp),\
@@ -1012,6 +1089,14 @@ df_infos_travaux_non_analysables[LBL_PCT_NON_ANALYSABLE].describe()
 df_infos_travaux_non_analysables[LBL_PCT_DEB_NON_ANALYSABLE].describe()
 
 
+# Nous excluons donc de notre analyse le travail des étudiant·es qui ne
+# maîtrisent pas les aspects syntaxiques de Python.  Le nombre de
+# travaux exclus reste toutefois faible en regard du nombre total.  Sur
+# les TPs 2 à 9 nous avons exclu en moyenne 2,67\% des travaux, qui sont en moyenne à 90\% des travaux de débutant·es
+# (écart-type : 17,85). %, avec une valeur de 100\% pour 5 des TPs.
+# Cette sur-représentation des débutant·es est cohérente avec la non maîtrise
+# syntaxique du langage.
+
 def calcule_infos_tests_ecrits_sans_deb(df_nb_tests_ecrits_tp_guides:pd.DataFrame) -> pd.DataFrame:
     """
     Args :
@@ -1022,7 +1107,7 @@ def calcule_infos_tests_ecrits_sans_deb(df_nb_tests_ecrits_tp_guides:pd.DataFram
     return df_nb_tests_ecrits_tp_guides_sans_deb[['Tps', LBL_NB_ETUD, LBL_NB_ETUD_ANALYSABLE, LBL_NB_ETUD_TESTS_PRESENTS,\
                                                       LBL_PCT_TESTS_PRESENTS, \
                                                       LBL_NB_ETUD_TESTS_PRESENTS_TTES_FCTS, LBL_PCT_TTES_FCTS,\
-                                                      LBL_NB_ETUD_NO_TEST, NB_ETUD_TESTS_QQ_FONCTIONS]]
+                                                      LBL_NB_ETUD_NO_TEST,LBL_PCT_TESTS_ABSENTS, NB_ETUD_TESTS_QQ_FONCTIONS]]
 
 
 df_infos_tests_ecrits_sans_deb =  calcule_infos_tests_ecrits_sans_deb(df_plot_nombre_tests_ecrits_tp_guides)
@@ -1030,8 +1115,20 @@ df_infos_tests_ecrits_sans_deb
 
 df_infos_tests_ecrits_sans_deb[LBL_PCT_TESTS_PRESENTS].describe()
 
+df_infos_tests_ecrits_sans_deb[LBL_PCT_TESTS_ABSENTS].describe()
+
+df_infos_tests_ecrits_sans_deb[LBL_NB_ETUD_NO_TEST].astype(float).describe()
+
 df_infos_tests_ecrits_sans_deb[LBL_PCT_TTES_FCTS].describe()
 
+
+# La figure~\ref{fig:tests-dans-code-analysable} indique que les travaux syntaxiquement  analysables 
+# ne contenant aucun test syntaxiquement correct sont en très petit nombre. 
+# En moyenne sur l'ensemble des TPs 2,7\% des étudiant·es
+# dont le travail est analysable n'ont écrit aucun test, avec un
+# écart-type de 0,49.
+#
+# Les résultats montrent que la plupart des étudiant·es écrivent des tests pour toutes les fonctions testables réalisées. La moyenne sur les TPs indique que 86,7\% des étudiant·es dont le code est analysable écrivent des tests pour toutes les fonctions testables, avec un écart-type à 6,5, un maximum à 96,3\% pour le TP2, et un tassement pour le TP9 (pour ce TP environ 77\% des étudiant·es ayant écrit des tests l'ont fait pour toutes les fonctions testables).
 
 def plot_tests_ecrits_TP_guides(df_tests_ecrits_tp_guides:pd.DataFrame) -> None:
     """
@@ -1086,8 +1183,6 @@ def plot_tests_ecrits_par_fonctions_TP_guides(df_tests_ecrits_tp_guides:pd.DataF
 plot_tests_ecrits_par_fonctions_TP_guides(calcule_infos_tests_ecrits_sans_deb(df_plot_nombre_tests_ecrits_tp_guides))
 
 
-# Un très grand nombre des travaux analysables (c'est à dire un fichier Python syntaxiquement correct contenant des fonctions) contient au moins un test (cf premier graphique). La moyenne sur les TPs indique que 94.7% des étudiant•es dont le travail est analysable ont écrit au moins un test, avec un écart-type de 1.86, un minimum de 92.25% pour le TP8 et un maximum de 96.7% pour le TP2.  Nous ne savons pas expliquer pourquoi le minimum se produit au niveau du TP8.
-#
 #
 # La brique de base pour le test unitaire étant la fonction, l'écriture d'au moins un test par fonction testable peut représenter un comportement nominal pour des débutant·es (le comportement nominal réel consistant à écrire un jeu de tests pertinents). Nous avons regardé quelle proportion des fonctions écrites et testables contiennent des tests (figure...). Les résultats montrent que la plupart des étudiant·es écrivent des tests pour toutes les fonctions testables qu'ils ou elles ont programmé. La moyenne sur les TPs indique que 86.7% des étudiant·es dont le code est analysable écrivent des tests pour toutes les fonctions, avec un écart-type à 6.5, un maximum à 96.3% pour le TP2, et un tassement pour le TP9 (pour ce TP environ 77% des étudiant·es ayant écrit des tests l'ont fait pour toutes les fonctions). On note que ce TP est l'un des plus difficiles du semestre, avec des boucles difficiles à écrire. 
 #
@@ -1178,9 +1273,11 @@ plot_tests_ecrits_deb(df_infos_tests_ecrits_deb_non_deb)
 plot_tests_ecrits_non_deb(df_infos_tests_ecrits_deb_non_deb)
 
 
+# Cette partie-là n'est pas dans l'article. Chiffres OK.
+#
 # Pour comparer le comportement moyen des débutant·es et non débutant·es pour l'écriture des tests on se base sur le pourcentage d'étudiant·es de ces 2 catégories ayant écrit au moins un test pour chaque fonction et n'ayant écrit aucun test. 
 #
-# Les données indiquent que 87.8% des débutants en moyenne ont écrit au moins un test pour toutes les fonctions qu'ils ont écrites (écart-type : 7), avec un minimum à 77.9% pour le TP9. Par ailleurs 84% des non débutants en moyenne ont écrit au moins un test pour toutes les fonctions qu'ils ont écrites (écart-type : 7.7), avec un minimum à 75.38% aussi pour le TP9. Il ne ressort donc pas de différence marquante entre les débutants et les non débutants. De plus les 2 catégories ont plus de fonctions non testées pour le TP estimé le plus difficile.  
+# Les données indiquent que 87.8% des débutants en moyenne ont écrit au moins un test pour toutes les fonctions qu'ils ont écrites (écart-type : 7), avec un minimum à 77.9% pour le TP9. Par ailleurs 85.1% des non débutants en moyenne ont écrit au moins un test pour toutes les fonctions qu'ils ont écrites (écart-type : 7.7), avec un minimum à 76.5% aussi pour le TP9. Il ne ressort donc pas de différence marquante entre les débutants et les non débutants. De plus les 2 catégories ont plus de fonctions non testées pour le TP estimé le plus difficile.  
 #
 # Dans le cas des étudiant·es qui n'écrivent aucun test, 3% des débutants en moyenne n'écrivent pas de test (écart-type : 1) et 2.4% des non débutants en moyenne n'écrivent pas de tests (écart-type : 0.7). On ne peut donc pas dire que le cursus des étudiant·es - vrais débutant·es ou étudiant·es ayant déjà pratiqué de la programmation Python, que ce soit en NSI ou dans le portail - influence l'écriture de tests. 
 
