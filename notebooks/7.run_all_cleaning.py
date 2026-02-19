@@ -13,8 +13,10 @@ from pathlib import Path
 from datetime import datetime
 import papermill as pm
 
-notebooks = ["0.Cleaning_JSON.ipynb", "1.Cleaning_actors.ipynb", "2.Cleaning_filename_phase1.ipynb", 
+notebooks_1 = ["0.Cleaning_JSON.ipynb", "1.Cleaning_actors.ipynb", "2.Cleaning_filename_phase1.ipynb", 
              "3.Cleaning_filename_phase2.ipynb", "4.Cleaning_filename_phase3.ipynb"] # all nb of cleaning
+
+notebooks = ["0.Cleaning_JSON.ipynb", "1.Cleaning_actors.ipynb"]
 #------------------------------------------------
 #      1.Prepare output folder
 #------------------------------------------------
@@ -48,7 +50,8 @@ for nb_path in notebooks:
         parameters={
         "filename": filename,
         "out_dir_interim": str(out_dir_interim),
-        "out_dir_raw": str(out_dir_raw)
+        "out_dir_raw": str(out_dir_raw),
+        "run_mode": "pipeline"
         },
         log_output=True
     )

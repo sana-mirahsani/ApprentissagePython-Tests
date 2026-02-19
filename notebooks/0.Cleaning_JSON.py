@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.19.1
 #   kernelspec:
-#     display_name: Python 3 (ipykernel)
+#     display_name: PFE
 #     language: python
 #     name: python3
 # ---
@@ -29,14 +29,40 @@
 # +
 import sys
 sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
-import pandas as pd
-import json
-from pathlib import Path
 
 from src.data.constants import *
-from src.data.cleaning import process_raw_data 
+from src.data.cleaning import process_raw_data
 
-# Si on execute ce notebook via le pipeline, décommenter ci-dessous
+
+# -
+
+
+def execute_by_pipeline(filename, out_dir_interim, out_dir_raw):
+    # check if the parameters are passed correctly
+    assert filename is not None, "filename was not passed!"
+    assert out_dir_interim is not None, "out_dir_interim missing"
+    assert out_dir_raw is not None, "out_dir_raw missing"
+
+    # define input and output file paths
+    input_file = filename + ".json"
+    output_file = filename +  "_clean"  + ".csv"
+
+    # Process the raw data and save the cleaned data to the interim directory
+    process_raw_data(input_file, output_file, out_dir_interim, out_dir_raw)
+
+
+def execute_manually():
+    # Define the path to the raw data file and the output directories (you can change them whatever you want)
+    filename = "traces260105" # change this to the name of the file you want to process (without the .json extension)
+    out_dir_interim = f"../data/interim/{filename}_20260205_093949"
+    out_dir_raw = f"../data/raw/{filename}_20260205_093949"
+    
+    # input and output data for this notebook
+    input_file = filename + ".json"
+    output_file = filename +  "_clean"  + ".csv"
+
+    # Process the raw data and save the cleaned data to the interim directory
+    process_raw_data(input_file, output_file, out_dir_interim, out_dir_raw)
 
 
 # + tags=["parameters"]
@@ -49,28 +75,23 @@ from src.data.cleaning import process_raw_data
 filename = None
 out_dir_interim = None
 out_dir_raw = None
+run_mode = "interactive"
 
 # +
-#assert filename is not None, "filename was not passed!"
-#assert out_dir_interim is not None, "out_dir_interim missing"
-#assert out_dir_raw is not None, "out_dir_raw missing"
-# -
+# to check if a notebook is being run via papermill or directly in Jupyter, 
+# we can check for the presence of the "PAPERMILL_EXECUTION" environment variable, 
+# which is set by papermill when it executes a notebook. If this variable is present, 
+# it means the notebook is being run via papermill; otherwise, it's being run directly in Jupyter.
 
-# This is when you run notebook alone, give the parameters manually
+try:
+    run_mode
+except NameError:
+    run_mode = "interactive"
 
-# ici ajouter le filename pour exécution du notebook hors pipeline
-filename = "traces260105"
+if run_mode == "pipeline":
+    print("Running via Pipeline (papermill)")
+    execute_by_pipeline(filename, out_dir_interim, out_dir_raw)
+else:
+    print("Running directly in Jupyter")
+    execute_manually()
 
-# input and output data for this notebook
-out_dir_interim = "../data/interim/traces260105_20260205_093949"
-out_dir_raw = "../data/raw/traces260105_20260205_093949"
-
-# Fin des modifs à faire liées à l'exécution autonome / pipeline.
-
-
-input_file = filename + ".json"
-output_file = filename +  "_clean"  + ".csv"
-
-# +
-
-process_raw_data(input_file, output_file, out_dir_interim, out_dir_raw)
