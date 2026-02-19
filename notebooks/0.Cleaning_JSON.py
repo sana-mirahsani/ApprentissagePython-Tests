@@ -49,21 +49,23 @@ from src.data.cleaning import process_raw_data
 filename = None
 out_dir_interim = None
 out_dir_raw = None
-
-# +
-#assert filename is not None, "filename was not passed!"
-#assert out_dir_interim is not None, "out_dir_interim missing"
-#assert out_dir_raw is not None, "out_dir_raw missing"
 # -
+
+assert filename is not None, "filename was not passed!"
+assert out_dir_interim is not None, "out_dir_interim missing"
+assert out_dir_raw is not None, "out_dir_raw missing"
 
 # This is when you run notebook alone, give the parameters manually
 
+# +
 # ici ajouter le filename pour exécution du notebook hors pipeline
-filename = "traces260105"
+#filename = "traces260105"
 
+# +
 # input and output data for this notebook
-out_dir_interim = "../data/interim/traces260105_20260205_093949"
-out_dir_raw = "../data/raw/traces260105_20260205_093949"
+#out_dir_interim = "../data/interim/traces260105_20260205_093949"
+#out_dir_raw = "../data/raw/traces260105_20260205_093949"
+# -
 
 # Fin des modifs à faire liées à l'exécution autonome / pipeline.
 
