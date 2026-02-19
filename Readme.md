@@ -59,12 +59,14 @@ project-root/
 
 - Go to folder : **notebooks**
 
-- Run **7.run_all_cleaning.py** and give the name of the raw data.json wichi must be in data/raw directory.
+- Run **7.run_all_cleaning.py** and give the name of the raw data.json which must be in data/raw directory.
 
-- This file creates a pipleline to execute all notebooks (from number 0 to 4) for cleaning phase. This pipeline gets the raw data in json and gives 
-a cleaned df for actors and filenames in CSV.
+- This file creates a pipeline to execute all notebooks (from number 0 to 4) for cleaning phase. This pipeline gets the raw data in json and gives 
+a cleaned df for actors and filenames in CSV in data/interim/filename.
 
-- in Every execution of a notebook the output is saved as csv file and it is passed to the next notebook as the input.
+- In Every execution of a notebook the output is saved as csv file and it is passed to the next notebook as the input.
+
+- Add meta data tag:parameters the second cell in notebook
 
 ## Where are these csv files saved?
 
@@ -189,3 +191,15 @@ For next appoinment :
 - How can we save the result of each cell of each notebook for using different data of each year : yes and Done
 
 ### Thursday 05/02
+- add mode of execution : 1. pipeline 2. maneulment
+- add special function for each filename , for the part of jokers and cleaning manual in notebook 1.cleaning_actors.ipynb
+
+- add special function for docstring generate in 2.cleaning_phase1, special function for each year because we already have filename for docstring generate for this year but not for the last year BUT they are not correct
+
+- add how to make metdata in notebook, in readme
+
+- add function for choosing the correct src/data/variable_constant for each year since it changes for each year.
+
+- add how can we run a notebook alone 
+
+- add semaine 1 for cleaning in phase2 becaus ein this year we had data and it is important, so another special function.

@@ -6,25 +6,23 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.19.1
 #   kernelspec:
-#     display_name: venv_jupyter_l1test
+#     display_name: PFE
 #     language: python
-#     name: venv_jupyter_l1test
+#     name: python3
 # ---
 
 # %% [markdown]
 # # Preparation Workflow Overview:
 # 1. Import Libraries
-# 2. Load DataFrame : traces250102_clean.csv
+# 2. Load DataFrame : filename_clean.csv
 # 3. Clean DataFrame
 #     <br>
 #     3.1 Convert Time Format
 #     <br>
 #     3.2 Clean **Actor** Field
-# 4. Save new DataFrame : acteur_nettoyage_2425.csv
-#
-#
+# 4. Save new DataFrame : filename_actor_clean.csv
 # ____________________________________________
 # **Explanation** 
 #
@@ -36,12 +34,35 @@
 # %%
 import sys
 sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
+import importlib
 
 from src.features import io_utils, data_cleaning
 from src.data.constants import INTERIM_DATA_DIR
+path_valid_students = "../data/logins_L1_2526.txt"
 
-# %% [markdown]
-# Si on execute ce notebook via le pipeline, décommenter ci-dessous
+# reload the modules to make sure we have the latest version of the code
+importlib.reload(io_utils)
+importlib.reload(data_cleaning)
+
+
+# %%
+def execute_by_pipeline(filename, out_dir_interim, out_dir_raw):
+    # check if the parameters are passed correctly
+    assert filename is not None, "filename was not passed!"
+    assert out_dir_interim is not None, "out_dir_interim missing"
+    assert out_dir_raw is not None, "out_dir_raw missing"
+
+    return filename, out_dir_interim, out_dir_raw
+
+
+# %%
+def execute_manually():
+    # Define the path to the raw data file and the output directories (you can change them whatever you want)
+    filename = "traces260105" # change this to the name of the file you want to process (without the .json extension)
+    out_dir_interim = f"../data/interim/{filename}_20260205_093949"
+    
+    return filename, out_dir_interim
+
 
 # %% tags=["parameters"]
 {
@@ -53,22 +74,25 @@ from src.data.constants import INTERIM_DATA_DIR
 filename = None
 out_dir_interim = None
 out_dir_raw = None
+run_mode = "interactive"
 
 # %%
-assert filename is not None, "filename was not passed!"
-assert out_dir_interim is not None, "out_dir_interim missing"
-assert out_dir_raw is not None, "out_dir_raw missing"
+# to check if a notebook is being run via papermill or directly in Jupyter, 
+# we can check for the presence of the "PAPERMILL_EXECUTION" environment variable, 
+# which is set by papermill when it executes a notebook. If this variable is present, 
+# it means the notebook is being run via papermill; otherwise, it's being run directly in Jupyter.
 
-# %% [markdown]
-# This is when you run notebook alone, give the parameters manually
+try:
+    run_mode
+except NameError:
+    run_mode = "interactive"
 
-# %%
-# ici ajouter le filename pour exécution du notebook hors pipeline
-#filename = "traces260105"
-
-# %%
-# input and output data for this notebook
-#out_dir_interim = "../data/interim/traces260105_20260205_093949/"
+if run_mode == "pipeline":
+    print("Running via Pipeline (papermill)")
+    filename, out_dir_interim, _ = execute_by_pipeline(filename, out_dir_interim, out_dir_raw)
+else:
+    print("Running directly in Jupyter")
+    filename, out_dir_interim = execute_manually()
 
 # %% [markdown]
 # Fin des modifs à faire liées à l'exécution autonome / pipeline.
@@ -84,6 +108,7 @@ input_file
 output_file
 
 # %%
+out_dir_interim
 
 # %% [markdown]
 # ## 2.Load DataFrame
@@ -137,14 +162,10 @@ df_clean[['session.id', 'timestamp.$date', 'time_delta', 'session.duration']]
 # Process: 
 # 1. Split actor and binome into 2 columns -> **df_clean = split_actor_binome()**
 # 2. Delete emails at the end -> **df_clean = delete_end_email()**
-# 3. Extract all the non matching name of actor with prenom.nom.etu -> **incorrect = not_a_correct_identifier()**
-# 4. Delete all rows of nebut -> **df_clean = delete_actor_lines()** 
-# 5. Remove actors or binomes name -> **df_clean = delete_name_actor_binome()**
-# 6. Replace joker -> **df_clean = replace_jokers()**
-# 7. Cleaning manually -> **df_clean = cleaning_manual_actors_2425()**
+# 3. Find and correct invalid names
 
 # %% [markdown]
-# #### 1. Split actor and binome into 2 columns (This part delete '/')
+# #### 1. Split actor and binome into 2 columns (remove '/' and same for each year)
 
 # %%
 # Before 
@@ -175,7 +196,7 @@ print("Successful!") if total_slash_actor == 0 and total_slash_binome == 0 else 
 df_clean['actor']
 
 # %% [markdown]
-# #### 2. Delete the email at the end
+# #### 2. Delete the email at the end (same for each year)
 
 # %%
 # Before (check actor and binom)
@@ -198,120 +219,75 @@ print(f"Total number of rows include @ in actor: {total_email_actor}")
 print("Successful!") if total_email_actor == 0 else print("Error!") 
 
 # %% [markdown]
-# #### 3. Extract all the non matching name of actor with prenom.nom.etu
+# #### 3. Find and correct invalid names (Depends on the year)
 
 # %%
-incorrect_actor  = data_cleaning.not_a_correct_identifier(df_clean,'actor')
-incorrect_binome = data_cleaning.not_a_correct_identifier(df_clean,'binome')
+if filename == "traces260105":
+    
+    incorrect_actor  = data_cleaning.check_invalid_identifier_by_login_file(df_clean,'actor', path_valid_students)
+    incorrect_binome = data_cleaning.check_invalid_identifier_by_login_file(df_clean,'binome', path_valid_students)
+    print(f"Total number of incorrect actors 2526: {len(incorrect_actor)}")
+    print(f"Total number of incorrect binomes 2526: {len(incorrect_binome)}")
 
-incorrect_actor, incorrect_binome
+    # remove mirabell.nebut
+    df_clean = data_cleaning.delete_actor_lines(df_clean, incorrect_actor[0])
+    
+    # replace 'tele-djidjoe-flora.da-sylveira.etu' by 'flora.sylveira.etu'
+    jokers_real_name = {
+    'tele-djidjoe-flora.da-sylveira.etu': 'flora.sylveira.etu'
+    }
+    
+    def_clean = data_cleaning.replace_jokers(df_clean, ['actor'], jokers_real_name)
 
-# %% [markdown]
-# #### 4. Delete all rows of nebut
+    # check again
+    incorrect_actor  = data_cleaning.check_invalid_identifier_by_login_file(df_clean,'actor', path_valid_students)
+    incorrect_binome = data_cleaning.check_invalid_identifier_by_login_file(df_clean,'binome', path_valid_students)
+    
+    if len(incorrect_actor) == 0 and len(incorrect_binome) == 0:
+        print("Removing invalid actors and binomes completed!")
+    else:
+        raise ValueError("There are still incorrect actors or binomes. Please check the lists of incorrect actors and binomes and clean them manually.")
+    
+elif filename == "traces250105":
+    incorrect_actor  = data_cleaning.check_invalid_identifier_by_pattern(df_clean,'actor')
+    incorrect_binome = data_cleaning.check_invalid_identifier_by_pattern(df_clean,'binome')
+    print(incorrect_actor, incorrect_binome)
+    print(f"Total number of incorrect actors 2425: {len(incorrect_actor)}")
+    print(f"Total number of incorrect binomes 2425: {len(incorrect_binome)}")
 
-# %%
-# Before
-total = (df_clean['actor'] == 'nebut').sum()
-print(f"total occurance of nebut : {total}") 
+    # remove mirabell.nebut
+    df_clean = data_cleaning.delete_actor_lines(df_clean, "nebut")
 
-# %%
-# Apply
-df_clean = data_cleaning.delete_actor_lines(df_clean, "nebut")
+    # replace binom=luc by empty string
+    df_clean = data_cleaning.delete_name_actor_binome(df_clean, 'binome', 'luc')
 
-# %%
-# After
-total = (df_clean['actor'] == 'nebut').sum()
-print(f"total occurance of nebut : {total}") 
-print("Successful!") if total == 0 else print("Error!") 
-
-# %% [markdown]
-# #### 5. Remove actors or binomes name ( just replace them by '' in binome column)
-
-# %%
-# Before in binome
-total = (df_clean['binome'] == 'luc').sum()
-print(f"total occurance : {total} ")
-
-# %%
-# Apply
-df_clean = data_cleaning.delete_name_actor_binome(df_clean, 'binome', 'luc')
-
-# %%
-# After 
-total = (df_clean['binome'] == 'luc').sum()
-print(f"Total occurance of : {total}")
-print("Successful!") if total == 0 else print("Error!") 
-
-# %% [markdown]
-# #### 6. Replace joker
-
-# %% [markdown]
-# Add the number total of matching marie is equal to the total occurance of two jokers
-
-# %%
-# Before
-total_joker1 = (df_clean['binome'] == 'MI1304').sum()
-total_joker2 = (df_clean['binome'] == 'MI1301').sum()
-
-total = total_joker1 + total_joker2
-
-print(f"Total occurance of joker 1 : {total_joker1}")
-print(f"Total occurance of joker 2 : {total_joker2}")
-
-# %%
-# Apply
-jokers_real_name = {
+    # replace jokers by real names
+    jokers_real_name = {
     'MI1304': 'mariama-sere.sylla.etu',
     'MI1301': 'mariama-sere.sylla.etu'
-}
-df_clean = data_cleaning.replace_jokers(df_clean, ['actor','binome'],jokers_real_name)
+    }
+    df_clean = data_cleaning.replace_jokers(df_clean, ['actor','binome'],jokers_real_name)
+
+    # cleaning manually, you can modify this function
+    df_clean = data_cleaning.cleaning_manual_actors_2425(df_clean, 'anis.younes.etu')
+
+    # check again
+    incorrect_actor  = data_cleaning.check_invalid_identifier_by_pattern(df_clean,'actor')
+    incorrect_binome = data_cleaning.check_invalid_identifier_by_pattern(df_clean,'binome')
+
+    print(f"Total number of incorrect actors 2425: {len(incorrect_actor)}")
+    print(f"Total number of incorrect binomes 2425: {len(incorrect_binome)}")
+
+    if len(incorrect_actor) == 0 and len(incorrect_binome) == 0:
+        print("Removing invalid actors and binomes completed!")
+    else:
+        raise ValueError("There are still incorrect actors or binomes. Please check the lists of incorrect actors and binomes and clean them manually.")
 
 # %%
-# After
-total_joker1 = (df_clean['binome'] == 'MI1304').sum()
-total_joker2 = (df_clean['binome'] == 'MI1301').sum()
-total_new_name = (df_clean['binome'] == 'mariama-sere.sylla.etu').sum()
-
-print(f"Total occurance of joker 1 : {total_joker1}")
-print(f"Total occurance of joker 2 : {total_joker2}")
-
-print("Successful!") if total_joker1 == 0 and total_joker1 == 0 and total_new_name == total else print("Error!") 
-
-# %% [markdown]
-# #### 7. Cleaning manually
-
-# %%
-# Before
-total = (df_clean['actor'] == 'anis.younes.etu').sum()
-
-print(f"Total occurance : {total}")
-
-# %%
-# Apply
-df_clean = data_cleaning.cleaning_manual_actors_2425(df_clean, 'anis.younes.etu')
-
-# %%
-# After
-total = (df_clean['actor'] == 'anis.younes.etu').sum()
-print(f"Total occurance : {total}")
-
-print("Successful!") if total == 0 else print("Error!") 
-
-# %% [markdown]
-# #### Retry Test for invalid actor or binome
-
-# %%
-incorrect_actor  = data_cleaning.not_a_correct_identifier(df_clean,'actor')
-incorrect_binome = data_cleaning.not_a_correct_identifier(df_clean,'binome')
-
-print(len(incorrect_actor),len(incorrect_binome))
-
-print("Cleaning actor successful!") if len(incorrect_actor) == 0 and len(incorrect_binome) == 0 else print("Error!") 
+df_clean[df_clean['binome'] == '']
 
 # %% [markdown]
 # ## 4.Save new dataframe
 
 # %%
 io_utils.write_csv(df_clean,out_dir_interim, output_file) 
-
-# %%

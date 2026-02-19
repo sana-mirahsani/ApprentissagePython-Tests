@@ -1,4 +1,4 @@
-# All function which are called directly or inside another function for cleaning data
+# All functions which are called directly or inside another function for cleaning data
 """
 Explanation:
 This file contains all functions for cleaning data.
@@ -17,6 +17,7 @@ sys.path.append('../')
 from pandas import to_datetime, to_timedelta
 import re
 import difflib
+import ast
 from src.data.variable_constant_2425 import pattern_files_name , all_TP_functions_name_except_TP1_and_TPGAME
 
 #------------------------------------------------
@@ -55,8 +56,7 @@ def clean_time(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 # ---------------- part 2: Actor cleaning -------------
-# Find not matching values : called directly
-def not_a_correct_identifier(df: pd.DataFrame, column : str) -> list:
+def check_invalid_identifier_by_pattern(df: pd.DataFrame, column : str) -> list:
 
     """
     Find the names of actor that doesn't match the pattern prenom.nom.etu
@@ -81,6 +81,33 @@ def not_a_correct_identifier(df: pd.DataFrame, column : str) -> list:
     invalid_actors = invalid_actors[~invalid_actors.str.fullmatch(pattern)]
 
     return invalid_actors
+
+def check_invalid_identifier_by_login_file(df: pd.DataFrame, column : str, path:str) -> list:
+    """
+    Find the names of actor that are not in the login.txt
+
+    Args:
+        df : The dataframe.
+        column : A column can be actor or binome (any column to check with format).
+        path : path of the login.txt
+
+    Returns:
+        diff: A list of invalid names for that year.
+    """
+    
+    #extract unique actors as list
+    unique_actors = df[column].dropna().unique().tolist()
+    
+    with open(path, "r", encoding="utf-8") as f:
+        content = f.read().strip() # read txt file in str
+        names = ast.literal_eval(content) # extract names as list
+
+        # find invalid students name, those not in the names
+        diff = [x for x in unique_actors if x not in names]
+
+        diff_wtihout_empty_strings = [x for x in diff if x != '']
+
+    return diff_wtihout_empty_strings
 
 # Remove @ from the end : called directly
 def delete_end_email(df: pd.DataFrame) -> pd.DataFrame:
@@ -244,19 +271,19 @@ def extract_short_filename_from_commandRan_Run_Program(commandRan_Run_Program: p
     return cleaned
 
 # Fill empty values by P_codeState : called directly
-def extract_short_filename_from_P_codestate_Run_Program(codestate_Run_Program: str) -> str:
+def extract_short_filename_from_P_codestate(codestate: str) -> str:
     '''
-    Get a Dataframe and fill filename column of Run.Program by
+    Get a Dataframe and fill filename column of a verb by
     cleaned commandRan column.
 
     Args:
-        codestate_Run_Program : The value of codestate for Runprogram.
+        codestate : The value of codestate for Runprogram.
 
     Returns:
-        codestate_Run_Program: Clean codestate_Run_Program just with the name of function.
+        codestate: Clean codestate just with the name of function.
     '''
     
-    match = re.search(r"<trace>(.*?)</trace>", str(codestate_Run_Program))
+    match = re.search(r"<trace>(.*?)</trace>", str(codestate))
     return match.group(1) if match else ''
     
 # Fill empty values of filename with clean commandRan column : called directly
