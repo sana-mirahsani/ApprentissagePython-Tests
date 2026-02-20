@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.19.1
+#       jupytext_version: 1.17.2
 #   kernelspec:
-#     display_name: PFE
+#     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
@@ -195,6 +195,9 @@ print("Successful!") if total_slash_actor == 0 and total_slash_binome == 0 else 
 # %%
 df_clean['actor']
 
+# %%
+df_clean[df_clean['actor'].str.contains('@')]['actor'].unique()
+
 # %% [markdown]
 # #### 2. Delete the email at the end (same for each year)
 
@@ -228,6 +231,9 @@ if filename == "traces260105":
     incorrect_binome = data_cleaning.check_invalid_identifier_by_login_file(df_clean,'binome', path_valid_students)
     print(f"Total number of incorrect actors 2526: {len(incorrect_actor)}")
     print(f"Total number of incorrect binomes 2526: {len(incorrect_binome)}")
+
+    print(f"Incorrect actors 2526:{incorrect_actor}")
+    print(f"Incorrect binome 2526:{incorrect_binome}")
 
     # remove mirabell.nebut
     df_clean = data_cleaning.delete_actor_lines(df_clean, incorrect_actor[0])
