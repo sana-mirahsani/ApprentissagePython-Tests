@@ -19,7 +19,7 @@ from pandas import to_datetime, to_timedelta
 import re
 import difflib
 import ast
-from src.features.verify_function import check_P_codestate_and_commandRan
+from src.features.data_testing import check_P_codestate_and_commandRan
 from src.data.variable_constant_2425 import pattern_files_name , all_TP_functions_name_except_TP1_and_TPGAME
 
 #------------------------------------------------

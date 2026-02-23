@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.19.1
 #   kernelspec:
-#     display_name: Python 3 (ipykernel)
+#     display_name: PFE
 #     language: python
 #     name: python3
 # ---
@@ -36,33 +36,14 @@ import sys
 sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
 import importlib
 
-from src.features import io_utils, data_cleaning
-from src.data.constants import INTERIM_DATA_DIR
+from src.features import io_utils, data_cleaning, pipeline_utils
+#from src.data.constants import INTERIM_DATA_DIR
 path_valid_students = "../data/logins_L1_2526.txt"
 
 # reload the modules to make sure we have the latest version of the code
 importlib.reload(io_utils)
 importlib.reload(data_cleaning)
-
-
-# %%
-def execute_by_pipeline(filename, out_dir_interim, out_dir_raw):
-    # check if the parameters are passed correctly
-    assert filename is not None, "filename was not passed!"
-    assert out_dir_interim is not None, "out_dir_interim missing"
-    assert out_dir_raw is not None, "out_dir_raw missing"
-
-    return filename, out_dir_interim, out_dir_raw
-
-
-# %%
-def execute_manually():
-    # Define the path to the raw data file and the output directories (you can change them whatever you want)
-    filename = "traces260105" # change this to the name of the file you want to process (without the .json extension)
-    out_dir_interim = f"../data/interim/{filename}_20260205_093949"
-    
-    return filename, out_dir_interim
-
+importlib.reload(pipeline_utils)
 
 # %% tags=["parameters"]
 {
@@ -89,10 +70,14 @@ except NameError:
 
 if run_mode == "pipeline":
     print("Running via Pipeline (papermill)")
-    filename, out_dir_interim, _ = execute_by_pipeline(filename, out_dir_interim, out_dir_raw)
+    filename, out_dir_interim, _ = pipeline_utils.execute_by_pipeline(filename, out_dir_interim, out_dir_raw)
 else:
     print("Running directly in Jupyter")
-    filename, out_dir_interim = execute_manually()
+    filename = "traces260105" # change this to the name of the file you want to process (without the .json extension)
+    out_dir_interim = f"../data/interim/{filename}_20260205_093949"
+    out_dir_raw = f"../data/raw/{filename}_20260205_093949"
+    filename, out_dir_interim, _ = pipeline_utils.execute_manually(filename, out_dir_interim, out_dir_raw)
+    
 
 # %% [markdown]
 # Fin des modifs à faire liées à l'exécution autonome / pipeline.
@@ -100,15 +85,6 @@ else:
 # %%
 input_file = filename + "_clean" + ".csv"
 output_file = filename + "_actor_clean" + ".csv"
-
-# %%
-input_file
-
-# %%
-output_file
-
-# %%
-out_dir_interim
 
 # %% [markdown]
 # ## 2.Load DataFrame
@@ -195,9 +171,6 @@ print("Successful!") if total_slash_actor == 0 and total_slash_binome == 0 else 
 # %%
 df_clean['actor']
 
-# %%
-df_clean[df_clean['actor'].str.contains('@')]['actor'].unique()
-
 # %% [markdown]
 # #### 2. Delete the email at the end (same for each year)
 
@@ -231,9 +204,6 @@ if filename == "traces260105":
     incorrect_binome = data_cleaning.check_invalid_identifier_by_login_file(df_clean,'binome', path_valid_students)
     print(f"Total number of incorrect actors 2526: {len(incorrect_actor)}")
     print(f"Total number of incorrect binomes 2526: {len(incorrect_binome)}")
-
-    print(f"Incorrect actors 2526:{incorrect_actor}")
-    print(f"Incorrect binome 2526:{incorrect_binome}")
 
     # remove mirabell.nebut
     df_clean = data_cleaning.delete_actor_lines(df_clean, incorrect_actor[0])

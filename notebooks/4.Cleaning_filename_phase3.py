@@ -8,7 +8,7 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.19.1
 #   kernelspec:
-#     display_name: Python 3 (ipykernel)
+#     display_name: PFE
 #     language: python
 #     name: python3
 # ---
@@ -24,17 +24,21 @@
 # ## 1.Import Libraries
 
 # %%
+import sys
+sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import difflib
 import re
+import importlib
 
-import sys
-sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
-
-from src.features import io_utils, data_cleaning
+from src.features import io_utils, data_cleaning, pipeline_utils
 from src.data.constants import INTERIM_DATA_DIR
-from src.data.variable_constant_2425 import TP_NAME, all_TP_functions_name_except_TP1_and_TPGAME , pattern_files_name
+
+importlib.reload(io_utils)
+importlib.reload(data_cleaning)
+importlib.reload(pipeline_utils)
 
 # %% tags=["parameters"]
 {
@@ -46,25 +50,32 @@ from src.data.variable_constant_2425 import TP_NAME, all_TP_functions_name_excep
 filename = None
 out_dir_interim = None
 out_dir_raw = None
-
-# %% [markdown]
-# Si on execute ce notebook via le pipeline, décommenter ci-dessous
+run_mode = "interactive"
 
 # %%
-assert filename is not None, "filename was not passed!"
-assert out_dir_interim is not None, "out_dir_interim missing"
-assert out_dir_raw is not None, "out_dir_raw missing"
+try:
+    run_mode
+except NameError:
+    run_mode = "interactive"
 
-# %% [markdown]
-# This is when you run notebook alone, give the parameters manually
+if run_mode == "pipeline":
+    print("Running via Pipeline (papermill)")
+    filename, out_dir_interim, _ = pipeline_utils.execute_by_pipeline(filename, out_dir_interim, out_dir_raw)
+else:
+    print("Running directly in Jupyter")
+    filename = "traces260105"
+    out_dir_interim = f"../data/interim/{filename}_20260205_093949"
+    out_dir_raw = f"../data/raw/{filename}_20260205_093949"
 
-# %%
-# ici ajouter le filename pour exécution du notebook hors pipeline, sinon commenter
-#filename = "traces260105"
+    filename, out_dir_interim, _ = pipeline_utils.execute_manually(filename, out_dir_interim, out_dir_raw)
 
-# %%
-# input and output data for this notebook, commenter
-#out_dir_interim = "../data/interim/traces260105_20260205_093949/"
+match filename:
+    case "traces250102":
+        from src.data.variable_constant_2425 import all_TP_functions_name_except_TP1_and_TPGAME, pattern_files_name, TP_NAME
+        
+    case "traces260105":
+        from src.data.variable_constant_2526 import all_TP_functions_name_except_TP1_and_TPGAME, pattern_files_name, TP_NAME
+       
 
 # %% [markdown]
 # Fin des modifs à faire liées à l'exécution autonome / pipeline.

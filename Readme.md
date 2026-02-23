@@ -111,6 +111,24 @@ Cleaning is in two main parts : 1- Cleaning actors 2- Cleaning filenames
 
     - phase 2 : it checks the found filename_infere and correct them or delete them if needed (it is done by validate_process function), and then it tries to fill the empty filename_infere by sandwich function.
 
+## What are the modes of executing?
+For cleaning phase, there are two modes : 1. By Pipeline 2. Manaully
+
+To run by pipeline, you should have parameters tag in the metadata but manually you can run the notebook independtly and directly without any meta data.
+
+## How to add the metadata to run by pipeline?
+
+You need to add the text below in the cell where the parameters are written like filename.
+
+```
+{
+    "tags": [
+        "parameters"
+    ]
+}
+```
+
+
 ## What is the result folder? what does it include?
 With pipeline in 7.run_all_cleaning.py, we can have several run for one data or even with different data, 
 since we want to save the output of each cell of a notebook in cleaning part, after the execution all notebook with it's output is save in JSON format, 
@@ -178,35 +196,35 @@ jupytext --set-formats ipynb,py:percent 2.Cleaning_filename_phase1.ipynb
 ### Friday 30/01
 - what did I do in the nettoyage. how all those numbers are deleted.
 - trace_clean the first CSV from Thomas work: 
-look at his work to what to do about and add the phase zero before cleaning the actor column. check how much time does it take?
+look at his work to what to do about and add the phase zero before cleaning the actor column. check how much time does it take? Done
 - Fnish the part not finish in analyse : 
 
 First look at the thomas code for the new data : Done!
 
-For next appoinment :
+### For next appoinment : Remains only 1
 --------
 - Use the part of Mirbelle of research_usage ( not for now)
-- In cleaning actor add a function to extract all the actors name that are same or included in the list of student which mirabel gave it in data.
+- In cleaning actor add a function to extract all the actors name that are same or included in the list of student which mirabel gave it in data : Done
 - Add a folder for each data of each year : Done
 - How can we save the result of each cell of each notebook for using different data of each year : yes and Done
 
-### Thursday 05/02
+### Thursday 05/02 : Done
 - add mode of execution : 1. pipeline 2. maneulment : Done
 - add special function for each filename , for the part of jokers and cleaning manual in notebook 1.cleaning_actors.ipynb : Done
 
-- add special function for docstring generate in 2.cleaning_phase1, special function for each year because we already have filename for docstring generate for this year but not for the last year BUT they are not correct
+- add special function for docstring generate in 2.cleaning_phase1, special function for each year because we already have filename for docstring generate for this year but not for the last year BUT they are not correct : Done
 
-- add how to make metdata in notebook, in readme
+- add how to make metdata in notebook, in readme : Done
 
-- add function for choosing the correct src/data/variable_constant for each year since it changes for each year.
+- add function for choosing the correct src/data/variable_constant for each year since it changes for each year : Done
 
-- add how can we run a notebook alone 
+- add how can we run a notebook alone in Readme : Done
 
-- add semaine 1 for cleaning in phase2 becaus ein this year we had data and it is important, so another special function.
+- add semaine 1 for cleaning in phase2 becaus ein this year we had data and it is important, so another special function : Done
 
-- Friday:
-In 0.cleaning_Json , put the the two functions in a src/features and then pass the inputs and outputs to the main function.
+### Friday: Remain only 1
+In 0.cleaning_Json , put the the two functions in a src/features and then pass the inputs and outputs to the main function : Done
 
 Add Selected_lineno, Lineno in Thomas code to convert them as the column.
 
-chnage the name of test_function.py to verification_functions.py
+chnage the name of test_function.py to verification_functions.py : done
