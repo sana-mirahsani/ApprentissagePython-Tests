@@ -11,13 +11,15 @@ Hope it helps you :)
 #------------------------------------------------
 #                  Library
 #------------------------------------------------
-import pandas as pd 
 import sys
 sys.path.append('../')
+
+import pandas as pd 
 from pandas import to_datetime, to_timedelta
 import re
 import difflib
 import ast
+from src.features.verify_function import check_P_codestate_and_commandRan
 from src.data.variable_constant_2425 import pattern_files_name , all_TP_functions_name_except_TP1_and_TPGAME
 
 #------------------------------------------------
@@ -247,7 +249,7 @@ def extract_short_filename(series: pd.Series) -> pd.Series:
     return series.str.split('/').str[-1]
 
 # Fill empty values of filename with clean commandRan column : called directly
-def extract_short_filename_from_commandRan_Run_Program(commandRan_Run_Program: pd.Series) -> pd.Series:
+def extract_short_filename_from_commandRan_Run_Program(commandRan_Run_Program: str) -> str:
     '''
     Get a Dataframe and fill filename column of Run.Program by
     cleaned commandRan column.
@@ -259,16 +261,24 @@ def extract_short_filename_from_commandRan_Run_Program(commandRan_Run_Program: p
         clean: The same column but clean.
     '''
 
+    # Safety check (important in pipelines)
+    if not isinstance(commandRan_Run_Program, str):
+            raise TypeError("commandRan_Run_Program must be a string")
+        
     # Replace $EDITOR_CONTENT by ''
-    cleaned = commandRan_Run_Program.str.replace('%Run -c $EDITOR_CONTENT\n', '', regex=False)
-    
-    # Remove %Run from the beginning
-    cleaned = cleaned.str.replace('^%Run ', '', regex=True).str.rstrip()
-    
-    # Remove \n from the end
-    cleaned = cleaned.str.replace('\n', '', regex=False)
+    commandRan_Run_Program = commandRan_Run_Program.replace('%Run -c $EDITOR_CONTENT\n', '')
 
-    return cleaned
+    # Remove %Run from the beginning
+    if commandRan_Run_Program.startswith('%Run '):
+            commandRan_Run_Program = re.sub(r'^%Run ', '', commandRan_Run_Program)
+
+    # Remove trailing whitespace  
+    commandRan_Run_Program = commandRan_Run_Program.rstrip()
+
+    # Remove \n from the end
+    commandRan_Run_Program = commandRan_Run_Program.replace('\n', '')
+
+    return commandRan_Run_Program
 
 # Fill empty values by P_codeState : called directly
 def extract_short_filename_from_P_codestate(codestate: str) -> str:
@@ -287,7 +297,7 @@ def extract_short_filename_from_P_codestate(codestate: str) -> str:
     return match.group(1) if match else ''
     
 # Fill empty values of filename with clean commandRan column : called directly
-def extract_short_filename_from_commandRan_Run_Debugger(commandRan_Run_Debugger: pd.Series) -> pd.Series:
+def extract_short_filename_from_commandRan_Run_Debugger(commandRan_Run_Debugger: str) -> str:
     '''
     Get a Dataframe and fill filename column of Run.Debugger by
     cleaned commandRan column.
@@ -298,29 +308,53 @@ def extract_short_filename_from_commandRan_Run_Debugger(commandRan_Run_Debugger:
     Returns:
         clean: The same column but clean.
     '''
-
+    # Safety check (important in pipelines)
+    if not isinstance(commandRan_Run_Debugger, str):
+            raise TypeError("commandRan_Run_Debugger must be a string")
+        
     # Remove %Debug from the beginning
-    cleaned = commandRan_Run_Debugger.str.replace('^%Debug ', '', regex=True).str.rstrip()
+    if commandRan_Run_Debugger.startswith('%Debug '):
+            commandRan_Run_Debugger = re.sub(r'^%Debug ', '', commandRan_Run_Debugger)
+
+    # Remove trailing whitespace
+    commandRan_Run_Debugger = commandRan_Run_Debugger.rstrip()
         
     # Remove \n from the end
-    cleaned = cleaned.str.replace('\n', '', regex=False)
+    commandRan_Run_Debugger = commandRan_Run_Debugger.replace('\n', '')
 
-    return cleaned
+    return commandRan_Run_Debugger
 
 # Fill empty values of filename with clean commandRan column : called directly
-def extract_short_filename_from_commandRan_Run_Command(commandRan_Run_Command: pd.Series) -> pd.Series:
+def extract_short_filename_from_commandRan_Run_Command(command: str) -> str:
 
     """
-    Get a Dataframe and fill filename column of Run.Command by
-    cleaned commandRan column.
+    Clean a single Run.Command command string.
 
     Args:
-        commandRan_Run_Command : A column of dataframe.
+        command : A single string from commandRan column.
 
     Returns:
-        clean: The same column but clean.
+        Cleaned string.
     """
-    # Create a mask
+
+    # Safety check (important in pipelines)
+    if not isinstance(command, str):
+        raise TypeError("commandRan_Run_Command must be a string")
+
+    # Remove prefix if present
+    if command.startswith('%FastDebug '):
+        command = re.sub(r'^%FastDebug ', '', command)
+
+    # Remove trailing whitespace
+    command = command.rstrip()
+
+    # Remove newline characters
+    command = command.replace('\n', '')
+
+    return command
+
+    """# Create a mask
+    print(type(commandRan_Run_Command))
     mask = commandRan_Run_Command.str.startswith('%FastDebug ', na=False)
     
     # Apply cleaning only to matching rows
@@ -330,7 +364,7 @@ def extract_short_filename_from_commandRan_Run_Command(commandRan_Run_Command: p
         .str.replace('\n', '', regex=False)
     
     # Return a Series with only the cleaned values, aligned with original index
-    return cleaned
+    return cleaned"""
 
 # Function to add space before parantes in dictionary : called inside find_filename_by_commandRan
 def get_regexp_for_function_call(functions_name:dict) -> dict:
@@ -401,6 +435,83 @@ def find_filename_by_commandRan(all_TP_functions : dict, pattern_files_name: str
         #if filename_infere == '':
             #print("Filename not found!")
         return filename_infere
+
+# Fill filename_infere for a verb
+def fill_filename_infere_for_verb(df: pd.DataFrame, verb_name: str, values_for_verb: dict) -> pd.DataFrame:
+    """
+    It fills the empty values of filename_infere for a verb by P_codeState 
+    if it contains <trace>.*\.py</trace>, and if not it fills them by commandRan 
+    if it starts with %Debug or %NiceDebug or %FastDebug or %Run for ONLY empty filename_infere.
+
+    Args:
+    df : The dataframe.
+    verb_name : The name of the verb to fill filename_infere for it.
+    values_for_verb : A dictionary of values for the verb which we will use to check.
+
+    Returns:
+    df: The same dataframe but with filled filename_infere for the verb.
+    """
+    # first : fill by P_codeState if it contains <trace>.*\.py</trace>
+    if values_for_verb['total_non_empty_codestate'] > 0 and values_for_verb['total_codestate_contain_trace'] > 0:
+        mask = (df['verb'] == verb_name) & (df['filename_infere'] == '')
+        df.loc[mask, 'filename_infere'] = df.loc[mask, 'P_codeState'].map(extract_short_filename_from_P_codestate)
+        
+    # second : fill by commandRan if it starts with %Debug or %NiceDebug or %FastDebug or %Run for ONLY empty filename_infere
+    if values_for_verb['total_non_empty_commandRan'] > 0:
+        if verb_name == 'Run.Program':
+            mask = (df['verb'] == 'Run.Program') & (df['filename_infere'] == '') 
+            df.loc[mask, 'filename_infere'] = df.loc[mask, 'commandRan'].map(extract_short_filename_from_commandRan_Run_Program)
+        
+        elif verb_name == 'Run.Command':
+            mask = (df['verb'] == 'Run.Command') & (df['filename_infere'] == '')
+            df.loc[mask, 'filename_infere'] = df.loc[mask, 'commandRan'].map(extract_short_filename_from_commandRan_Run_Command)
+
+            df.loc[mask, 'filename_infere'] = df.loc[mask, 'commandRan'].apply(
+            lambda command: find_filename_by_commandRan(all_TP_functions_name_except_TP1_and_TPGAME, pattern_files_name, command)
+            )
+            
+        elif verb_name == 'Run.Debugger':
+            mask = (df['verb'] == 'Run.Debugger') & (df['filename_infere'] == '')
+            df.loc[mask, 'filename_infere'] = df.loc[mask, 'commandRan'].map(extract_short_filename_from_commandRan_Run_Debugger)
+        else:
+            raise ValueError(f"Unexpected verb name: {verb_name}. Expected 'Run.Program', 'Run.Command', or 'Run.Debugger'.")
+
+    return df
+
+# Make decision how to fill the filename_infere
+def desicion_function_to_fill_filename_infere(df: pd.DataFrame, verb_name: str, verb_name_value: int) -> pd.DataFrame:
+    """
+    It decides how to fill filename_infere for a verb, it has 3 cases:
+        1. If all filename_infere for the verb are filled, we will check their correctness later
+        2. If some filename_infere for the verb are empty, we will try to fill them by P_codeState and commandRan if they have non-empty codestate or non-empty commandRan respectively, and if they start with %Debug or %NiceDebug or %FastDebug or %Run.
+        3. The verb doesn't exist.
+
+    Args:
+        df : The dataframe.
+        verb_name : The name of the verb to fill filename_infere for it.
+        verb_name_value : The value of the verb's state in the dictionary passed by check_P_codestate_and_commandRan function.
+
+    Returns:
+        df: The same dataframe but with filled filename_infere for the verb if it is the case.
+
+    """
+
+    if verb_name_value == 0:
+        print(f"All filename_infere for {verb_name} are filled, we will check their correctness later in phase 2.")
+        return df
+    
+    elif verb_name_value == 1:
+        if verb_name == 'Session.Start' or verb_name == 'Session.End':
+            print('Verb is Session.Start or Session.End, we will not fill filename_infere for these verbs.')
+            return df
+        
+        else:
+            print(f"Some filename_infere for {verb_name} are empty, we will try to fill them by P_codeState and commandRan if they have non-empty codestate or non-empty commandRan respectively, and if they start with %Debug or %NiceDebug or %FastDebug or %Run.")
+            values_for_verb = check_P_codestate_and_commandRan(df, verb_name)
+            df = fill_filename_infere_for_verb(df, verb_name, values_for_verb)
+            return df
+    else:
+        raise ValueError(f"Unexpected verb_name_value: {verb_name_value}. Expected 0 or 1.")
 
 #------------------------------------------------------------
 #      Functions of 3.Cleaning_filename_phase3.ipynb

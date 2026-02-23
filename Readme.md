@@ -191,8 +191,8 @@ For next appoinment :
 - How can we save the result of each cell of each notebook for using different data of each year : yes and Done
 
 ### Thursday 05/02
-- add mode of execution : 1. pipeline 2. maneulment
-- add special function for each filename , for the part of jokers and cleaning manual in notebook 1.cleaning_actors.ipynb
+- add mode of execution : 1. pipeline 2. maneulment : Done
+- add special function for each filename , for the part of jokers and cleaning manual in notebook 1.cleaning_actors.ipynb : Done
 
 - add special function for docstring generate in 2.cleaning_phase1, special function for each year because we already have filename for docstring generate for this year but not for the last year BUT they are not correct
 
@@ -203,3 +203,10 @@ For next appoinment :
 - add how can we run a notebook alone 
 
 - add semaine 1 for cleaning in phase2 becaus ein this year we had data and it is important, so another special function.
+
+- Friday:
+In 0.cleaning_Json , put the the two functions in a src/features and then pass the inputs and outputs to the main function.
+
+Add Selected_lineno, Lineno in Thomas code to convert them as the column.
+
+chnage the name of test_function.py to verification_functions.py
