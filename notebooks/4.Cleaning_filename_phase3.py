@@ -14,11 +14,45 @@
 # ---
 
 # %% [markdown]
-# # Phase3 Workflow Overview:
+# ## Phase3 Workflow Overview:
 # 1. Import Libraries
-# 2. Load DataFrame : phase2_nettoyage_fichiere.csv 
+# 2. Load DataFrame : filename + "_filename_phase2_clean" + ".csv"
 # 3. Bizzar indices
-# 4. Save final dataframe
+# 4. Save final dataframe : filename + "_filename_phase3_clean" + ".csv"
+# 5. Analyse for year 2425
+#
+# _________________________________________________________
+# **Explanation** 
+# The goal of this notebook is to find and remove the bizzar indices from dataframe.
+#
+# #### What are these Bizzar indices?
+#
+# Some **filename_infere** entries are correct but don’t match the names in their **P_codeState**. This means the student renamed the file to a valid name, but it doesn’t match the original trace, and even the functions inside **P_codeState** show a different file name.
+# <br>
+#
+# In phase 2 of nettoyage, the system first checks if the name matches the expected pattern. If it does, it returns the name without checking the **P_codeState** content, which is faster than inspecting each row’s content. Therefore, it’s clear that these names didn’t get updated when they should have.
+#
+# #### Three situations of Bizzar indices:
+#
+# **Note :These traces are only for Run.Test and these are the number of traces , NOT number of the students**
+#
+# - filename_impossible_to_find_index : It has a filename_infere but can't find the filename by P_codestate to check them 
+# - filename_case1_index : The filename_infere it is not same as the name between <trace></trace> in P_codeState
+# - filename_case2_index : The filename_infere it is not same as the name found by the functions in P_codeState
+#
+# #### Why we have the Bizzar indices? Shouldn't they be corrected in phase1 or 2 of nettoyage?
+#
+# The issue comes from the structure of the correct_filename_infere_in_subset function in data_cleaning. The function first checks if filename_infere matches the expected pattern (which includes all file names). If it matches, it returns the filename_infere without checking P_codeState. This works for most cases, but if a filename_infere is correct yet doesn’t match the name in P_codeState, the algorithm fails.
+# <br>
+#
+# We could prioritize checking P_codeState, but that would be slow and unnecessary for traces that are already correct. Now that most of the data is cleaned, we can specifically check the filename_infere that don’t match P_codeState and fix them.
+#
+# #### What can we do about these Bizzar indices?
+#
+# The filename_infere found in case1 or case2 can be replaced with the name from either the trace or the function name in P_codeState. Since the P_codeState name is more reliable, we prefer to use it.
+# <br>
+#
+# For entries in filename_impossible_to_find_index, where we can’t find the name from either the functions or the traces, we can’t recover them. These entries are removed to ensure the analysis is correct.
 
 # %% [markdown]
 # ## 1.Import Libraries
@@ -29,12 +63,10 @@ sys.path.append('../') # these two lines allow the notebook to find the path to 
 
 import pandas as pd
 import matplotlib.pyplot as plt
-import difflib
-import re
+
 import importlib
 
 from src.features import io_utils, data_cleaning, pipeline_utils
-from src.data.constants import INTERIM_DATA_DIR
 
 importlib.reload(io_utils)
 importlib.reload(data_cleaning)
@@ -91,28 +123,124 @@ output_file = filename + "_filename_phase3_clean" + ".csv"
 # %%
 df = io_utils.reading_dataframe(dir= out_dir_interim, file_name=input_file)
 
-
 # %% [markdown]
 # ## 3.Bizzar indices
 
 # %% [markdown]
-# **What are these Bizzar indices?**
+# ### 3.1 Extract these strange indices
+
+# %%
+# Create Dataframe
+df_strange_filenames_Run_Test = pd.DataFrame(columns=['TP','filename_impossible_to_find_index', 'filename_case1','filename_case2']) 
+
+# Fill dataframe only for Run.Test for each TP
+for tp in TP_NAME:
+
+    df, impossible_filename, filename_case1, filename_case2 = data_cleaning.find_strange_filename_infere(df, tp,'Run.Test',
+                                                                                                         all_TP_functions_name_except_TP1_and_TPGAME ,
+                                                                                                         pattern_files_name)
+    
+    # Append row to a new df
+    df_strange_filenames_Run_Test = pd.concat([
+        df_strange_filenames_Run_Test,
+        pd.DataFrame({'TP': [tp], 'filename_impossible_to_find_index': [impossible_filename], 'filename_case1': [filename_case1], 'filename_case2': [filename_case2]})
+    ], ignore_index=True)
+
+df_strange_filenames_Run_Test
+
+# %% [markdown]
+# ### 3.2 Save bizzar indices into CSV
+
+# %%
+# save the removed trace into a csv
+io_utils.write_csv(df= df_strange_filenames_Run_Test, dir= out_dir_interim, file_name= 'bizzar_traces.csv')
+
+# %% [markdown]
+# ### 3.3 Calculate the percentage of bizzar indices before they are removed
+
+# %%
+# calculate the percentage of removing traces of each TP
+all_percentage_removed = [] # save later for the plot
+
+for tp in TP_NAME:
+
+    total_traces_of_tp = (df['TP'] == tp).sum()
+    total_traces_of_empty_filename = len(df_strange_filenames_Run_Test[df_strange_filenames_Run_Test['TP'] == tp]['filename_impossible_to_find_index'].iloc[0])
+    total_traces_of_filename_case1 = len(df_strange_filenames_Run_Test[df_strange_filenames_Run_Test['TP'] == tp]['filename_case1'].iloc[0])
+    total_traces_of_filename_case2 = len(df_strange_filenames_Run_Test[df_strange_filenames_Run_Test['TP'] == tp]['filename_case2'].iloc[0])
+
+    total_traces_to_remove = total_traces_of_empty_filename 
+
+    percentage_removed = (total_traces_to_remove / total_traces_of_tp) * 100
+    all_percentage_removed.append(percentage_removed)
+
+    print("---------------------------")
+    print(tp)
+    print(f"Total traces of empty_filename : {total_traces_of_empty_filename}")
+    print(f"Total traces of filename_case1 : {total_traces_of_filename_case1}")
+    print(f"Total traces of filename_case2 : {total_traces_of_filename_case2}")
+    print(f"Total traces to remove : {total_traces_to_remove}")
+    print(f"Total traces of TP : {total_traces_of_tp}")
+    print(f"{percentage_removed:.2f}% of the rows will be removed.")
+
+# %% [markdown]
+# ### 3.4 Plot the percentage of removing bizzar indices
 #
-# There are filename_infere that are correct but they are not as same as the name in their P_codeState; it means that the student changed the name of file into another name which is correct but not same as the name between traces or even when I look at the content of P_codeState, the functions shows another name of file. Since in phase2 nettoyage, it checks first if the name is in the pattern, if so return the name without checking the P_codeState (it's more efficase than checking the content of P_codeState for each row), so it is obvious these names didn't change eventhough they should have. These traces are in three situations:
+# The plot below shows the percentage of rows where filename_infere couldn’t be found in P_codeState and had to be removed for accurate analysis.
+
+# %%
+indices = TP_NAME
+
+plt.figure(figsize=(10, 6))
+plt.bar(indices, all_percentage_removed, color='coral')
+plt.title('Percentage of Rows Removed')
+plt.xlabel('Index')
+plt.ylabel('Percentage Removed (%)')
+
+# Add percentage labels above bars
+for i, v in enumerate(all_percentage_removed):
+    plt.text(i, v + 1, f"{v:.1f}%", ha='center')
+
+plt.ylim(0, 10)
+plt.show()
+
+# %% [markdown]
+# **Interpretation for year 2425** 
 #
-# **Note :These traces are only for Run.Test and these are the number of traces , NOT number of the students**
-#
-# - filename_impossible_to_find_index : It has a filename_infere but can't find the filename by P_codestate to check them 
-# - filename_case1_index : The filename_infere it is not same as the name between <trace></trace> in P_codeState
-# - filename_case2_index : The filename_infere it is not same as the name found by the functions in P_codeState
-#
-#
-# **Why we have the Bizzar indices? Shouldn't be corrected in phase1 or 2 of nettoyage?**
-#
-# It's because of the function's structure **correct_filename_infere_in_subset** in **data_cleaning**. I prioritize the matching of filename_infere with the pattern (which include all the names of files) , and if matches, so it returns the filename_infere and it skips the checking part of P_codeState which works for the majority but if there are traces where their name of filename_infere is correct but it is not same as the name found by looking at the P_codeState, the algorithm fails. Of course we can prioritize the checking P_codeState in the function, BUT it will take a lots of time, and it will check each P_codeState of traces which are already correct, so it won't be effective. However, now that the majority of data is cleaned, we can check again what are the filename_infere which doesn't correspond to name found in P_codeState and replace them. 
-#
-# **What we should to them?**
-# The filename_infere which will be found in case1 or case2, can be replaced by the name is found by whether the name between traces or the functions name in P_codeState, (since we are more sure that the name found by P_codeState is more correct, we can replace them) but for those in case **filename_impossible_to_find_index** , which means we can't find the name neither by their functions or name beween traces, we can't do anything, so we remove them to have a correct analyze.
+# As shown, the highest percentage is for TP1 at 2.5%, which is normal since semaine_1 was not concered in phase2. Notably, TP_GAME (the most critical case) requires only 1.2% of its rows to be removed. This suggests we can proceed with the removal without worrying about a significant impact on the results.
+
+# %% [markdown]
+# ### 3.5 Remove bizzar indices from dataframe
+
+# %%
+old_df_before_removing = df.copy() # save the original one just in case
+
+# Before removing
+len(df)
+
+# %%
+columns = ['filename_impossible_to_find_index', 'filename_case1', 'filename_case2']
+
+for tp in TP_NAME:
+
+    for column in columns:
+        index_to_removed = df_strange_filenames_Run_Test[df_strange_filenames_Run_Test['TP'] == tp][column].iloc[0]
+
+        if index_to_removed != []:
+            df = df.drop(index=index_to_removed)
+
+# %%
+# After removing traces
+len(df)
+
+# %% [markdown]
+# ## 4.Save final dataframe
+
+# %%
+io_utils.write_csv(df,out_dir_interim,output_file)
+
+# %% [markdown]
+# ## 5. Analyse for year 2425
 #
 # | Phase | Total_trace |Filled_trace | Correct_trace | Incorrect_trace | EmptyTotal_trace | OtherVerbsEmpty_trace | FilledBySandwich | BizzarIndices |
 # |----------|----------|----------|----------|----------|----------|----------|----------| ----------|
@@ -147,161 +275,3 @@ df = io_utils.reading_dataframe(dir= out_dir_interim, file_name=input_file)
 #
 # - BizzarIndices :
 #     Total number of Bizzar filename_infere (I already explain them before), they will be deleted from df.
-
-# %% [markdown]
-# ### Extract these strange indices
-
-# %%
-# extract these strange indices
-def find_strange_filename_infere(TP,verb):
-
-    # create the lists
-    filename_impossible_to_find_index, filename_case1_index, filename_case2_index = [], [] , []
-    
-    for index, row in df[(df['TP'] == TP) & (df['verb'] == verb)].iterrows():
-
-        match_state = re.search(r"<trace>(.*?)</trace>", str(row['P_codeState']))
-        
-        if match_state:
-            
-            trace_line = match_state.group(1)
-                
-            # Case1 : if <trace></trace> exists and the name between is different from the name in filename_infere
-            if row['filename_infere'] != trace_line:
-                # Save the index
-                filename_case1_index.append(index)
-                
-                # check the similarity, to find the correct name
-                filename_infere_removed = row['filename_infere'].replace('.py', '')
-                similarity = difflib.SequenceMatcher(None, trace_line[:-3], filename_infere_removed).ratio()
-
-                if similarity > 0.8:
-                        # if the similarity is more than 80%, then change it
-                        df.loc[index,'filename_infere'] = trace_line
-                    
-        else:
-            # Case2 : if <trace></trace> is removed, try to find the name by the functions 
-            filename_infere_codestate = data_cleaning.find_filename_by_codestate(all_TP_functions_name_except_TP1_and_TPGAME, pattern_files_name, row['P_codeState'])
-
-            if filename_infere_codestate == '': 
-                # Can't find the filename by functions in P_codeState
-                # Save the index
-                filename_impossible_to_find_index.append(index)
-
-            else: 
-                # Can find the fielname by functions' name but it is not same as the name in filename_infere
-                if row['filename_infere'] != filename_infere_codestate:
-                    
-                    # Save the index
-                    filename_case2_index.append(index) 
-
-                    # Change the name by the correct one
-                    df.loc[index,'filename_infere'] = filename_infere_codestate
-
-
-    return filename_impossible_to_find_index, filename_case1_index, filename_case2_index
-
-# Create Dataframe
-df_strange_filenames_Run_Test = pd.DataFrame(columns=['TP','filename_impossible_to_find_index', 'filename_case1','filename_case2']) 
-
-# Fill dataframe only for Run.Test for each TP
-for tp in TP_NAME:
-
-    impossible_filename, filename_case1, filename_case2 = find_strange_filename_infere(tp,'Run.Test')
-    
-    # Append row to df
-    df_strange_filenames_Run_Test = pd.concat([
-        df_strange_filenames_Run_Test,
-        pd.DataFrame({'TP': [tp], 'filename_impossible_to_find_index': [impossible_filename], 'filename_case1': [filename_case1], 'filename_case2': [filename_case2]})
-    ], ignore_index=True)
-
-df_strange_filenames_Run_Test
-
-# %% [markdown]
-# ### Save bizzar indices into CSV
-
-# %%
-# save the removed trace into a csv
-io_utils.write_csv(df_strange_filenames_Run_Test,out_dir_interim,'bizzar_traces.csv')
-
-# %% [markdown]
-# ### Calculate the percentage of removing bizzar indices
-
-# %%
-# calculate the percentage of removing traces of each TP
-all_percentage_removed = [] # save later for the plot
-
-for tp in TP_NAME:
-
-    total_traces_of_tp = (df['TP'] == tp).sum()
-    total_traces_of_empty_filename = len(df_strange_filenames_Run_Test[df_strange_filenames_Run_Test['TP'] == tp]['filename_impossible_to_find_index'].iloc[0])
-    total_traces_of_filename_case1 = len(df_strange_filenames_Run_Test[df_strange_filenames_Run_Test['TP'] == tp]['filename_case1'].iloc[0])
-    total_traces_of_filename_case2 = len(df_strange_filenames_Run_Test[df_strange_filenames_Run_Test['TP'] == tp]['filename_case2'].iloc[0])
-
-    total_traces_to_remove = total_traces_of_empty_filename 
-
-    percentage_removed = (total_traces_to_remove / total_traces_of_tp) * 100
-    all_percentage_removed.append(percentage_removed)
-
-    print("---------------------------")
-    print(tp)
-    print(f"Total traces of empty_filename : {total_traces_of_empty_filename}")
-    print(f"Total traces of filename_case1 : {total_traces_of_filename_case1}")
-    print(f"Total traces of filename_case2 : {total_traces_of_filename_case2}")
-    print(f"Total traces to remove : {total_traces_to_remove}")
-    print(f"Total traces of TP : {total_traces_of_tp}")
-    print(f"{percentage_removed:.2f}% of the rows will be removed.")
-
-# %% [markdown]
-# ### Plot the percentage of removing bizzar indices
-
-# %%
-indices = TP_NAME
-
-plt.figure(figsize=(10, 6))
-plt.bar(indices, all_percentage_removed, color='coral')
-plt.title('Percentage of Rows Removed')
-plt.xlabel('Index')
-plt.ylabel('Percentage Removed (%)')
-
-# Add percentage labels above bars
-for i, v in enumerate(all_percentage_removed):
-    plt.text(i, v + 1, f"{v:.1f}%", ha='center')
-
-plt.ylim(0, 10)
-plt.show()
-
-# %% [markdown]
-# **Interpretation** 
-#
-# The plot above illustrates the percentage of rows that it was impossible to find a filename_infere by their P_codeState so they need to be removed to ensure accurate analysis. As shown, the highest percentage is for TP1 at 2.5%, which is normal since semaine_1 was not concered in phase2. Notably, TP_GAME (the most critical case) requires only 1.2% of its rows to be removed. This suggests we can proceed with the removal without worrying about a significant impact on the results.
-
-# %% [markdown]
-# ### Remove bizzar indices from dataframe
-
-# %%
-old_df_before_removing = df.copy() # save the original one just in case
-
-# Before removing
-len(df)
-
-# %%
-columns = ['filename_impossible_to_find_index', 'filename_case1', 'filename_case2']
-
-for tp in TP_NAME:
-
-    for column in columns:
-        index_to_removed = df_strange_filenames_Run_Test[df_strange_filenames_Run_Test['TP'] == tp][column].iloc[0]
-
-        if index_to_removed != []:
-            df = df.drop(index=index_to_removed)
-
-# %%
-# After removing traces
-len(df)
-
-# %% [markdown]
-# ## 4.Save final dataframe
-
-# %%
-io_utils.write_csv(df,out_dir_interim,output_file)
