@@ -107,7 +107,7 @@ match filename:
         
     case "traces260105":
         from src.data.variable_constant_2526 import all_TP_functions_name_except_TP1_and_TPGAME, pattern_files_name, TP_NAME
-       
+
 
 # %% [markdown]
 # Fin des modifs à faire liées à l'exécution autonome / pipeline.

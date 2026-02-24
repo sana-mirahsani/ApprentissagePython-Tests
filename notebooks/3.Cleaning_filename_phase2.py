@@ -131,10 +131,10 @@ else:
 
 match filename:
     case "traces250102":
-        from src.data.variable_constant_2425 import TP_name, Type_TP, pattern_files_name
+        from src.data.variable_constant_2425 import TP_name, Type_TP, pattern_files_name, all_TP_functions_name_except_TP1_and_TPGAME
         
     case "traces260105":
-        from src.data.variable_constant_2526 import TP_name, Type_TP, pattern_files_name
+        from src.data.variable_constant_2526 import TP_name, Type_TP, pattern_files_name, all_TP_functions_name_except_TP1_and_TPGAME
 
 
 # %% [markdown]
@@ -176,7 +176,7 @@ def validate_process_of_filename(df_index,df,pattern):
             except:
                 print("here1")
                 raise
-            data_cleaning.correct_filename_infere_in_subset(subset_df,df,pattern)
+            data_cleaning.correct_filename_infere_in_subset(subset_df,df,pattern, all_TP_functions_name_except_TP1_and_TPGAME, pattern_files_name)
 
     print('successful!!')   
 
