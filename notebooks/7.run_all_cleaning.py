@@ -14,7 +14,7 @@ from datetime import datetime
 import papermill as pm
 
 notebooks = ["0.Cleaning_JSON.ipynb", "1.Cleaning_actors.ipynb", "2.Cleaning_filename_phase1.ipynb", 
-             "3.Cleaning_filename_phase2.ipynb", "4.Cleaning_filename_phase3.ipynb"] # all nb of cleaning
+             "3.Cleaning_filename_phase2.ipynb", "4.Cleaning_filename_phase3.ipynb"] # all notebooks of cleaning
 
 #------------------------------------------------
 #      1.Prepare output folder

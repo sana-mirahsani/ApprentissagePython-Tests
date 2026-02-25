@@ -230,3 +230,8 @@ Add Selected_lineno, Lineno in Thomas code to convert them as the column.
 chnage the name of test_function.py to verification_functions.py : done
 
 Check if phase3 works correctly or not : Done
+
+#### Last week:
+- Put function debutan in data_cleaning and add its usage in clean_actor
+- Add Selected_lineno, Lineno in Thomas code to convert them as the column.
+- Use the part of Mirbelle of research_usage

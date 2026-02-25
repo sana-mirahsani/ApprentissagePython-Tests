@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# # Preparation Workflow Overview:
+# ## Preparation Workflow Overview:
 # 1. Import Libraries
 # 2. Load DataFrame : filename_clean.csv
 # 3. Clean DataFrame
@@ -22,7 +22,8 @@
 #     3.1 Convert Time Format
 #     <br>
 #     3.2 Clean **Actor** Field
-# 4. Save new DataFrame : filename_actor_clean.csv
+# 4. Filter on research_usage
+# 5. Save new DataFrame : filename_actor_clean.csv
 # ____________________________________________
 # **Explanation** 
 #
@@ -37,6 +38,7 @@ sys.path.append('../') # these two lines allow the notebook to find the path to 
 import importlib
 
 from src.features import io_utils, data_cleaning, pipeline_utils
+
 #from src.data.constants import INTERIM_DATA_DIR
 path_valid_students = "../data/logins_L1_2526.txt"
 
@@ -263,7 +265,45 @@ elif filename == "traces250105":
 df_clean[df_clean['binome'] == '']
 
 # %% [markdown]
-# ## 4.Save new dataframe
+# ## 4. Filter on research_usage
+
+# %%
+filtered_df_clean = data_cleaning.propage_chgt_avis_research_OK(df_clean)
+
+# %% [markdown]
+# ## 5.Save new dataframe
+
+# %%
+df_clean[df_clean['binome'] !=''][['binome', 'actor', 'research_usage']]
+
+# %%
+df_clean[df_clean['research_usage'] == ''][['actor','research_usage']]
+
+# %%
+actors = set(filtered_df_clean[(filtered_df_clean['research_usage'] == '0.0') & (filtered_df_clean['research_usage'] == '1.0')]['actor'])
+binomes = set(filtered_df_clean['binome'])
+binomes_and_actors = actors.intersection(binomes)
+
+for name in binomes_and_actors:
+    
+    
+    value = filtered_df_clean[(filtered_df_clean['actor'] == name) | (filtered_df_clean['binome'] == name)]['research_usage'].unique()
+    
+    if len(value) == 3:
+        print(name)
+
+# %%
+actors = set(filtered_df_clean['actor'])
+binomes = set(filtered_df_clean['binome'])
+binomes_and_actors = actors.intersection(binomes)
+
+for name in binomes_and_actors:
+    
+    
+    value = filtered_df_clean[(filtered_df_clean['actor'] == name) | (filtered_df_clean['binome'] == name)]['research_usage'].unique()
+    
+    if len(value) == 3:
+        print(name)
 
 # %%
 io_utils.write_csv(df_clean,out_dir_interim, output_file) 

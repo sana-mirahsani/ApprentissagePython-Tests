@@ -223,6 +223,18 @@ def cleaning_manual_actors_2425(df: pd.DataFrame, name: str) -> pd.DataFrame:
     
     return df_cleaned
 
+def propage_chgt_avis_research_OK(df:pd.DataFrame) -> pd.DataFrame:
+    """
+    Renvoie un nouveau df dont le research_OK est propagé en arrière et en avant.
+    """
+    df_copy = df.copy()
+    actor_non_research_usage = set(df[df['research_usage'] == '0.0']['actor'])
+    actor_oui_research_usage = set(df[df['research_usage'] == '1.0']['actor'])
+    actors_chgt_avis = actor_non_research_usage.intersection(actor_oui_research_usage)
+    for actor in actors_chgt_avis:
+        indexes = df[df['actor'] == actor].index
+        df_copy.loc[indexes, 'research_usage'] = "1.0"
+    return df_copy
 #------------------------------------------------------------
 #      Functions of 2.Cleaning_filename_phase1.ipynb
 #-----------------------------------------------------------

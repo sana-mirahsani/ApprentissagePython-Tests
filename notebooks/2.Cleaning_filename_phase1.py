@@ -92,7 +92,7 @@ else:
     out_dir_interim = f"../data/interim/{filename}_20260205_093949"
     out_dir_raw = f"../data/raw/{filename}_20260205_093949"
 
-    filename, out_dir_interim = pipeline_utils.execute_manually(filename, out_dir_interim, out_dir_raw)
+    filename, out_dir_interim, _ = pipeline_utils.execute_manually(filename, out_dir_interim, out_dir_raw)
 
 match filename:
     case "traces250102":
