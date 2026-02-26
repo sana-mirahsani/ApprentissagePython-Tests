@@ -1,1 +1,12 @@
 pandas
+nbformat
+json
+Path
+datetime
+papermill
+sys
+re
+difflib
+ast
+importlib
+matplotlib.pyplot

@@ -22,7 +22,10 @@ project-root/
 │   │  ├── too_short_sessions.csv        # Traces with too short lengths (Removed from original df)
 │   │
 │   ├── processed/
-│      ├── anonymized_actor.csv          # Name of actors with their hash id
+│   |  ├── anonymized_actor.csv          # Name of actors with their hash id
+│   |
+│   ├── raw/ # JSON data
+│
 │
 ├── notebooks/             
 │   ├── 1.Cleaning_actors.py           # Cleaning actor column
@@ -48,9 +51,9 @@ project-root/
 │       ├── data_cleaning.py       # Functions to cleaning actors or filename_infere
 │       ├── data_testing.py        # Functions to test the results after cleaning each time
 │       ├── io_utils.py            # Functions to read and write csv files 
-│
+│       ├── pipeline_utils         # Functions to verify the values
 │ 
-├── src/
+├── requirement.txt
 |       
 └── README.md                # Project documentation
 ```
@@ -232,6 +235,6 @@ chnage the name of test_function.py to verification_functions.py : done
 Check if phase3 works correctly or not : Done
 
 #### Last week:
-- Put function debutan in data_cleaning and add its usage in clean_actor
+- Put function debutan in data_cleaning and add its usage in clean_actor : Need a csv file
 - Add Selected_lineno, Lineno in Thomas code to convert them as the column.
-- Use the part of Mirbelle of research_usage
+- Use the part of Mirbelle of research_usage : Done
