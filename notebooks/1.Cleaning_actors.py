@@ -36,7 +36,7 @@
 import sys
 sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
 import importlib
-
+import pandas as pd
 from src.features import io_utils, data_cleaning, pipeline_utils
 
 #from src.data.constants import INTERIM_DATA_DIR
@@ -261,49 +261,95 @@ elif filename == "traces250105":
     else:
         raise ValueError("There are still incorrect actors or binomes. Please check the lists of incorrect actors and binomes and clean them manually.")
 
-# %%
-df_clean[df_clean['binome'] == '']
-
 # %% [markdown]
 # ## 4. Filter on research_usage
 
 # %%
-filtered_df_clean = data_cleaning.propage_chgt_avis_research_OK(df_clean)
+# convert empty string to Nan
+df_clean['research_usage'] = (
+    df_clean['research_usage']
+    .replace('', pd.NA)
+)
+
+# %%
+# convert strings to float
+df_clean['research_usage'] = pd.to_numeric(df_clean['research_usage'])
+
+# %%
+# fill Nan by -1 and then classify by the different values in research_usage
+df_clean['research_usage_clean'] = df_clean['research_usage'].fillna(-1)
+groups = df_clean.groupby('actor')['research_usage_clean'] \
+           .apply(lambda x: set(x.unique()))
+
+# %%
+# extract the different groups of actors
+only_1 = groups[groups == {1.0}].index
+only_0 = groups[groups == {0.0}].index
+zero_nan = groups[groups == {0.0, -1.0}].index
+one_nan = groups[groups == {1.0, -1.0}].index
+zero_one = groups[groups == {0.0, 1.0}].index
+all_three = groups[groups == {0.0, 1.0, -1.0}].index
+
+# %%
+# check the overlap
+set(only_1) & (set(only_0)) & (set(zero_nan)) & (set(one_nan)) & (set(zero_one)) & (set(all_three))
+
+# %%
+len(only_1) + (len(only_0)) + (len(zero_nan)) + (len(one_nan)) + (len(zero_one)) + (len(all_three))
+
+# %%
+# fill dataframe
+mask = (
+    df_clean['actor'].isin(zero_nan) &
+    (df_clean['research_usage_clean'] == -1.0)
+)
+
+df_clean.loc[mask, 'research_usage_clean'] = 0.0
+
+# %%
+# fill dataframe
+mask = (
+    df_clean['actor'].isin(one_nan) &
+    (df_clean['research_usage_clean'] == -1.0)
+)
+
+df_clean.loc[mask, 'research_usage_clean'] = 1.0
+
+# %%
+# fill dataframe
+mask = (
+    df_clean['actor'].isin(zero_one) &
+    (df_clean['research_usage_clean'] == 0.0)
+)
+
+df_clean.loc[mask, 'research_usage_clean'] = 1.0
+
+# %%
+# fill dataframe
+mask = (
+    df_clean['actor'].isin(all_three) &
+    (df_clean['research_usage_clean'].isin([0.0, -1.0]))
+)
+
+df_clean.loc[mask, 'research_usage_clean'] = 1.0
+
+# %%
+df_clean['research_usage_clean'].unique()
+
+# %%
+actor_non_research_usage = set(df_clean[df_clean['research_usage_clean'] == 0]['actor'])
+actor_oui_research_usage = set(df_clean[df_clean['research_usage_clean'] == 1]['actor'])
+
+len(actor_non_research_usage), len(actor_oui_research_usage)
+
+# %%
+set(actor_non_research_usage) & set(actor_oui_research_usage)
+
+# %%
+df_clean['research_usage_clean'].head()
 
 # %% [markdown]
 # ## 5.Save new dataframe
-
-# %%
-df_clean[df_clean['binome'] !=''][['binome', 'actor', 'research_usage']]
-
-# %%
-df_clean[df_clean['research_usage'] == ''][['actor','research_usage']]
-
-# %%
-actors = set(filtered_df_clean[(filtered_df_clean['research_usage'] == '0.0') & (filtered_df_clean['research_usage'] == '1.0')]['actor'])
-binomes = set(filtered_df_clean['binome'])
-binomes_and_actors = actors.intersection(binomes)
-
-for name in binomes_and_actors:
-    
-    
-    value = filtered_df_clean[(filtered_df_clean['actor'] == name) | (filtered_df_clean['binome'] == name)]['research_usage'].unique()
-    
-    if len(value) == 3:
-        print(name)
-
-# %%
-actors = set(filtered_df_clean['actor'])
-binomes = set(filtered_df_clean['binome'])
-binomes_and_actors = actors.intersection(binomes)
-
-for name in binomes_and_actors:
-    
-    
-    value = filtered_df_clean[(filtered_df_clean['actor'] == name) | (filtered_df_clean['binome'] == name)]['research_usage'].unique()
-    
-    if len(value) == 3:
-        print(name)
 
 # %%
 io_utils.write_csv(df_clean,out_dir_interim, output_file) 
