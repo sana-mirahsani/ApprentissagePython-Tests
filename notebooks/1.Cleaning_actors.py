@@ -38,6 +38,7 @@ sys.path.append('../') # these two lines allow the notebook to find the path to 
 import importlib
 import pandas as pd
 from src.features import io_utils, data_cleaning, pipeline_utils
+from src.data.constants import RAW_DATA_DIR
 
 #from src.data.constants import INTERIM_DATA_DIR
 path_valid_students = "../data/logins_L1_2526.txt"
@@ -75,10 +76,18 @@ if run_mode == "pipeline":
     filename, out_dir_interim, _ = pipeline_utils.execute_by_pipeline(filename, out_dir_interim, out_dir_raw)
 else:
     print("Running directly in Jupyter")
-    filename = "traces260105" # change this to the name of the file you want to process (without the .json extension)
-    out_dir_interim = f"../data/interim/{filename}_20260205_093949"
-    out_dir_raw = f"../data/raw/{filename}_20260205_093949"
+    filename = "traces250102" # change this to the name of the file you want to process (without the .json extension)
+    out_dir_interim = f"../data/interim/"
+    out_dir_raw = f"../data/raw/"
     filename, out_dir_interim, _ = pipeline_utils.execute_manually(filename, out_dir_interim, out_dir_raw)
+
+match filename:
+    case "traces250102":
+        df_admin_etud = io_utils.reading_dataframe(dir= RAW_DATA_DIR, file_name='identifiants_2425.csv')
+        
+    case "traces260105":
+        pass
+        #df_admin_etud = io_utils.reading_dataframe(dir= RAW_DATA_DIR, file_name='identifiants_2526.csv')
 
 
 # %% [markdown]
@@ -226,7 +235,7 @@ if filename == "traces260105":
     else:
         raise ValueError("There are still incorrect actors or binomes. Please check the lists of incorrect actors and binomes and clean them manually.")
     
-elif filename == "traces250105":
+elif filename == "traces250102":
     incorrect_actor  = data_cleaning.check_invalid_identifier_by_pattern(df_clean,'actor')
     incorrect_binome = data_cleaning.check_invalid_identifier_by_pattern(df_clean,'binome')
     print(incorrect_actor, incorrect_binome)
@@ -349,7 +358,48 @@ set(actor_non_research_usage) & set(actor_oui_research_usage)
 df_clean['research_usage_clean'].head()
 
 # %% [markdown]
-# ## 5.Save new dataframe
+# ## 5. Add Debutan column
+
+# %%
+df_admin_etud.head()
+
+# %%
+debutan_students = df_admin_etud[(df_admin_etud['NSI']!='NSI2') & (df_admin_etud['redoublant']=='non')]['actor'].unique().tolist()
+
+# %%
+mask = (
+    df_clean['actor'].isin(debutan_students)     
+)
+
+df_clean.loc[mask, 'actor_is_debutan'] = 1
+df_clean.loc[~mask, 'actor_is_debutan'] = 0
+
+# filter only on students as debutan
+only_binome = set(df_clean['binome']) - set(df_clean['actor'])
+
+mask = (
+    (df_clean['binome'].isin(only_binome)) &
+    (df_clean['binome'].isin(debutan_students))     
+)
+
+df_clean.loc[mask, 'binome_is_debutan'] = 1
+
+
+# %%
+df_clean[['actor', 'actor_is_debutan', 'binome', 'binome_is_debutan']]
+
+# %%
+missing = set(debutan_students) - set(df_clean['actor'])
+len(missing)
+
+# %%
+missing
+
+# %% [markdown]
+# This is strange, because there are 15 students who are not in the dataframe at all BUT they are in the df_admin_etud.
+
+# %% [markdown]
+# ## 6.Save new dataframe
 
 # %%
 io_utils.write_csv(df_clean,out_dir_interim, output_file) 
