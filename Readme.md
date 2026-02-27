@@ -204,9 +204,9 @@ look at his work to what to do about and add the phase zero before cleaning the 
 
 First look at the thomas code for the new data : Done!
 
-### For next appoinment : Remains only 1
+### For next appoinment : Done
 --------
-- Use the part of Mirbelle of research_usage ( not for now)
+- Use the part of Mirbelle of research_usage ( not for now) : Done
 - In cleaning actor add a function to extract all the actors name that are same or included in the list of student which mirabel gave it in data : Done
 - Add a folder for each data of each year : Done
 - How can we save the result of each cell of each notebook for using different data of each year : yes and Done
