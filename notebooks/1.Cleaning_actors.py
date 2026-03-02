@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.19.1
+#       jupytext_version: 1.17.2
 #   kernelspec:
-#     display_name: PFE
+#     display_name: venv_jupyter_l1test
 #     language: python
-#     name: python3
+#     name: venv_jupyter_l1test
 # ---
 
 # %% [markdown]
@@ -274,30 +274,36 @@ elif filename == "traces250102":
 # ## 4. Filter on research_usage
 
 # %%
-# convert empty string to Nan
-df_clean['research_usage'] = (
+# convert strings to True and False
+df_clean['research_usage_clean'] = (
     df_clean['research_usage']
-    .replace('', pd.NA)
+    .replace('1.0', True)
 )
 
-# %%
-# convert strings to float
-df_clean['research_usage'] = pd.to_numeric(df_clean['research_usage'])
+
+df_clean['research_usage_clean'] = (
+    df_clean['research_usage']
+    .replace('0.0', False)
+)
+
+df_clean[['research_usage_clean', 'research_usage']]
 
 # %%
-# fill Nan by -1 and then classify by the different values in research_usage
-df_clean['research_usage_clean'] = df_clean['research_usage'].fillna(-1)
+df_clean['research_usage'].unique()
+
+# %%
+# classify by the different values in research_usage
 groups = df_clean.groupby('actor')['research_usage_clean'] \
            .apply(lambda x: set(x.unique()))
 
 # %%
 # extract the different groups of actors
-only_1 = groups[groups == {1.0}].index
-only_0 = groups[groups == {0.0}].index
-zero_nan = groups[groups == {0.0, -1.0}].index
-one_nan = groups[groups == {1.0, -1.0}].index
-zero_one = groups[groups == {0.0, 1.0}].index
-all_three = groups[groups == {0.0, 1.0, -1.0}].index
+only_1 = groups[groups == {True}].index
+only_0 = groups[groups == {False}].index
+zero_nan = groups[groups == {False, ''}].index
+one_nan = groups[groups == {True, ''}].index
+zero_one = groups[groups == {False, True}].index
+all_three = groups[groups == {False, True, ''}].index
 
 # %%
 # check the overlap
@@ -310,44 +316,44 @@ len(only_1) + (len(only_0)) + (len(zero_nan)) + (len(one_nan)) + (len(zero_one))
 # fill dataframe
 mask = (
     df_clean['actor'].isin(zero_nan) &
-    (df_clean['research_usage_clean'] == -1.0)
+    (df_clean['research_usage_clean'] == '')
 )
 
-df_clean.loc[mask, 'research_usage_clean'] = 0.0
+df_clean.loc[mask, 'research_usage_clean'] = False
 
 # %%
 # fill dataframe
 mask = (
     df_clean['actor'].isin(one_nan) &
-    (df_clean['research_usage_clean'] == -1.0)
+    (df_clean['research_usage_clean'] == '')
 )
 
-df_clean.loc[mask, 'research_usage_clean'] = 1.0
+df_clean.loc[mask, 'research_usage_clean'] = True
 
 # %%
 # fill dataframe
 mask = (
     df_clean['actor'].isin(zero_one) &
-    (df_clean['research_usage_clean'] == 0.0)
+    (df_clean['research_usage_clean'] == False)
 )
 
-df_clean.loc[mask, 'research_usage_clean'] = 1.0
+df_clean.loc[mask, 'research_usage_clean'] = True
 
 # %%
 # fill dataframe
 mask = (
     df_clean['actor'].isin(all_three) &
-    (df_clean['research_usage_clean'].isin([0.0, -1.0]))
+    (df_clean['research_usage_clean'].isin([False, '']))
 )
 
-df_clean.loc[mask, 'research_usage_clean'] = 1.0
+df_clean.loc[mask, 'research_usage_clean'] = True
 
 # %%
 df_clean['research_usage_clean'].unique()
 
 # %%
-actor_non_research_usage = set(df_clean[df_clean['research_usage_clean'] == 0]['actor'])
-actor_oui_research_usage = set(df_clean[df_clean['research_usage_clean'] == 1]['actor'])
+actor_non_research_usage = set(df_clean[df_clean['research_usage_clean'] == False]['actor'])
+actor_oui_research_usage = set(df_clean[df_clean['research_usage_clean'] == True]['actor'])
 
 len(actor_non_research_usage), len(actor_oui_research_usage)
 
@@ -363,16 +369,19 @@ df_clean['research_usage_clean'].head()
 # %%
 df_admin_etud.head()
 
+# %% [markdown]
+# Liste des actors qui sont des débutants
+
 # %%
-debutan_students = df_admin_etud[(df_admin_etud['NSI']!='NSI2') & (df_admin_etud['redoublant']=='non')]['actor'].unique().tolist()
+debutant_students = df_admin_etud[(df_admin_etud['NSI']!='NSI2') & (df_admin_etud['redoublant']=='non')]['actor'].unique().tolist()
 
 # %%
 mask = (
-    df_clean['actor'].isin(debutan_students)     
+    df_clean['actor'].isin(debutant_students)     
 )
 
-df_clean.loc[mask, 'actor_is_debutan'] = 1
-df_clean.loc[~mask, 'actor_is_debutan'] = 0
+df_clean.loc[mask, 'actor_is_debutant'] = True
+df_clean.loc[~mask, 'actor_is_debutant'] = False
 
 # filter only on students as debutan
 only_binome = set(df_clean['binome']) - set(df_clean['actor'])
@@ -382,7 +391,7 @@ mask = (
     (df_clean['binome'].isin(debutan_students))     
 )
 
-df_clean.loc[mask, 'binome_is_debutan'] = 1
+df_clean.loc[mask, 'binome_is_debutan'] = True
 
 
 # %%
@@ -403,3 +412,5 @@ missing
 
 # %%
 io_utils.write_csv(df_clean,out_dir_interim, output_file) 
+
+# %%
