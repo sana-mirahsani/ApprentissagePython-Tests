@@ -8,9 +8,9 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.19.1
 #   kernelspec:
-#     display_name: venv_jupyter_l1test
+#     display_name: Python 3
 #     language: python
-#     name: venv_jupyter_l1test
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -37,9 +37,12 @@ import ast
 import sys
 sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
 
-from src.features import io_utils, data_testing
-from src.data.constants import INTERIM_DATA_DIR
-from src.data.variable_constant_2425 import SORTED_SEANCE, TP_NAME, all_TP_prog_functions_name_by_tp
+from src.features import io_utils, data_testing, pipeline_utils
+
+import importlib
+importlib.reload(io_utils)
+importlib.reload(data_testing)
+importlib.reload(pipeline_utils)
 
 # add for Mirabelle's code 
 from thonnycontrib.backend.test_finder import L1TestFinder
@@ -47,13 +50,26 @@ from thonnycontrib.exceptions import SpaceMissingAfterPromptException
 
 
 # %%
-TP_NAME
+filename = "traces260105"
+out_dir_interim = f"../data/interim/{filename}_20260205_093949"
+out_dir_raw = f"../data/raw/{filename}_20260205_093949"
+
+filename, out_dir_interim, _ = pipeline_utils.execute_manually(filename, out_dir_interim, out_dir_raw)
+
+match filename:
+    case "traces250102":
+        from src.data.variable_constant_2425 import TP_NAME, SORTED_SEANCE, all_TP_prog_functions_name_by_tp
+        
+    case "traces260105":
+        from src.data.variable_constant_2526 import TP_NAME, SORTED_SEANCE, all_TP_prog_functions_name_by_tp
+
+input_file = filename + "_filename_phase3_clean" + ".csv"
 
 # %% [markdown]
 # ## 2.Load DataFrame
 
 # %%
-df = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='phase3_nettoyage_fichiere.csv')
+df = io_utils.reading_dataframe(dir= out_dir_interim, file_name= input_file)
 
 # %% [markdown]
 # ### Add column codeState, combined by P_codeState and F_codeState
@@ -403,11 +419,11 @@ plt.show()
 # ### 4.11 Calculate the total number of Run.Test in the too_short_session.csv
 
 # %%
-df_too_short = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='too_short_sessions.csv')
+df_too_short = io_utils.reading_dataframe(dir= out_dir_interim, file_name='too_short_sessions.csv')
 df_too_short 
 
 # %%
-df_inlcuding_too_short_sessions = io_utils.reading_dataframe(dir= INTERIM_DATA_DIR, file_name='phase1_nettoyage_fichiere.csv')
+df_inlcuding_too_short_sessions = io_utils.reading_dataframe(dir= out_dir_interim, file_name= filename + '_filename_phase1_clean.csv')
 
 # Since the too_short_sessions are removed in the data of phase2, we need to read the data from phase1, before removing the too_short_sessions to check the verbs == Run.Test or not
 

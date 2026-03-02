@@ -8,13 +8,13 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.19.1
 #   kernelspec:
-#     display_name: Python 3 (ipykernel)
+#     display_name: PFE
 #     language: python
 #     name: python3
 # ---
 
 # %% [markdown]
-# # Preparation Workflow Overview:
+# ## Preparation Workflow Overview:
 # 1. Import Libraries
 # 2. Load DataFrame : phase1_nettoyage_fichiere.csv
 # 3. Validate 'filename_infere' values for each week
@@ -87,9 +87,13 @@ import pandas as pd
 import sys
 sys.path.append('../') # these two lines allow the notebook to find the path to the source code contained in 'src'
 
-from src.features import io_utils, data_cleaning, data_testing
-from src.data.constants import INTERIM_DATA_DIR
-from src.data.variable_constant_2425 import TP_name, Type_TP, pattern_files_name
+import importlib
+from src.features import io_utils, data_cleaning, data_testing, pipeline_utils
+
+importlib.reload(io_utils)
+importlib.reload(data_cleaning)
+importlib.reload(data_testing)
+importlib.reload(pipeline_utils)
 
 # %% [markdown]
 # Utilisation par papermill des metadatas de la cellule qui suit.
@@ -106,25 +110,32 @@ from src.data.variable_constant_2425 import TP_name, Type_TP, pattern_files_name
 filename = None
 out_dir_interim = None
 out_dir_raw = None
-
-# %% [markdown]
-# Si on execute ce notebook via le pipeline, décommenter ci-dessous
+run_mode = "interactive"
 
 # %%
-assert filename is not None, "filename was not passed!"
-assert out_dir_interim is not None, "out_dir_interim missing"
-assert out_dir_raw is not None, "out_dir_raw missing"
+try:
+    run_mode
+except NameError:
+    run_mode = "interactive"
 
-# %% [markdown]
-# This is when you run notebook alone, give the parameters manually
+if run_mode == "pipeline":
+    print("Running via Pipeline (papermill)")
+    filename, out_dir_interim, _ = pipeline_utils.execute_by_pipeline(filename, out_dir_interim, out_dir_raw)
+else:
+    print("Running directly in Jupyter")
+    filename = "traces260105"
+    out_dir_interim = f"../data/interim/{filename}_20260205_093949"
+    out_dir_raw = f"../data/raw/{filename}_20260205_093949"
 
-# %%
-# ici ajouter le filename pour exécution du notebook hors pipeline
-#filename = "traces260105"
+    filename, out_dir_interim, _ = pipeline_utils.execute_manually(filename, out_dir_interim, out_dir_raw)
 
-# %%
-# input and output data for this notebook
-#out_dir_interim = "../data/interim/traces260105_20260205_093949/"
+match filename:
+    case "traces250102":
+        from src.data.variable_constant_2425 import TP_name, Type_TP, pattern_files_name, all_TP_functions_name_except_TP1_and_TPGAME
+        
+    case "traces260105":
+        from src.data.variable_constant_2526 import TP_name, Type_TP, pattern_files_name, all_TP_functions_name_except_TP1_and_TPGAME
+
 
 # %% [markdown]
 # Fin des modifs à faire liées à l'exécution autonome / pipeline.
@@ -138,15 +149,10 @@ output_file = filename + "_filename_phase2_clean" + ".csv"
 # ## 2. Load DataFrame
 
 # %%
-df_clean = io_utils.reading_dataframe(dir= out_dir_interim, file_name=input_file)
+df = io_utils.reading_dataframe(dir= out_dir_interim, file_name=input_file)
 
 # %%
-# This is for test and can be deleted later
-df_clean[df_clean['_id.$oid'] == '66ed37fabd5a98b8f9da4354'][['filename','filename_infere','P_codeState','verb','commandRan']]
-
-# %%
-# This is for test and can be deleted later
-df_clean[df_clean['_id.$oid'] == '66ed3929bd5a98b8f9da4482'][['filename','filename_infere','P_codeState','verb','commandRan']]
+df_clean = df.copy()
 
 
 # %% [markdown]
@@ -170,7 +176,7 @@ def validate_process_of_filename(df_index,df,pattern):
             except:
                 print("here1")
                 raise
-            data_cleaning.correct_filename_infere_in_subset(subset_df,df,pattern)
+            data_cleaning.correct_filename_infere_in_subset(subset_df,df,pattern, all_TP_functions_name_except_TP1_and_TPGAME, pattern_files_name)
 
     print('successful!!')   
 
@@ -293,7 +299,8 @@ data_testing.test_filename_infere_total(df_clean,pattern_files_name)
 # Now it is removed, because it is difficult to find the filename for this week.
 
 # %%
-#df_clean, df_empty_string_semaine_1 = main_process('semaine_1',df_clean,pattern_files_name)
+if filename == "traces260105":
+    df_clean, df_empty_string_semaine_1 = main_process('semaine_1',df_clean,pattern_files_name)
 
 # %% [markdown]
 # ### 3.2 **DF[seance] == semaine_2**

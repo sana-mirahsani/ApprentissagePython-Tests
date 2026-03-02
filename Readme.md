@@ -22,7 +22,10 @@ project-root/
 │   │  ├── too_short_sessions.csv        # Traces with too short lengths (Removed from original df)
 │   │
 │   ├── processed/
-│      ├── anonymized_actor.csv          # Name of actors with their hash id
+│   |  ├── anonymized_actor.csv          # Name of actors with their hash id
+│   |
+│   ├── raw/ # JSON data
+│
 │
 ├── notebooks/             
 │   ├── 1.Cleaning_actors.py           # Cleaning actor column
@@ -48,9 +51,9 @@ project-root/
 │       ├── data_cleaning.py       # Functions to cleaning actors or filename_infere
 │       ├── data_testing.py        # Functions to test the results after cleaning each time
 │       ├── io_utils.py            # Functions to read and write csv files 
-│
+│       ├── pipeline_utils         # Functions to verify the values
 │ 
-├── src/
+├── requirement.txt
 |       
 └── README.md                # Project documentation
 ```
@@ -110,6 +113,24 @@ Cleaning is in two main parts : 1- Cleaning actors 2- Cleaning filenames
     - phase 1 : it tries to just fill the new column filename_infere for each different verb (it doesn't check if the name which is found is correct or not, it just fill them).
 
     - phase 2 : it checks the found filename_infere and correct them or delete them if needed (it is done by validate_process function), and then it tries to fill the empty filename_infere by sandwich function.
+
+## What are the modes of executing?
+For cleaning phase, there are two modes : 1. By Pipeline 2. Manaully
+
+To run by pipeline, you should have parameters tag in the metadata but manually you can run the notebook independtly and directly without any meta data.
+
+## How to add the metadata to run by pipeline?
+
+You need to add the text below in the cell where the parameters are written like filename.
+
+```
+{
+    "tags": [
+        "parameters"
+    ]
+}
+```
+
 
 ## What is the result folder? what does it include?
 With pipeline in 7.run_all_cleaning.py, we can have several run for one data or even with different data, 
@@ -178,28 +199,42 @@ jupytext --set-formats ipynb,py:percent 2.Cleaning_filename_phase1.ipynb
 ### Friday 30/01
 - what did I do in the nettoyage. how all those numbers are deleted.
 - trace_clean the first CSV from Thomas work: 
-look at his work to what to do about and add the phase zero before cleaning the actor column. check how much time does it take?
+look at his work to what to do about and add the phase zero before cleaning the actor column. check how much time does it take? Done
 - Fnish the part not finish in analyse : 
 
 First look at the thomas code for the new data : Done!
 
-For next appoinment :
+### For next appoinment : Done
 --------
-- Use the part of Mirbelle of research_usage ( not for now)
-- In cleaning actor add a function to extract all the actors name that are same or included in the list of student which mirabel gave it in data.
+- Use the part of Mirbelle of research_usage ( not for now) : Done
+- In cleaning actor add a function to extract all the actors name that are same or included in the list of student which mirabel gave it in data : Done
 - Add a folder for each data of each year : Done
 - How can we save the result of each cell of each notebook for using different data of each year : yes and Done
 
-### Thursday 05/02
-- add mode of execution : 1. pipeline 2. maneulment
-- add special function for each filename , for the part of jokers and cleaning manual in notebook 1.cleaning_actors.ipynb
+### Thursday 05/02 : Done
+- add mode of execution : 1. pipeline 2. maneulment : Done
+- add special function for each filename , for the part of jokers and cleaning manual in notebook 1.cleaning_actors.ipynb : Done
 
-- add special function for docstring generate in 2.cleaning_phase1, special function for each year because we already have filename for docstring generate for this year but not for the last year BUT they are not correct
+- add special function for docstring generate in 2.cleaning_phase1, special function for each year because we already have filename for docstring generate for this year but not for the last year BUT they are not correct : Done
 
-- add how to make metdata in notebook, in readme
+- add how to make metdata in notebook, in readme : Done
 
-- add function for choosing the correct src/data/variable_constant for each year since it changes for each year.
+- add function for choosing the correct src/data/variable_constant for each year since it changes for each year : Done
 
-- add how can we run a notebook alone 
+- add how can we run a notebook alone in Readme : Done
 
-- add semaine 1 for cleaning in phase2 becaus ein this year we had data and it is important, so another special function.
+- add semaine 1 for cleaning in phase2 becaus ein this year we had data and it is important, so another special function : Done
+
+### Friday: Remain only 1
+In 0.cleaning_Json , put the the two functions in a src/features and then pass the inputs and outputs to the main function : Done
+
+Add Selected_lineno, Lineno in Thomas code to convert them as the column.
+
+chnage the name of test_function.py to verification_functions.py : done
+
+Check if phase3 works correctly or not : Done
+
+#### Last week:
+- Put function debutan in data_cleaning and add its usage in clean_actor : Done
+- Add Selected_lineno, Lineno in Thomas code to convert them as the column.
+- Use the part of Mirbelle of research_usage : Done

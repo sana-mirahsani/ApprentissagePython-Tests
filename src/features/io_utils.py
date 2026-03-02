@@ -26,7 +26,7 @@ def reading_dataframe(dir : str, file_name : str) -> pd.DataFrame:
 
     if file_path.exists():
         print(f"Directory is ok.")
-
+        
         # convert to dataframe
         df = pd.read_csv(file_path, keep_default_na=False)
         return df
@@ -92,7 +92,7 @@ def write_too_short_indices_to_csv(df : pd.DataFrame, dir: str, week : str, file
     file = Path(dir) / filename
 
     # check if there is already too_short_sessions.csv, append the data
-    if Path(dir).exists() and week != 'semaine_2': # extract the df to append the new df to it
+    if Path(file).exists() and week != 'semaine_2': # extract the df to append the new df to it
         
         old_df = pd.read_csv(file, keep_default_na=False)
         df_combined = pd.concat([old_df, new_df], ignore_index=True) # append the new df to the old df
