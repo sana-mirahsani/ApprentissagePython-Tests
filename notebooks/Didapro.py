@@ -377,7 +377,7 @@ df_donnees_TP_guides['pourcentage_debutants'].astype(float).describe()
 df_donnees_TP_guides_corrige['pourcentage_debutants'].astype(float).describe()
 
 
-# **TODO revoir ce texte** Le nombre d'étudiant·es ayant réalisé en présentiel les TPs guidés oscille entre 152 (semaine 9) et 181 (semaine 4) selon la semaine, avec une moyenne de 168 étudiant·es par semaine. Les chiffres reflètent l'évolution de la promotion au fil du semestre, avec une décroissance des effectifs à partir du milieu du semestre dûe aux abandons.  Parmi ces étudiant·es, le pourcentage d'étudiant·es débutant·es ayant réalisé en présentiel les TPs guidés oscille entre 53 (semaine 6) et et 58% (semaine 7) selon la semaine, avec une moyenne de 56% d'étudiant·es débutant·es (écart-type : 1.68).
+# Le nombre d'étudiant·es ayant réalisé en présentiel les TPs guidés oscille entre 152 (semaine 9) et 181 (semaine 4) selon la semaine, avec une moyenne de 168 étudiant·es par semaine. Les chiffres reflètent l'évolution de la promotion au fil du semestre, avec une décroissance des effectifs à partir du milieu du semestre dûe aux abandons.  Parmi ces étudiant·es, le pourcentage d'étudiant·es débutant·es ayant réalisé en présentiel les TPs guidés oscille entre 54 et 58% selon la semaine, avec une moyenne de 56.4% d'étudiant·es débutant·es (écart-type : 1.5).
 
 def plot_TPs_guides_general(df_donnees_TP_guides:pd.DataFrame) -> None:
     """
