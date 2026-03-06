@@ -103,10 +103,10 @@ else:
 
 match filename:
     case "traces250102":
-        from src.data.variable_constant_2425 import all_TP_functions_name_except_TP1_and_TPGAME, pattern_files_name, TP_NAME
+        from src.data.variable_constant_2425 import TP_NAME_LABEL, ALL_FILES, pattern_files_name
         
     case "traces260105":
-        from src.data.variable_constant_2526 import all_TP_functions_name_except_TP1_and_TPGAME, pattern_files_name, TP_NAME
+        from src.data.variable_constant_2526 import TP_NAME_LABEL, ALL_FILES, pattern_files_name
 
 
 # %% [markdown]
@@ -134,10 +134,10 @@ df = io_utils.reading_dataframe(dir= out_dir_interim, file_name=input_file)
 df_strange_filenames_Run_Test = pd.DataFrame(columns=['TP','filename_impossible_to_find_index', 'filename_case1','filename_case2']) 
 
 # Fill dataframe only for Run.Test for each TP
-for tp in TP_NAME:
+for tp in TP_NAME_LABEL:
 
     df, impossible_filename, filename_case1, filename_case2 = data_cleaning.find_strange_filename_infere(df, tp,'Run.Test',
-                                                                                                         all_TP_functions_name_except_TP1_and_TPGAME ,
+                                                                                                         ALL_FILES,
                                                                                                          pattern_files_name)
     
     # Append row to a new df
@@ -162,7 +162,7 @@ io_utils.write_csv(df= df_strange_filenames_Run_Test, dir= out_dir_interim, file
 # calculate the percentage of removing traces of each TP
 all_percentage_removed = [] # save later for the plot
 
-for tp in TP_NAME:
+for tp in TP_NAME_LABEL:
 
     total_traces_of_tp = (df['TP'] == tp).sum()
     total_traces_of_empty_filename = len(df_strange_filenames_Run_Test[df_strange_filenames_Run_Test['TP'] == tp]['filename_impossible_to_find_index'].iloc[0])
@@ -189,7 +189,7 @@ for tp in TP_NAME:
 # The plot below shows the percentage of rows where filename_infere couldn’t be found in P_codeState and had to be removed for accurate analysis.
 
 # %%
-indices = TP_NAME
+indices = TP_NAME_LABEL
 
 plt.figure(figsize=(10, 6))
 plt.bar(indices, all_percentage_removed, color='coral')
@@ -221,7 +221,7 @@ len(df)
 # %%
 columns = ['filename_impossible_to_find_index', 'filename_case1', 'filename_case2']
 
-for tp in TP_NAME:
+for tp in TP_NAME_LABEL:
 
     for column in columns:
         index_to_removed = df_strange_filenames_Run_Test[df_strange_filenames_Run_Test['TP'] == tp][column].iloc[0]

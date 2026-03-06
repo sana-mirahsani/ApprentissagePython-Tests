@@ -34,6 +34,7 @@ project-root/
 │   ├── 4.Cleaning_filename_phase3.py  # Finding and removing bizzar indices 
 │   ├── 5.Anonymizing.py               # Anonymizing data   
 │   ├── 6.Analyze.py                   # Analyzing data  
+│   ├── 7.run_all_cleaning.py          # Run all notebooks by pipeline 
 │   ├── find_filename_by_commandRan.py # Mirabelle's code, it is integrated in Sana's code             
 │   ├── find_test_final.py             # Mirabelle's code, it is integrate in Sana's code
 │   ├── find_tests.py                  # Mirabelle's code, I didn't use it

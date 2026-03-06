@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.19.1
 #   kernelspec:
-#     display_name: venv_jupyter_l1test
+#     display_name: PFE
 #     language: python
-#     name: venv_jupyter_l1test
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -86,8 +86,8 @@ match filename:
         df_admin_etud = io_utils.reading_dataframe(dir= RAW_DATA_DIR, file_name='identifiants_2425.csv')
         
     case "traces260105":
-        pass
-        #df_admin_etud = io_utils.reading_dataframe(dir= RAW_DATA_DIR, file_name='identifiants_2526.csv')
+        # YOU MUST CHANGE the FILENAME
+        df_admin_etud = io_utils.reading_dataframe(dir= RAW_DATA_DIR, file_name='identifiants_2425.csv')
 
 
 # %% [markdown]
@@ -274,36 +274,30 @@ elif filename == "traces250102":
 # ## 4. Filter on research_usage
 
 # %%
-# convert strings to True and False
-df_clean['research_usage_clean'] = (
+# convert empty string to Nan
+df_clean['research_usage'] = (
     df_clean['research_usage']
-    .replace('1.0', True)
+    .replace('', pd.NA)
 )
 
-
-df_clean['research_usage_clean'] = (
-    df_clean['research_usage']
-    .replace('0.0', False)
-)
-
-df_clean[['research_usage_clean', 'research_usage']]
+# %%
+# convert strings to float
+df_clean['research_usage'] = pd.to_numeric(df_clean['research_usage'])
 
 # %%
-df_clean['research_usage'].unique()
-
-# %%
-# classify by the different values in research_usage
+# fill Nan by -1 and then classify by the different values in research_usage
+df_clean['research_usage_clean'] = df_clean['research_usage'].fillna(-1)
 groups = df_clean.groupby('actor')['research_usage_clean'] \
            .apply(lambda x: set(x.unique()))
 
 # %%
 # extract the different groups of actors
-only_1 = groups[groups == {True}].index
-only_0 = groups[groups == {False}].index
-zero_nan = groups[groups == {False, ''}].index
-one_nan = groups[groups == {True, ''}].index
-zero_one = groups[groups == {False, True}].index
-all_three = groups[groups == {False, True, ''}].index
+only_1 = groups[groups == {1.0}].index
+only_0 = groups[groups == {0.0}].index
+zero_nan = groups[groups == {0.0, -1.0}].index
+one_nan = groups[groups == {1.0, -1.0}].index
+zero_one = groups[groups == {0.0, 1.0}].index
+all_three = groups[groups == {0.0, 1.0, -1.0}].index
 
 # %%
 # check the overlap
@@ -316,44 +310,44 @@ len(only_1) + (len(only_0)) + (len(zero_nan)) + (len(one_nan)) + (len(zero_one))
 # fill dataframe
 mask = (
     df_clean['actor'].isin(zero_nan) &
-    (df_clean['research_usage_clean'] == '')
+    (df_clean['research_usage_clean'] == -1.0)
 )
 
-df_clean.loc[mask, 'research_usage_clean'] = False
+df_clean.loc[mask, 'research_usage_clean'] = 0.0
 
 # %%
 # fill dataframe
 mask = (
     df_clean['actor'].isin(one_nan) &
-    (df_clean['research_usage_clean'] == '')
+    (df_clean['research_usage_clean'] == -1.0)
 )
 
-df_clean.loc[mask, 'research_usage_clean'] = True
+df_clean.loc[mask, 'research_usage_clean'] = 1.0
 
 # %%
 # fill dataframe
 mask = (
     df_clean['actor'].isin(zero_one) &
-    (df_clean['research_usage_clean'] == False)
+    (df_clean['research_usage_clean'] == 0.0)
 )
 
-df_clean.loc[mask, 'research_usage_clean'] = True
+df_clean.loc[mask, 'research_usage_clean'] = 1.0
 
 # %%
 # fill dataframe
 mask = (
     df_clean['actor'].isin(all_three) &
-    (df_clean['research_usage_clean'].isin([False, '']))
+    (df_clean['research_usage_clean'].isin([0.0, -1.0]))
 )
 
-df_clean.loc[mask, 'research_usage_clean'] = True
+df_clean.loc[mask, 'research_usage_clean'] = 1.0
 
 # %%
 df_clean['research_usage_clean'].unique()
 
 # %%
-actor_non_research_usage = set(df_clean[df_clean['research_usage_clean'] == False]['actor'])
-actor_oui_research_usage = set(df_clean[df_clean['research_usage_clean'] == True]['actor'])
+actor_non_research_usage = set(df_clean[df_clean['research_usage_clean'] == 0]['actor'])
+actor_oui_research_usage = set(df_clean[df_clean['research_usage_clean'] == 1]['actor'])
 
 len(actor_non_research_usage), len(actor_oui_research_usage)
 
@@ -369,30 +363,44 @@ df_clean['research_usage_clean'].head()
 # %%
 df_admin_etud.head()
 
-# %% [markdown]
-# Liste des actors qui sont des débutants
+# %%
+debutan_students = df_admin_etud[(df_admin_etud['NSI']!='NSI2') & (df_admin_etud['redoublant']=='non')]['actor'].unique().tolist()
 
 # %%
-debutant_students = df_admin_etud[(df_admin_etud['NSI']!='NSI2') & (df_admin_etud['redoublant']=='non')]['actor'].unique().tolist()
+# create two columns for debut
+df_clean['binome_is_debutan'] = ''
+df_clean['actor_is_debutan'] = ''
 
 # %%
+# fill the two columns
 mask = (
-    df_clean['actor'].isin(debutant_students)     
+    df_clean['actor'].isin(debutan_students)     
 )
 
-df_clean.loc[mask, 'actor_is_debutant'] = True
-df_clean.loc[~mask, 'actor_is_debutant'] = False
+df_clean.loc[mask, 'actor_is_debutan'] = 1
+df_clean.loc[~mask, 'actor_is_debutan'] = 0
 
 # filter only on students as debutan
 only_binome = set(df_clean['binome']) - set(df_clean['actor'])
+only_binome.remove('')
 
-mask = (
+mask1 = (
     (df_clean['binome'].isin(only_binome)) &
     (df_clean['binome'].isin(debutan_students))     
 )
 
-df_clean.loc[mask, 'binome_is_debutan'] = True
+df_clean.loc[mask1, 'binome_is_debutan'] = 1
 
+mask2 = df_clean['binome'].isin(only_binome) & ~df_clean['binome'].isin(debutan_students)
+
+df_clean.loc[mask2, 'binome_is_debutan'] = 0
+
+# %% [markdown]
+# mask : put 1 for all actors which are in the debutan list.
+# <br>
+# mask1 : put 1 for all only binomes which are in the debutan list.
+# <br>
+# mask2 : put 0 for all only binomes which are NOT in the debutan list.
 
 # %%
 df_clean[['actor', 'actor_is_debutan', 'binome', 'binome_is_debutan']]
@@ -412,5 +420,3 @@ missing
 
 # %%
 io_utils.write_csv(df_clean,out_dir_interim, output_file) 
-
-# %%

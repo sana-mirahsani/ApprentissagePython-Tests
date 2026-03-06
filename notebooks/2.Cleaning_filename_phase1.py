@@ -96,10 +96,10 @@ else:
 
 match filename:
     case "traces250102":
-        from src.data.variable_constant_2425 import TP_name, Type_TP, pattern_files_name, all_TP_functions_name_except_TP1_and_TPGAME
+        from src.data.variable_constant_2425 import ALL_FILES, pattern_files_name
         
     case "traces260105":
-        from src.data.variable_constant_2526 import TP_name, Type_TP, pattern_files_name, all_TP_functions_name_except_TP1_and_TPGAME
+        from src.data.variable_constant_2526 import ALL_FILES, pattern_files_name
 
 
 # %% [markdown]
@@ -181,7 +181,7 @@ for i, (verb, states) in enumerate(all_verbs_with_their_states.items()):
         old_num_empty, old_num_null = data_testing.check_empty_values_in_column(df_clean_masked, column_name='filename_infere', time_happened="before")
     
     # apply the desicion function to fill filename_infere for the current verb
-    df_clean = data_cleaning.desicion_function_to_fill_filename_infere(df_clean, verb, states, all_TP_functions_name_except_TP1_and_TPGAME, pattern_files_name)
+    df_clean = data_cleaning.desicion_function_to_fill_filename_infere(df_clean, verb, states, ALL_FILES, pattern_files_name)
     
     # check after applying
     if states == 1:

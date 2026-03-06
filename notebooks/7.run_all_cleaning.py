@@ -10,7 +10,7 @@
 import nbformat
 import json
 from pathlib import Path
-import datetime
+from datetime import datetime
 import papermill as pm
 
 notebooks = ["0.Cleaning_JSON.ipynb", "1.Cleaning_actors.ipynb", "2.Cleaning_filename_phase1.ipynb", 

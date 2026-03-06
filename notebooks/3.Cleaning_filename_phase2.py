@@ -131,10 +131,10 @@ else:
 
 match filename:
     case "traces250102":
-        from src.data.variable_constant_2425 import TP_name, Type_TP, pattern_files_name, all_TP_functions_name_except_TP1_and_TPGAME
+        from src.data.variable_constant_2425 import ALL_FILES, pattern_files_name
         
     case "traces260105":
-        from src.data.variable_constant_2526 import TP_name, Type_TP, pattern_files_name, all_TP_functions_name_except_TP1_and_TPGAME
+        from src.data.variable_constant_2526 import ALL_FILES, pattern_files_name
 
 
 # %% [markdown]
@@ -176,7 +176,7 @@ def validate_process_of_filename(df_index,df,pattern):
             except:
                 print("here1")
                 raise
-            data_cleaning.correct_filename_infere_in_subset(subset_df,df,pattern, all_TP_functions_name_except_TP1_and_TPGAME, pattern_files_name)
+            data_cleaning.correct_filename_infere_in_subset(subset_df,df,pattern, ALL_FILES, pattern_files_name)
 
     print('successful!!')   
 
@@ -525,11 +525,10 @@ try:
 except Exception as error:
     print(error)
 
-# create dictionary with keys of filenames and values of TP name
+# create dictionary with keys of filenames and values of NAME TP 
 file_to_tp = {}
-for tp, files in TP_name.items():
-    for f in files:
-        file_to_tp[f] = tp
+for filename in ALL_FILES:
+    file_to_tp[filename] = ALL_FILES[filename]['TP_name']
 
 # Apply : fill all values of TP
 df_clean["TP"] = df_clean["filename_infere"].map(file_to_tp)
@@ -565,11 +564,13 @@ try:
 except Exception as error:
     print(error)
     
-# create dictionary with keys of filenames and values of TP name
+# create dictionary with keys of filenames and values of TYPE TP
 file_to_type_tp = {}
-for tp, files in Type_TP.items():
-    for f in files:
-        file_to_type_tp[f] = tp
+for filename in ALL_FILES:
+    file_to_type_tp[filename] = ALL_FILES[filename]['file_type']
+
+# add Irrelevant element
+file_to_type_tp['Irre'] = ['Irrelevant']
 
 # Apply : fill all values of Type_TP
 df_clean["Type_TP"] = df_clean["filename_infere"].map(file_to_type_tp)

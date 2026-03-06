@@ -353,12 +353,14 @@ def get_regexp_for_function_call(functions_name:dict) -> dict:
     '''
     dico = {}
     for key in functions_name:
-        function_list = functions_name[key]
-        new_list = []
-        for name in function_list:
-            new_name = rf'(\W|\A){name}[ \t]*\('#r'(\W|\A)' + re.escape(name) + r'[ \t]*\('
-            new_list.append(new_name)
-        dico[key] = new_list
+        function_list = functions_name[key]['functions']
+
+        if function_list:
+            new_list = []
+            for name in function_list:
+                new_name = rf'(\W|\A){name}[ \t]*\('#r'(\W|\A)' + re.escape(name) + r'[ \t]*\('
+                new_list.append(new_name)
+            dico[key] = new_list
     return dico
 
 # Function to find the corresponding filename: called inside find_filename_by_commandRan
@@ -416,7 +418,7 @@ def find_filename_by_commandRan(all_TP_functions : dict, pattern_files_name: str
 
 # Fill filename_infere for a verb
 def fill_filename_infere_for_verb(df: pd.DataFrame, verb_name: str, values_for_verb: dict,
-                                  all_TP_functions_name_except_TP1_and_TPGAME, pattern_files_name) -> pd.DataFrame:
+                                  ALL_FILES_DICT, pattern_files_name) -> pd.DataFrame:
     """
     It fills the empty values of filename_infere for a verb by P_codeState 
     if it contains <trace>.*\.py</trace>, and if not it fills them by commandRan 
@@ -446,7 +448,7 @@ def fill_filename_infere_for_verb(df: pd.DataFrame, verb_name: str, values_for_v
             df.loc[mask, 'filename_infere'] = df.loc[mask, 'commandRan'].map(extract_short_filename_from_commandRan_Run_Command)
 
             df.loc[mask, 'filename_infere'] = df.loc[mask, 'commandRan'].apply(
-            lambda command: find_filename_by_commandRan(all_TP_functions_name_except_TP1_and_TPGAME, pattern_files_name, command)
+            lambda command: find_filename_by_commandRan(ALL_FILES_DICT, pattern_files_name, command)
             )
             
         elif verb_name == 'Run.Debugger':
@@ -458,7 +460,7 @@ def fill_filename_infere_for_verb(df: pd.DataFrame, verb_name: str, values_for_v
     return df
 
 # Make decision how to fill the filename_infere
-def desicion_function_to_fill_filename_infere(df: pd.DataFrame, verb_name: str, verb_name_value: int, all_TP_functions_name_except_TP1_and_TPGAME,
+def desicion_function_to_fill_filename_infere(df: pd.DataFrame, verb_name: str, verb_name_value: int, ALL_FILES_DICT,
     pattern_files_name) -> pd.DataFrame:
     """
     Its is used in phase 1
@@ -491,7 +493,7 @@ def desicion_function_to_fill_filename_infere(df: pd.DataFrame, verb_name: str, 
             print(f"Some filename_infere for {verb_name} are empty, we will try to fill them by P_codeState and commandRan if they have non-empty codestate or non-empty commandRan respectively, and if they start with %Debug or %NiceDebug or %FastDebug or %Run.")
             values_for_verb = check_P_codestate_and_commandRan(df, verb_name)
             df = fill_filename_infere_for_verb(df, verb_name, values_for_verb, 
-                                               all_TP_functions_name_except_TP1_and_TPGAME, pattern_files_name)
+                                               ALL_FILES_DICT, pattern_files_name)
             return df
     else:
         raise ValueError(f"Unexpected verb_name_value: {verb_name_value}. Expected 0 or 1.")
@@ -542,7 +544,7 @@ def desicion_for_filename(extracted_function_names_list : list ,all_TP_functions
     Args:
         extracted_function_names_list : all functions found after word 'def' by find_filename_by_codestate()
         
-        all_TP_functions : all_TP_functions_name_except_TP1_and_TPGAME from variable_constant_2425.py
+        all_TP_functions : ALL_FILES from variable_constant_2425.py
 
     Returns:
         filename_infere: The correct name of the row or an empty string.
@@ -553,11 +555,13 @@ def desicion_for_filename(extracted_function_names_list : list ,all_TP_functions
     # step1: find all corresponding filenames
     for extracted_function in extracted_function_names_list:
         
-        for filename, function_names in all_TP_functions.items():
-            set_function_names = set(function_names) # convert to set, to increase the speed : O(n)
+        for filename in all_TP_functions:
+            function_names = all_TP_functions[filename]['functions']
+            if function_names:
+                set_function_names = set(function_names) # convert to set, to increase the speed : O(n)
 
-            if extracted_function in set_function_names: # if function name is in the list
-                all_extracted_filename.append(filename) # append the corrsponding filename
+                if extracted_function in set_function_names: # if function name is in the list
+                    all_extracted_filename.append(filename) # append the corrsponding filename
             
     # step2: find the most appeared filename
     if len(all_extracted_filename) != 0: # if it is not empty
@@ -587,7 +591,7 @@ def find_filename_by_codestate(all_TP_functions : dict, pattern_files_name : str
              This is a basic idea and it is good for TP which have same functions. It can be better!
 
     Args:
-        all_TP_functions : all_TP_functions_name_except_TP1_and_TPGAME from variable_constant_2425.py
+        all_TP_functions : ALL_FILES from variable_constant_2425.py
         pattern_files_name : pattern_files_name from variable_constant_2425.py
         codeState : The codeState (P_codeState or F_codeState) of the current row.
 
@@ -631,7 +635,7 @@ def find_filename_by_codestate(all_TP_functions : dict, pattern_files_name : str
     
 # check and correct the filename_infere between each session.Start and session.End : called directly
 def correct_filename_infere_in_subset(subset: pd.DataFrame,df: pd.DataFrame,pattern:str,
-                                      all_TP_functions_name_except_TP1_and_TPGAME, pattern_files_name) -> None:
+                                      ALL_FILES, pattern_files_name) -> None:
 
     """
     It checks the filename_infere of each row of a subset of the the original dataframe.
@@ -667,7 +671,7 @@ def correct_filename_infere_in_subset(subset: pd.DataFrame,df: pd.DataFrame,patt
         if filename_infere == '':
 
                 if (row['verb'] ==  'Run.Program') and (row['P_codeState'] != ''): # P_codeState has a content
-                    new_filename_infere = find_filename_by_codestate(all_TP_functions_name_except_TP1_and_TPGAME,pattern_files_name,row['P_codeState'])          
+                    new_filename_infere = find_filename_by_codestate(ALL_FILES,pattern_files_name,row['P_codeState'])          
 
         # filename_infere non vide
         else:
@@ -681,7 +685,7 @@ def correct_filename_infere_in_subset(subset: pd.DataFrame,df: pd.DataFrame,patt
                     if row['verb'] == 'File.Save':
                         
                         if row['F_codeState'] != '': # F_codeState has a content
-                            new_filename_infere = find_filename_by_codestate(all_TP_functions_name_except_TP1_and_TPGAME,pattern_files_name,row['F_codeState'])
+                            new_filename_infere = find_filename_by_codestate(ALL_FILES,pattern_files_name,row['F_codeState'])
                             
                             # if  it can't find the name in codestate, it checks the old filename_infere with similarity
                             if new_filename_infere == '':
@@ -690,7 +694,7 @@ def correct_filename_infere_in_subset(subset: pd.DataFrame,df: pd.DataFrame,patt
                     elif row['verb'] in ['Run.Test', 'Run.Command', 'Run.Program', 'Run.Debugger']:
 
                         if row['P_codeState'] != '': # P_codeState has a content
-                            new_filename_infere = find_filename_by_codestate(all_TP_functions_name_except_TP1_and_TPGAME,pattern_files_name,row['P_codeState'])
+                            new_filename_infere = find_filename_by_codestate(ALL_FILES,pattern_files_name,row['P_codeState'])
                             
                             # if  it can't find the name in codestate, it checks the old filename_infere with similarity
                             if new_filename_infere == '':
@@ -893,7 +897,7 @@ def check_invalid_names(df:pd.DataFrame,df_indices:pd.DataFrame):
 #      Functions of 4.Cleaning_filename_phase3.ipynb
 #-----------------------------------------------------------
 def find_strange_filename_infere(df :  pd.DataFrame, TP: str , verb : str, 
-                                 all_TP_functions_name_except_TP1_and_TPGAME : dict, 
+                                 ALL_FILES : dict, 
                                  pattern_files_name: str) -> tuple:
     
     """
@@ -901,10 +905,10 @@ def find_strange_filename_infere(df :  pd.DataFrame, TP: str , verb : str,
     Read the explanation in notebook 4.Cleaning_filename_phase3.ipynb about Bizzar indices.
 
     Args: 
-        df :  Original DataFrame
+        df : Original DataFrame
         TP: Name of TP
         verb : Verb like Run.Test
-        all_TP_functions_name_except_TP1_and_TPGAME : A dictionary from variable_constant 
+        ALL_FILES : A dictionary from variable_constant 
         pattern_files_name: a string from all files name got concated
 
     Returns:
@@ -940,7 +944,7 @@ def find_strange_filename_infere(df :  pd.DataFrame, TP: str , verb : str,
                     
         else:
             # Case2 : if <trace></trace> is removed, try to find the name by the functions 
-            filename_infere_codestate = find_filename_by_codestate(all_TP_functions_name_except_TP1_and_TPGAME, pattern_files_name, row['P_codeState'])
+            filename_infere_codestate = find_filename_by_codestate(ALL_FILES, pattern_files_name, row['P_codeState'])
 
             if filename_infere_codestate == '': 
                 # Can't find the filename by functions in P_codeState

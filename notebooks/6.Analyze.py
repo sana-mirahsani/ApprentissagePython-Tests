@@ -17,13 +17,12 @@
 # # Analyze Workflow Overview:
 # 1. Import Libraries
 #
-# 2. Load DataFrame : phase2_nettoyage_fichiere.csv 
+# 2. Load DataFrame : phase3_nettoyage_fichiere.csv 
 # <br>
 # (It should be Final_nettoyage_2425.csv but for now we don't work with anonymized data because it is hard)
 #
 # 3. All analyzes
 #
-# 4. ToDo (will be deleted later)
 
 # %% [markdown]
 # ## 1.Import Libraries
@@ -58,10 +57,10 @@ filename, out_dir_interim, _ = pipeline_utils.execute_manually(filename, out_dir
 
 match filename:
     case "traces250102":
-        from src.data.variable_constant_2425 import TP_NAME, SORTED_SEANCE, all_TP_prog_functions_name_by_tp
+        from src.data.variable_constant_2425 import TP_NAME_LABEL, SORTED_SEANCE, ALL_TP_PROG_FUNCTIONS_NAME_BY_TP
         
     case "traces260105":
-        from src.data.variable_constant_2526 import TP_NAME, SORTED_SEANCE, all_TP_prog_functions_name_by_tp
+        from src.data.variable_constant_2526 import TP_NAME_LABEL, SORTED_SEANCE, ALL_TP_PROG_FUNCTIONS_NAME_BY_TP
 
 input_file = filename + "_filename_phase3_clean" + ".csv"
 
@@ -128,7 +127,7 @@ plt.show()
 # %%
 df_students_per_TP = pd.DataFrame(columns=['TP', 'number of students'])
 
-for tp in TP_NAME:
+for tp in TP_NAME_LABEL:
     actor_column  = df[df['TP'] == tp]['actor']
     column_binome = df[df['TP'] == tp]['binome']
     all_students  = set(actor_column).union(set(column_binome))
@@ -162,7 +161,7 @@ plt.show()
 df_students_per_Type_Tp = pd.DataFrame(columns=['TP','TP_mani', 'TP_prog']) # create the df
 Type_TPs = ['TP_mani', 'TP_prog'] # create a list of different types of tp
 
-for tp in TP_NAME:
+for tp in TP_NAME_LABEL:
 
     all_types_tp = []  # saving all numbers of types of TP
 
@@ -244,7 +243,7 @@ verbs = ['Run.Command','Run.Program','Run.Test','Run.Debugger']
 
 df_students_per_verb = pd.DataFrame(columns=['TP','Run.Command', 'Run.Program','Run.Test','Run.Debugger']) # create the df
 
-for tp in TP_NAME:
+for tp in TP_NAME_LABEL:
 
     df_filtered = df[df['TP'] == tp] # filter on TP
     number_of_students = []
@@ -285,7 +284,7 @@ verbs = ['Run.Command','Run.Program','Run.Test','Run.Debugger']
 
 df_students_per_verb_TP_prog = pd.DataFrame(columns=['TP','Run.Command', 'Run.Program','Run.Test','Run.Debugger']) # create the df
 
-for tp in TP_NAME:
+for tp in TP_NAME_LABEL:
 
     df_filtered = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')] # filter on TP & TP_prog
     number_of_students = []
@@ -327,7 +326,7 @@ verbs = ['Run.Command','Run.Program','Run.Test','Run.Debugger']
 
 df_comparing = pd.DataFrame(columns=['TP','total_number','Run.Command', 'Run.Program','Run.Test','Run.Debugger']) # create the df
 
-for tp in TP_NAME:
+for tp in TP_NAME_LABEL:
 
     df_filtered = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')] # filter on TP & TP_prog
     number_of_students = []
@@ -372,7 +371,7 @@ plt.show()
 # %%
 # create a crossttable of two columns of df
 count_table_seance_TP = pd.crosstab(df['seance'],df['TP'])
-count_table_seance_TP = count_table_seance_TP.reindex(index = SORTED_SEANCE, columns = TP_NAME, fill_value=0)
+count_table_seance_TP = count_table_seance_TP.reindex(index = SORTED_SEANCE, columns = TP_NAME_LABEL, fill_value=0)
 count_table_seance_TP
 
 # %%
@@ -488,7 +487,7 @@ def calculate_verb_in_TP(df,verb,tp):
 # %%
 df_run_test = pd.DataFrame(columns=['TP','total_number_students','doing_run_test','not_doing_run_test']) # create the df
 
-for tp in TP_NAME:
+for tp in TP_NAME_LABEL:
     
     if tp != 'Tp10':
         total_students , total_students_including_run_test, total_students_excluding_run_test = calculate_verb_in_TP(df,'Run.Test',tp)
@@ -556,7 +555,7 @@ df_empty_test = pd.DataFrame(columns=['TP','total_student','num_doing_run_test',
 students_doing_test_all_tp = []
 students_with_empty_test_all_tp = []
 
-for tp in TP_NAME:
+for tp in TP_NAME_LABEL:
     
     # start the calculation
     all_students, total_students_doing_test , total_students_with_empty_test = calculation_empty_test(df,tp)
@@ -615,7 +614,7 @@ def run_test_rate_by_tp(tp,df):
 run_test_rate_per_tp_all  = [] # list to save all percentage
 real_test_rate_per_tp_all = [] # list to save all percentage real test
 
-for tp in TP_NAME:
+for tp in TP_NAME_LABEL:
 
     if tp != 'Tp10':
         percentage_test, percentage_real_test = run_test_rate_by_tp(tp,df_empty_test) # calculate the percentage
@@ -630,8 +629,8 @@ for tp in TP_NAME:
 # %%
 # Plotting
 plt.figure(figsize=(8, 5))
-plt.plot(TP_NAME, run_test_rate_per_tp_all, marker='o', linestyle='-', color='skyblue', label = 'Doing Run Test')
-plt.plot(TP_NAME, real_test_rate_per_tp_all, marker='o', linestyle='-', color='orange', label = 'Doing Real Test')
+plt.plot(TP_NAME_LABEL, run_test_rate_per_tp_all, marker='o', linestyle='-', color='skyblue', label = 'Doing Run Test')
+plt.plot(TP_NAME_LABEL, real_test_rate_per_tp_all, marker='o', linestyle='-', color='orange', label = 'Doing Real Test')
 plt.title('Rate of students doing Run.Test and real test per each TP')
 plt.ylabel('Percentage (%)')
 plt.ylim(0, 100) 
@@ -646,7 +645,7 @@ plt.show()
 # A list to store all the indices
 records = []
 
-for tp in TP_NAME:
+for tp in TP_NAME_LABEL:
     tp_df = df[(df['TP'] == tp) & (df['Type_TP'] == 'TP_prog')] # filter on TP and TP_prog
     indices_to_check = tp_df.index.tolist() # extract the indices of files of TP_prog
 
@@ -671,7 +670,7 @@ df_indices_excluding_run_test = pd.DataFrame(records) # convert the dictionary i
 df_indices_excluding_run_test
 
 # %%
-labels = TP_NAME
+labels = TP_NAME_LABEL
 values = df_indices_excluding_run_test['total_num_No_Run_Test']
 
 plt.subplots(figsize=(17, 6))
@@ -688,7 +687,7 @@ plt.show()
 records_student = [] 
 
 for idx, row in df_indices_excluding_run_test.iterrows():
-    tp_name = row['TP']
+    TP_NAME_LABEL = row['TP']
     index_ranges = row['indices']  # list of tuples like (start, end)
 
     actors_in_ranges = set()
@@ -699,7 +698,7 @@ for idx, row in df_indices_excluding_run_test.iterrows():
         actors_in_ranges.update(actor_slice.unique())
 
     records_student.append({
-            'TP': tp_name,
+            'TP': TP_NAME_LABEL,
             'students_name': actors_in_ranges,
             'total_num': len(actors_in_ranges)
         }) 
@@ -709,7 +708,7 @@ df_students_excluding_run_test = pd.DataFrame(records_student)
 df_students_excluding_run_test 
 
 # %%
-labels = TP_NAME
+labels = TP_NAME_LABEL
 values = df_students_excluding_run_test['total_num']
 
 plt.subplots(figsize=(17, 6))
@@ -865,7 +864,7 @@ df_empty_test # this dataframe is created in 4.13 part
 # %%
 all_students_doing_real_test = {} # a dictionary of students doing the real test in each TP by looking df_empty_test
 
-for tp in TP_NAME:
+for tp in TP_NAME_LABEL:
     df_filtered_tp = df_empty_test[df_empty_test['TP'] == tp]
     
     students_doing_run_test   = set(df_filtered_tp['name_doing_run_test'].iloc[0])
@@ -1226,7 +1225,7 @@ def find_tests_for_tp_tpprog_name(name:str, df:pd.DataFrame, tp:str) -> tuple[pd
             #if df.loc[index]['verb'] == 'Session.Start': # parseable codestate not found
             #    return None, True, False
             most_recent_codeState = df_name_tp.loc[index]['codeState']
-            dict_tests = find_tests_in_codestate_for_functions(most_recent_codeState, all_TP_prog_functions_name_by_tp[tp])
+            dict_tests = find_tests_in_codestate_for_functions(most_recent_codeState, ALL_TP_PROG_FUNCTIONS_NAME_BY_TP[tp])
             if dict_tests != None: # parseable
                 col_functions = []
                 col_tests_number = []
@@ -1329,75 +1328,3 @@ df_tests_tp9, cannot_analyze_codestate_students_tp9, empty_codestate_students_tp
 
 # %%
 df_tests_tp9
-
-# %% [markdown]
-# # ToDo
-#
-# **DONE:**
-# - We must anonymized the too_short_sessions.csv, the column of actors
-# - semaine_5: there are two sessions, but only one sessions they were working, because the second session was controle TP and the internet was cut
-# - Ignore the part of **utilisation print**
-# - we want just Nom_TP_PPROGRAMMATION without the first week
-# - Leave the part after the print on Etude_sur_les_testes.py
-# - How write boolean for test green or red for Run.Test : DONE!
-# - See cleaning.keep_research_data_only in notebooks/Init_data.py
-# - try to find another way of coding of correct_filename_infere_in_subset, reduce the number of if
-# - correct the filename_inere in case 1 and two by the P_codeState, and calculate the percentage of emoing traces only for those with empty filename, which we can't find the filename by the P_codeState : Done!
-# - add diagram to compare the number of students using each verb and the total number of present student in TP (TP_prog) : DONE! 4.8
-# - Calculate the total number of Run.Test in the too_short_session : DONE! 4.11
-# - calculate the percentage of how many students in each TP, (only TP_prog) did the Run.Test from all present students : Done! 4.14
-# - In 4.15 :add the plotting and change the code: DONE! the time of execution reduced from 4 mins to 3s !
-# - add in Readme how the dataframe form json is sorted by actor (alphabet) an then by session.id and then tempstamp.date, this is in cleaning.py of Thomas version : DONE!
-# - Calculate how many students didn't do the run.test in each TP, TP_prog : DONE!
-# - add in 4.13, the student which were in 60% of doing the run.test, are they empty tests or not. you should extract their name: DONE!
-# - add number of student who did each file.py in TP_GAME : DONE 4.18
-# - look Run.Test in each TP if the value in column tests is empty or not. if the Run.Test is clicked once and the tests is empty so there is no Run.Test:  DONE 4.18
-# - In each TP_GAME, look for each student, in the newest file of Run.Test, how many their column tests is empty and isn't : DONE but need to check 
-# - check this https://gitlab.univ-lille.fr/L1-programmation/analyse-des-traces/-/blob/amadou_analyse/notebooks/PJI_amadou_2024.py 
-# - add how many students in ech TP , TP_prog, did the run test and from doing this run.test, how many of them are doing only empty ones and the percentage of doing run.test - empty run.test = a value / total students who did the TP : DONE!
-# - add table in phase2, to explain better in markdown : Done
-# - error in analyze for id df[df['_id.$oid'] == '673db140bd5a98b8f9dd1f13'][['filename_infere','filename','P_codeState','verb','commandRan','TP','Type_TP']] : DONE
-# - seperate part Bizzar indices in another notebook, phase 3 nettoyage and then give the output of this file to another notebook: DONE
-# - add trace in variable_constant : DONE!
-#
-# **In process:**
-#
-#
-# **New :**
-#
-# - How many students stoped doing run.test in TP-GAME 
-# - check the students who didn't do the test during the TP_GAME, wht is the reason, didn't they do any test during other TP or not
-#
-# - add in TP_GAME and for student who didn't do the run.test, in which of P_codestate (the last one) is not empty, and if there is any name in the previous step, then check each file for them (if they had worked on all files)
-#
-# - look first which students has the red tests and what they did?
-#     - test red and solved the bug
-#     - test red and left and went to do something else
-#     - test red and didn't do anything else
-#
-# - check the file duplicated_runTest.ipynb
-#
-# - add part to find all the run.Test red and see how many students did Run.Debogguer just after this test red
-#
-# - add def for the functions in variable_constant_2425 (by mirabelle)
-#
-# - seperate the name between traces in variable_constant_2425 and create in another function 
-#
-# - add find_test_final in analyze
-#
-# - add in comment in find_test_final that the values for students(test number is Nan and they have a name of TP, it is not bizzar because it means student did only Run.command 
-# and since the codestate is empty, there is no calling function in codestate but there is in commandRan)
-# - find_test_final : the number of test shows the number of test students did for each function that is written in the codestate, if it is zero, means there is the function in codestate but with zero test, if Nan means there is no fonction in codestate or it is empty, (this is done by finding the most recent file if it is analyzable)
-# - check how in nettoyage decides for the situation when there are different names of functions of both tp_mani and tp_prog 
-# - check how it decides for tp name when there are different names of functions of different tps
-# - read assert and test automatisé
-#
-# - new:
-# - add checking the name extracted of traces with pattern (all fileanem)
-# - add third condition which is going to check the text in tp after not finding filename_infere by def
-# - add another dictionar only include the text of tp not the functions
-#
-# ## To show : 
-# - 4.14, add a diagram on Run_test rate
-# - 4.19
-#
